@@ -47,9 +47,18 @@ Spotify Wrapped, but for your ChatGPT conversations. Upload your export, get bea
 
 ```bash
 cd projects/chatgpt-wrapped
+
+# macOS
 open index.html
-# Drop your conversations.json or ZIP file
+
+# Windows
+start index.html
+
+# Linux
+xdg-open index.html
 ```
+
+Then drop your `conversations.json` or ChatGPT export ZIP file.
 
 ---
 
@@ -60,7 +69,7 @@ open index.html
 - Node.js 20+
 - Docker (for PostgreSQL)
 - OpenAI API key (for embeddings + voice transcription)
-- **sox** (for voice input): `brew install sox`
+- Anthropic API key (optional, for Claude)
 
 ### Setup
 
@@ -68,20 +77,48 @@ open index.html
 # Install dependencies
 npm install
 
-# Install sox for voice input (Mac)
-brew install sox
-
 # Start database
 npm run db:start
+```
 
-# Create .env file
+#### Create `.env` file
+
+<details>
+<summary><b>🍎 macOS / Linux</b></summary>
+
+```bash
 cat > .env << EOF
 DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 EOF
+```
 
-# Run database migrations
+</details>
+
+<details>
+<summary><b>🪟 Windows (PowerShell)</b></summary>
+
+```powershell
+@"
+DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+Or manually create a `.env` file with these contents:
+```
+DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+</details>
+
+#### Run Database Migrations
+
+```bash
 docker exec -i personal-operator-db psql -U operator -d personal_operator < schemas/db-schema.sql
 docker exec -i personal-operator-db psql -U operator -d personal_operator < migrations/002_task_understanding.sql
 ```
@@ -91,10 +128,9 @@ docker exec -i personal-operator-db psql -U operator -d personal_operator < migr
 ```bash
 # Start the server
 npm run server
-
-# Open the dashboard
-open http://localhost:3001
 ```
+
+Then open http://localhost:3001 in your browser.
 
 The dashboard includes:
 - **📋 Tasks tab** — Natural language task management
@@ -102,14 +138,51 @@ The dashboard includes:
 
 ---
 
-## Voice Input (Mac Microphone)
+## Voice Input
+
+Voice input requires **sox** for audio recording from your microphone.
 
 ### Setup
 
+<details>
+<summary><b>🍎 macOS</b></summary>
+
 ```bash
-# Install sox (required for audio recording)
 brew install sox
 ```
+
+</details>
+
+<details>
+<summary><b>🪟 Windows</b></summary>
+
+1. Download sox from https://sourceforge.net/projects/sox/files/sox/
+2. Extract to a folder (e.g., `C:\Program Files\sox`)
+3. Add to PATH:
+   - Open System Properties → Environment Variables
+   - Add `C:\Program Files\sox` to your PATH
+4. Restart your terminal
+
+Or use **Chocolatey**:
+```powershell
+choco install sox
+```
+
+Or use **Scoop**:
+```powershell
+scoop install sox
+```
+
+</details>
+
+<details>
+<summary><b>🐧 Linux (Ubuntu/Debian)</b></summary>
+
+```bash
+sudo apt install sox
+```
+
+</details>
 
 ### Usage
 
@@ -123,7 +196,7 @@ npm run voice:continuous
 
 ### How It Works
 
-1. **Press Enter** to start recording from your Mac microphone
+1. **Press Enter** to start recording from your microphone
 2. **Speak naturally** — recording auto-stops after 2 seconds of silence
 3. **OpenAI Whisper** transcribes your speech
 4. **Understanding Engine** classifies your intent and updates tasks

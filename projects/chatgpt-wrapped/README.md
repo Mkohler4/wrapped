@@ -59,66 +59,11 @@ ChatGPT Wrapped analyzes your ChatGPT conversation export and creates a beautifu
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### Option A: Standalone Mode (No Backend Required)
 
-- **Node.js** 18+ (recommend using [nvm](https://github.com/nvm-sh/nvm))
-- **PostgreSQL** 14+ (or use Docker)
-- **OpenAI API Key** (for AI-powered insights)
+The easiest way to use ChatGPT Wrapped — just open the HTML file in your browser!
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/yourusername/personal-operator-assistant.git
-cd personal-operator-assistant
-```
-
-### 2. Install Dependencies
-
-```bash
-npm install
-```
-
-### 3. Set Up PostgreSQL
-
-**Option A: Using Docker (Recommended)**
-```bash
-docker run -d \
-  --name postgres-operator \
-  -e POSTGRES_USER=operator \
-  -e POSTGRES_PASSWORD=operator_dev_password \
-  -e POSTGRES_DB=personal_operator \
-  -p 5433:5432 \
-  postgres:14
-```
-
-**Option B: Local PostgreSQL**
-```bash
-# Create database
-createdb personal_operator
-
-# Or connect and create:
-psql -c "CREATE DATABASE personal_operator;"
-```
-
-### 4. Configure Environment Variables
-
-```bash
-# Set your database URL
-export DATABASE_URL="postgresql://operator:operator_dev_password@localhost:5433/personal_operator"
-
-# Set your OpenAI API key (for AI insights)
-export OPENAI_API_KEY="sk-your-key-here"
-```
-
-### 5. Initialize the Database
-
-```bash
-npm run db:migrate
-# Or manually run the schema:
-# psql $DATABASE_URL -f src/db/schema.sql
-```
-
-### 6. Get Your ChatGPT Export
+#### 1. Get Your ChatGPT Export
 
 1. Go to [chat.openai.com](https://chat.openai.com)
 2. Click your profile → **Settings**
@@ -126,38 +71,134 @@ npm run db:migrate
 4. Click **Export** and wait for the email
 5. Download the ZIP file (it may take a few minutes to arrive)
 
-### 7. Import Your Data
+#### 2. Open the App
+
+<details>
+<summary><b>🍎 macOS</b></summary>
 
 ```bash
-# Import your ChatGPT export ZIP file
+cd projects/chatgpt-wrapped
+open index.html
+```
+
+Or double-click `index.html` in Finder.
+
+</details>
+
+<details>
+<summary><b>🪟 Windows</b></summary>
+
+```cmd
+cd projects\chatgpt-wrapped
+start index.html
+```
+
+Or double-click `index.html` in File Explorer.
+
+</details>
+
+<details>
+<summary><b>🐧 Linux</b></summary>
+
+```bash
+cd projects/chatgpt-wrapped
+xdg-open index.html
+```
+
+Or open `index.html` from your file manager.
+
+</details>
+
+#### 3. Upload Your Data
+
+- Drag and drop your ChatGPT export ZIP file onto the upload area
+- Or drop just the `conversations.json` file from the export
+
+That's it! Your Wrapped experience will generate instantly in-browser.
+
+---
+
+### Option B: Full Backend Mode (Advanced Features)
+
+For AI-powered insights and persistent storage, use the full backend.
+
+#### Prerequisites
+
+- **Node.js** 18+ (recommend using [nvm](https://github.com/nvm-sh/nvm) on Mac/Linux or [nvm-windows](https://github.com/coreybutler/nvm-windows) on Windows)
+- **Docker** (for PostgreSQL)
+- **OpenAI API Key** (for AI-powered insights)
+
+#### 1. Clone and Install
+
+```bash
+git clone https://github.com/yourusername/personal-operator-assistant.git
+cd personal-operator-assistant
+npm install
+```
+
+#### 2. Set Up PostgreSQL with Docker
+
+```bash
+npm run db:start
+```
+
+#### 3. Configure Environment Variables
+
+<details>
+<summary><b>🍎 macOS / Linux</b></summary>
+
+```bash
+cat > .env << EOF
+DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
+OPENAI_API_KEY=sk-your-key-here
+EOF
+```
+
+Or use export:
+```bash
+export DATABASE_URL="postgresql://operator:operator_dev_password@localhost:5433/personal_operator"
+export OPENAI_API_KEY="sk-your-key-here"
+```
+
+</details>
+
+<details>
+<summary><b>🪟 Windows (PowerShell)</b></summary>
+
+```powershell
+@"
+DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
+OPENAI_API_KEY=sk-your-key-here
+"@ | Out-File -FilePath .env -Encoding utf8
+```
+
+Or set environment variables:
+```powershell
+$env:DATABASE_URL = "postgresql://operator:operator_dev_password@localhost:5433/personal_operator"
+$env:OPENAI_API_KEY = "sk-your-key-here"
+```
+
+</details>
+
+#### 4. Initialize Database & Import Data
+
+```bash
+# Run migrations
+npm run db:migrate
+
+# Import your ChatGPT export
 npm run import:chatgpt /path/to/your/chatgpt-export.zip
 ```
 
-This will:
-- Extract and parse all your conversations
-- Store them in PostgreSQL
-- Generate embeddings for semantic search
-- Extract images (uploaded and AI-generated)
+> **Windows note:** Use backslashes for paths: `npm run import:chatgpt C:\Users\you\Downloads\chatgpt-export.zip`
 
-### 8. Start the Server
+#### 5. Start the Server
 
 ```bash
-# Start the backend server
 npm run dev
-# Or:
-npx tsx src/server.ts
 ```
 
-The server runs on `http://localhost:3001`
-
-### 9. View Your Wrapped
-
-Open in your browser:
-```
-http://localhost:3001/wrapped
-```
-
-Click **"Load My ChatGPT Data"** to see your personalized Wrapped experience!
+Open http://localhost:3001/wrapped in your browser and click **"Load My ChatGPT Data"**!
 
 ---
 
@@ -226,7 +267,7 @@ The Wrapped experience consists of 18 animated slides:
 ### Running in Development Mode
 
 ```bash
-# Terminal 1: Start the server with auto-reload
+# Start the server with auto-reload
 npm run dev
 
 # The frontend is served at /wrapped
@@ -248,6 +289,34 @@ npm run db:reset
 # Re-run migrations
 npm run db:migrate
 ```
+
+---
+
+## 💻 Platform Notes
+
+| Feature | macOS | Windows | Linux |
+|---------|-------|---------|-------|
+| Standalone HTML | ✅ | ✅ | ✅ |
+| Backend Server | ✅ | ✅ | ✅ |
+| Docker | ✅ | ✅ (Docker Desktop) | ✅ |
+| AI Insights | ✅ | ✅ | ✅ |
+
+### Windows-Specific Tips
+
+- Use **PowerShell** or **Git Bash** for the best experience
+- File paths use backslashes: `C:\Users\you\Downloads\file.zip`
+- If using Command Prompt, some npm scripts may need `npx` prefix
+- Docker Desktop for Windows requires WSL2 or Hyper-V enabled
+
+### macOS-Specific Tips
+
+- If using Apple Silicon (M1/M2/M3), Docker runs natively
+- Homebrew is recommended for installing dependencies: `brew install node`
+
+### Linux-Specific Tips
+
+- Most distributions have Node.js in package managers, but [nvm](https://github.com/nvm-sh/nvm) is recommended for version management
+- Docker can be installed via your distribution's package manager or [Docker's official instructions](https://docs.docker.com/engine/install/)
 
 ---
 
