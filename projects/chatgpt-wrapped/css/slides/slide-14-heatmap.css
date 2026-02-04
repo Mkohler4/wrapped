@@ -1,0 +1,476 @@
+/* ============================================
+   Slide 14: Activity Heatmap (GitHub-style)
+   ============================================ */
+
+/* Background elements */
+.heatmap-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.heatmap-bg-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(rgba(16, 163, 127, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(16, 163, 127, 0.03) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0;
+  animation: heatmapGridFade 1.5s ease-out 0.3s forwards;
+}
+
+@keyframes heatmapGridFade {
+  to { opacity: 1; }
+}
+
+.heatmap-bg-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 400px;
+  background: radial-gradient(ellipse at center, rgba(16, 163, 127, 0.08) 0%, transparent 70%);
+  filter: blur(60px);
+  animation: heatmapGlowPulse 4s ease-in-out infinite;
+}
+
+@keyframes heatmapGlowPulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+/* Main content wrapper */
+.heatmap-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+/* Headline styling - matching other slides */
+.heatmap-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: heatmapFadeIn 0.6s ease-out forwards;
+}
+
+.heatmap-icon {
+  font-size: 2rem;
+  width: 48px;
+  height: 48px;
+  background: rgba(16, 163, 127, 0.15);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.heatmap-title {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #10a37f 0%, #667eea 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heatmap-subtitle {
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+  opacity: 0;
+  animation: heatmapFadeIn 0.6s ease-out 0.15s forwards;
+}
+
+@keyframes heatmapFadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Heatmap container */
+.heatmap-container {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 1.5rem;
+  overflow-x: auto;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  opacity: 0;
+  animation: heatmapFadeIn 0.8s ease-out 0.3s forwards;
+}
+
+.heatmap-wrapper {
+  display: flex;
+  gap: 4px;
+}
+
+.heatmap-day-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 20px;
+  margin-right: 4px;
+}
+
+.heatmap-day-label {
+  height: 12px;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  line-height: 12px;
+  font-weight: 500;
+}
+
+.heatmap-grid {
+  display: flex;
+  gap: 3px;
+}
+
+.heatmap-week {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.heatmap-month-labels {
+  display: flex;
+  gap: 3px;
+  margin-bottom: 4px;
+  margin-left: 24px;
+}
+
+.heatmap-month-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  min-width: 45px;
+  font-weight: 500;
+}
+
+/* Heatmap cells with animation support */
+.heatmap-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.04);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Level 0 (inactive) cells are always visible */
+.heatmap-cell.level-0 { 
+  background: rgba(255, 255, 255, 0.04); 
+  opacity: 1;
+}
+
+/* Active cells (level 1-4) start hidden and animate in */
+.heatmap-cell.level-1,
+.heatmap-cell.level-2,
+.heatmap-cell.level-3,
+.heatmap-cell.level-4 {
+  opacity: 0;
+  transform: scale(0.5);
+}
+
+.heatmap-cell.level-1.animated,
+.heatmap-cell.level-2.animated,
+.heatmap-cell.level-3.animated,
+.heatmap-cell.level-4.animated {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.heatmap-cell:hover {
+  transform: scale(1.4);
+  outline: 2px solid rgba(255, 255, 255, 0.4);
+  z-index: 10;
+  position: relative;
+}
+
+.heatmap-cell.level-1 { background: rgba(16, 163, 127, 0.25); box-shadow: 0 0 4px rgba(16, 163, 127, 0.1); }
+.heatmap-cell.level-2 { background: rgba(16, 163, 127, 0.45); box-shadow: 0 0 6px rgba(16, 163, 127, 0.15); }
+.heatmap-cell.level-3 { background: rgba(16, 163, 127, 0.7); box-shadow: 0 0 8px rgba(16, 163, 127, 0.2); }
+.heatmap-cell.level-4 { background: rgba(16, 163, 127, 1); box-shadow: 0 0 12px rgba(16, 163, 127, 0.4); }
+
+/* Tooltip */
+.heatmap-tooltip {
+  position: fixed;
+  background: rgba(18, 18, 18, 0.98);
+  border: 1px solid rgba(16, 163, 127, 0.3);
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(5px);
+  transition: all 0.2s ease;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.heatmap-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.heatmap-tooltip-date {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-bottom: 2px;
+}
+
+.heatmap-tooltip-count {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+/* Legend */
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 1rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  opacity: 0;
+  animation: heatmapFadeIn 0.6s ease-out 0.5s forwards;
+}
+
+.heatmap-legend-cell {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  transition: transform 0.2s ease;
+}
+
+.heatmap-legend-cell:hover {
+  transform: scale(1.3);
+}
+
+/* Stats grid - card style matching other slides */
+.heatmap-stats-grid {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: heatmapFadeIn 0.6s ease-out 0.6s forwards;
+}
+
+.heatmap-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 1rem 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  min-width: 120px;
+  transition: all 0.3s ease;
+}
+
+.heatmap-stat-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(16, 163, 127, 0.3);
+  transform: translateY(-2px);
+}
+
+.heatmap-stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.heatmap-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.heatmap-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+/* Stat card bar */
+.heatmap-stat-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.5rem;
+}
+
+.heatmap-stat-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--gradient-1);
+  border-radius: 2px;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Streak dots visualization */
+.heatmap-stat-streak-dots {
+  display: flex;
+  gap: 3px;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100px;
+}
+
+.heatmap-streak-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+  transform: scale(0);
+  animation: streakDotPop 0.3s ease-out forwards;
+}
+
+@keyframes streakDotPop {
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Activity rate ring */
+.heatmap-stat-ring {
+  width: 40px;
+  height: 40px;
+  margin-top: 0.5rem;
+}
+
+.heatmap-ring-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.heatmap-ring-bg {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.08);
+  stroke-width: 3;
+}
+
+.heatmap-ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Highlight card */
+.heatmap-highlight {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(16, 163, 127, 0.08);
+  border: 1px solid rgba(16, 163, 127, 0.2);
+  border-radius: 12px;
+  font-size: 0.95rem;
+  color: var(--text);
+  opacity: 0;
+  animation: heatmapFadeIn 0.6s ease-out 0.8s forwards;
+}
+
+.heatmap-highlight-icon {
+  font-size: 1.25rem;
+}
+
+.heatmap-highlight-text strong {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .heatmap-title {
+    font-size: 1.8rem;
+  }
+  
+  .heatmap-subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .heatmap-stats-grid {
+    gap: 1rem;
+  }
+  
+  .heatmap-stat-card {
+    padding: 0.75rem 1rem;
+    min-width: 100px;
+  }
+  
+  .heatmap-stat-value {
+    font-size: 1.5rem;
+  }
+  
+  .heatmap-stat-icon {
+    font-size: 1.25rem;
+  }
+  
+  .heatmap-container {
+    padding: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .heatmap-headline {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .heatmap-title {
+    font-size: 1.5rem;
+  }
+  
+  .heatmap-stats-grid {
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  
+  .heatmap-stat-card {
+    width: 100%;
+    max-width: 200px;
+    flex-direction: row;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  
+  .heatmap-stat-bar,
+  .heatmap-stat-streak-dots,
+  .heatmap-stat-ring {
+    display: none;
+  }
+}

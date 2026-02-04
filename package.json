@@ -1,0 +1,67 @@
+{
+  "name": "personal-operator-assistant",
+  "version": "0.1.0",
+  "description": "Your personal AI operator that knows you",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "import:chatgpt": "tsx src/scripts/import-chatgpt.ts",
+    "import:chatgpt:full": "tsx src/scripts/import-chatgpt-full.ts",
+    "embeddings:backfill": "tsx src/scripts/backfill-embeddings.ts",
+    "search": "tsx src/scripts/search.ts",
+    "profile:analyze": "tsx src/scripts/analyze-profile.ts",
+    "profile:html": "tsx src/scripts/generate-profile-page.ts",
+    "wrapped:stats": "tsx src/scripts/wrapped-stats.ts",
+    "wrapped:stats:json": "tsx src/scripts/wrapped-stats.ts --json",
+    "task": "tsx src/scripts/task.ts",
+    "task:list": "tsx src/scripts/task.ts list",
+    "task:show": "tsx src/scripts/task.ts show",
+    "task:correct": "tsx src/scripts/task.ts correct",
+    "task:archive": "tsx src/scripts/task.ts archive",
+    "voice": "tsx src/scripts/voice.ts",
+    "voice:continuous": "tsx src/scripts/voice.ts --continuous",
+    "memory:list": "tsx src/scripts/review-memories.ts list",
+    "memory:review": "tsx src/scripts/review-memories.ts review",
+    "memory:approve": "tsx src/scripts/review-memories.ts approve",
+    "memory:reject": "tsx src/scripts/review-memories.ts reject",
+    "memory:clear-junk": "tsx src/scripts/review-memories.ts clear-junk",
+    "server": "tsx src/server.ts",
+    "server:dev": "tsx watch src/server.ts",
+    "db:start": "docker compose up -d",
+    "db:stop": "docker compose down",
+    "db:logs": "docker compose logs -f db",
+    "db:reset": "docker compose down -v && docker compose up -d",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write src"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "jszip": "^3.10.1",
+    "openai": "^4.28.0",
+    "pg": "^8.11.3",
+    "pgvector": "^0.1.8",
+    "uuid": "^9.0.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.0",
+    "@types/pg": "^8.11.0",
+    "@types/uuid": "^9.0.0",
+    "eslint": "^8.56.0",
+    "prettier": "^3.2.4",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.2.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
+

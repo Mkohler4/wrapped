@@ -1,0 +1,40 @@
+/* ============================================
+   ChatGPT Wrapped - Main Stylesheet (Entry Point)
+   ============================================
+   This file imports all modular CSS components.
+   Import order matters - variables.css must come first.
+   ============================================ */
+
+/* ============================================
+   Core Styles
+   ============================================ */
+@import 'core/variables.css';
+@import 'core/base.css';
+@import 'core/upload.css';
+@import 'core/processing.css';
+@import 'core/navigation.css';
+@import 'core/modals.css';
+
+/* ============================================
+   Slide-Specific Styles
+   ============================================ */
+@import 'slides/slide-01-conversations.css';
+@import 'slides/slide-02-messages.css';
+@import 'slides/slide-03-topics.css';
+@import 'slides/slide-04-identity.css';
+@import 'slides/slide-05-obsession.css';
+@import 'slides/slide-07-time-personality.css';
+@import 'slides/slide-08-evolution.css';
+@import 'slides/slide-09-themes.css';
+@import 'slides/slide-10-gallery.css';
+@import 'slides/slide-13-fun-facts.css';
+@import 'slides/slide-14-heatmap.css';
+@import 'slides/slide-15-verdict.css';
+@import 'slides/slide-16-achievements.css';
+@import 'slides/slide-17-word-bubbles.css';
+@import 'slides/slide-18-share.css';
+
+/* ============================================
+   Video Generation Styles
+   ============================================ */
+@import 'video/video-ui.css';

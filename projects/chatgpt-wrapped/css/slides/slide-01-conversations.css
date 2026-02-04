@@ -1,0 +1,251 @@
+/* ============================================
+   Slide 1: Conversations - Opening Impact
+   ============================================ */
+
+/* Floating bubbles background */
+.convo-bubbles-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.convo-bubble {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 20px 20px 20px 4px;
+  background: rgba(16, 163, 127, 0.08);
+  border: 1px solid rgba(16, 163, 127, 0.15);
+  opacity: 0;
+  animation: bubbleFloat 20s ease-in-out infinite;
+}
+
+.convo-bubble::before {
+  content: '💬';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 1rem;
+  opacity: 0.4;
+}
+
+.convo-bubble:nth-child(odd) {
+  background: rgba(102, 126, 234, 0.06);
+  border-color: rgba(102, 126, 234, 0.12);
+}
+
+.convo-bubble:nth-child(3n) {
+  width: 32px;
+  height: 32px;
+}
+
+.convo-bubble:nth-child(3n)::before {
+  font-size: 0.8rem;
+}
+
+.convo-bubble:nth-child(5n) {
+  width: 50px;
+  height: 50px;
+}
+
+.convo-bubble:nth-child(5n)::before {
+  font-size: 1.3rem;
+}
+
+@keyframes bubbleFloat {
+  0% {
+    opacity: 0;
+    transform: translateY(100vh) rotate(-5deg);
+  }
+  10% {
+    opacity: 0.6;
+  }
+  90% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-100px) rotate(5deg);
+  }
+}
+
+/* Main content */
+.convo-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Number container with glow effect */
+.convo-number-container {
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.convo-number {
+  font-size: 10rem;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+}
+
+.convo-number-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, rgba(16, 163, 127, 0.2) 0%, transparent 70%);
+  filter: blur(40px);
+  z-index: 0;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.8; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.convo-label {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0.25rem;
+}
+
+.convo-sublabel {
+  font-size: 1.2rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Micro-stats */
+.convo-stats {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1rem 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+}
+
+.convo-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.convo-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.convo-stat-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.convo-stat-divider {
+  width: 1px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Visual progress bar */
+.convo-visual {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.convo-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.convo-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--gradient-1);
+  border-radius: 4px;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.convo-bar-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .convo-number {
+    font-size: 6rem;
+  }
+  
+  .convo-label {
+    font-size: 1.8rem;
+  }
+  
+  .convo-sublabel {
+    font-size: 1rem;
+  }
+  
+  .convo-stats {
+    gap: 1rem;
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .convo-stat-value {
+    font-size: 1.25rem;
+  }
+  
+  .convo-visual {
+    max-width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .convo-number {
+    font-size: 4.5rem;
+  }
+  
+  .convo-label {
+    font-size: 1.5rem;
+  }
+  
+  .convo-stats {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .convo-stat-divider {
+    width: 40px;
+    height: 1px;
+  }
+}
+

@@ -1,0 +1,505 @@
+/* ============================================
+   Slide 17: Word Bubbles / Vocabulary
+   ============================================ */
+
+/* Main content */
+.vocab-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1000px;
+  height: 100%;
+  padding: 0 1rem;
+}
+
+.vocab-headline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.vocab-title {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #667eea 0%, #10a37f 50%, #f472b6 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vocab-subtitle {
+  color: var(--text-muted);
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  opacity: 0;
+}
+
+.vocab-subtitle.animate-in {
+  animation: vocabFadeIn 0.6s ease-out 0.15s forwards;
+}
+
+@keyframes vocabFadeIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Hero word card */
+.vocab-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 2.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: 20px;
+  margin-bottom: 0.75rem;
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.vocab-hero.animate-in {
+  animation: vocabHeroReveal 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+}
+
+@keyframes vocabHeroReveal {
+  to { opacity: 1; transform: scale(1); }
+}
+
+.vocab-hero-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at center, rgba(102, 126, 234, 0.15) 0%, transparent 60%);
+  filter: blur(30px);
+  pointer-events: none;
+  animation: vocabHeroGlow 3s ease-in-out infinite;
+}
+
+@keyframes vocabHeroGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
+.vocab-hero-badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  background: rgba(16, 163, 127, 0.15);
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  margin-bottom: 0.5rem;
+}
+
+.vocab-hero-word {
+  font-family: 'Outfit', sans-serif;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+  text-transform: lowercase;
+}
+
+.vocab-hero-count {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.vocab-hero-number {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vocab-hero-label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Word bubbles wrapper */
+.word-bubbles-wrapper {
+  flex: 1;
+  width: 100%;
+  max-width: 900px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+}
+
+.word-bubbles-wrapper.animate-in {
+  animation: vocabFadeIn 0.8s ease-out 0.5s forwards;
+}
+
+.word-bubbles-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 280px;
+  max-height: 380px;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.word-bubble {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, rgba(74, 222, 128, 0.35), rgba(74, 222, 128, 0.15));
+  border: 2px solid rgba(74, 222, 128, 0.4);
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  padding: 0.5rem;
+  cursor: default;
+  transform: translate(-50%, -50%);
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.word-bubble:hover {
+  animation-play-state: paused;
+  filter: brightness(1.3) drop-shadow(0 0 20px currentColor);
+  z-index: 10;
+  scale: 1.15;
+}
+
+.word-bubble.size-xl {
+  width: 140px;
+  height: 140px;
+  font-size: 1.1rem;
+  background: radial-gradient(circle at 30% 30%, rgba(74, 222, 128, 0.5), rgba(74, 222, 128, 0.2));
+  border: 3px solid rgba(74, 222, 128, 0.6);
+  box-shadow: 0 8px 32px rgba(74, 222, 128, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.15);
+}
+
+.word-bubble.size-lg {
+  width: 110px;
+  height: 110px;
+  font-size: 0.9rem;
+  background: radial-gradient(circle at 30% 30%, rgba(96, 165, 250, 0.45), rgba(96, 165, 250, 0.15));
+  border: 2px solid rgba(96, 165, 250, 0.5);
+  box-shadow: 0 6px 24px rgba(96, 165, 250, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.word-bubble.size-md {
+  width: 85px;
+  height: 85px;
+  font-size: 0.75rem;
+  background: radial-gradient(circle at 30% 30%, rgba(251, 191, 36, 0.4), rgba(251, 191, 36, 0.12));
+  border: 2px solid rgba(251, 191, 36, 0.5);
+  box-shadow: 0 4px 16px rgba(251, 191, 36, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.word-bubble.size-sm {
+  width: 65px;
+  height: 65px;
+  font-size: 0.65rem;
+  background: radial-gradient(circle at 30% 30%, rgba(244, 114, 182, 0.35), rgba(244, 114, 182, 0.1));
+  border: 1px solid rgba(244, 114, 182, 0.45);
+  box-shadow: 0 3px 12px rgba(244, 114, 182, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.word-bubble-count {
+  position: absolute;
+  bottom: -20px;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  font-weight: 600;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+}
+
+.word-bubble:hover .word-bubble-count {
+  opacity: 1;
+}
+
+/* Stats footer */
+.vocab-stats {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin-top: 0.5rem;
+  opacity: 0;
+}
+
+.vocab-stats.animate-in {
+  animation: vocabFadeIn 0.6s ease-out 0.8s forwards;
+}
+
+.vocab-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.vocab-stat-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.vocab-stat-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+}
+
+.vocab-stat-divider {
+  width: 1px;
+  height: 30px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Hint text */
+.vocab-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  opacity: 0;
+  margin-top: 0.5rem;
+}
+
+.vocab-hint.animate-in {
+  animation: vocabFadeIn 0.6s ease-out 1s forwards;
+}
+
+.vocab-hint-dot {
+  opacity: 0.4;
+}
+
+/* Bubble animations */
+@keyframes bubblePop {
+  0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(1.08); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Randomized floating animations - each bubble gets a different path */
+@keyframes bubbleFloat1 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-50%, -50%) translate(12px, -18px) rotate(2deg); }
+  40% { transform: translate(-50%, -50%) translate(-8px, -10px) rotate(-1deg); }
+  60% { transform: translate(-50%, -50%) translate(15px, 8px) rotate(3deg); }
+  80% { transform: translate(-50%, -50%) translate(-12px, 14px) rotate(-2deg); }
+}
+
+@keyframes bubbleFloat2 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-50%, -50%) translate(-15px, -12px) rotate(-3deg); }
+  50% { transform: translate(-50%, -50%) translate(10px, -20px) rotate(2deg); }
+  75% { transform: translate(-50%, -50%) translate(-18px, 10px) rotate(-1deg); }
+}
+
+@keyframes bubbleFloat3 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  15% { transform: translate(-50%, -50%) translate(20px, 8px) rotate(4deg); }
+  35% { transform: translate(-50%, -50%) translate(5px, -22px) rotate(1deg); }
+  55% { transform: translate(-50%, -50%) translate(-14px, -8px) rotate(-3deg); }
+  75% { transform: translate(-50%, -50%) translate(-20px, 15px) rotate(-2deg); }
+}
+
+@keyframes bubbleFloat4 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  30% { transform: translate(-50%, -50%) translate(-10px, 20px) rotate(-2deg); }
+  50% { transform: translate(-50%, -50%) translate(18px, 5px) rotate(3deg); }
+  70% { transform: translate(-50%, -50%) translate(8px, -18px) rotate(1deg); }
+}
+
+@keyframes bubbleFloat5 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  20% { transform: translate(-50%, -50%) translate(-20px, -5px) rotate(-4deg); }
+  45% { transform: translate(-50%, -50%) translate(12px, -15px) rotate(2deg); }
+  70% { transform: translate(-50%, -50%) translate(18px, 12px) rotate(-1deg); }
+  90% { transform: translate(-50%, -50%) translate(-8px, 18px) rotate(3deg); }
+}
+
+@keyframes bubbleFloat6 {
+  0%, 100% { transform: translate(-50%, -50%) translate(0, 0) rotate(0deg); }
+  25% { transform: translate(-50%, -50%) translate(14px, -20px) rotate(3deg); }
+  50% { transform: translate(-50%, -50%) translate(-18px, -5px) rotate(-2deg); }
+  75% { transform: translate(-50%, -50%) translate(-5px, 22px) rotate(1deg); }
+}
+
+@keyframes bubblePulse {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.word-bubble.animate-in {
+  transform: translate(-50%, -50%);
+  animation: bubblePop 0.5s ease-out forwards;
+  animation-delay: var(--delay, 0s);
+}
+
+/* Apply different float animations based on nth-child for randomness */
+.word-bubble.animate-in:nth-child(12n+1) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat1 8s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+2) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat2 9s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+3) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat3 7s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+4) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat4 10s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+5) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat5 8.5s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+6) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat6 9.5s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+7) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat3 11s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+8) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat1 7.5s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+9) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat4 8s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+10) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat2 10.5s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n+11) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat5 9s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+.word-bubble.animate-in:nth-child(12n) {
+  animation: bubblePop 0.5s ease-out forwards, bubbleFloat6 7s ease-in-out 0.5s infinite;
+  animation-delay: var(--delay, 0s), calc(var(--delay, 0s) + 0.5s);
+}
+
+/* Responsive styles for vocab slide */
+@media (max-width: 768px) {
+  .vocab-title {
+    font-size: 1.6rem;
+  }
+  
+  .vocab-subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .vocab-hero {
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .vocab-hero-word {
+    font-size: 1.8rem;
+  }
+  
+  .vocab-hero-number {
+    font-size: 1.2rem;
+  }
+  
+  .vocab-stats {
+    gap: 1.5rem;
+    padding: 0.5rem 1rem;
+  }
+  
+  .vocab-stat-value {
+    font-size: 1.2rem;
+  }
+  
+  .word-bubbles-container {
+    min-height: 220px;
+    max-height: 300px;
+  }
+  
+  .word-bubble.size-xl {
+    width: 100px;
+    height: 100px;
+    font-size: 0.85rem;
+  }
+  
+  .word-bubble.size-lg {
+    width: 80px;
+    height: 80px;
+    font-size: 0.75rem;
+  }
+  
+  .word-bubble.size-md {
+    width: 65px;
+    height: 65px;
+    font-size: 0.65rem;
+  }
+  
+  .word-bubble.size-sm {
+    width: 50px;
+    height: 50px;
+    font-size: 0.55rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .vocab-headline {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .vocab-title {
+    font-size: 1.4rem;
+  }
+  
+  .vocab-stats {
+    flex-direction: row;
+    gap: 1rem;
+  }
+  
+  .vocab-stat-divider {
+    height: 24px;
+  }
+  
+  .vocab-hint {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  
+  .vocab-hint-dot {
+    display: none;
+  }
+}

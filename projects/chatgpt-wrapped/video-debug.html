@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video Scene Debug - ChatGPT Wrapped</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0d0d0d;
+      color: #ffffff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      color: #10a37f;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    
+    .header p {
+      color: #888;
+      font-size: 14px;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      gap: 30px;
+    }
+    
+    .sidebar {
+      width: 250px;
+      flex-shrink: 0;
+    }
+    
+    .scene-list {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 16px;
+    }
+    
+    .scene-list h3 {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .scene-btn {
+      display: block;
+      width: 100%;
+      padding: 12px 16px;
+      margin-bottom: 8px;
+      background: #252525;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+    }
+    
+    .scene-btn:hover {
+      background: #303030;
+      border-color: #10a37f;
+    }
+    
+    .scene-btn.active {
+      background: #10a37f;
+      border-color: #10a37f;
+    }
+    
+    .scene-btn .scene-num {
+      display: inline-block;
+      width: 24px;
+      height: 24px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 50%;
+      text-align: center;
+      line-height: 24px;
+      font-size: 12px;
+      margin-right: 10px;
+    }
+    
+    .scene-btn.active .scene-num {
+      background: rgba(0,0,0,0.2);
+    }
+    
+    .main {
+      flex: 1;
+    }
+    
+    .canvas-container {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #000;
+      border-radius: 16px;
+      padding: 20px;
+      min-height: 600px;
+    }
+    
+    #previewCanvas {
+      max-width: 100%;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
+    }
+    
+    .control-btn {
+      padding: 12px 24px;
+      background: #252525;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .control-btn:hover {
+      background: #353535;
+    }
+    
+    .control-btn.primary {
+      background: #10a37f;
+    }
+    
+    .control-btn.primary:hover {
+      background: #0d8a6a;
+    }
+    
+    .format-toggle {
+      display: flex;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: center;
+    }
+    
+    .format-btn {
+      padding: 8px 16px;
+      background: #252525;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      color: #888;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .format-btn:hover {
+      border-color: #444;
+    }
+    
+    .format-btn.active {
+      background: #1a1a1a;
+      border-color: #10a37f;
+      color: #fff;
+    }
+    
+    .scene-info {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+    
+    .scene-info h3 {
+      font-size: 16px;
+      margin-bottom: 12px;
+      color: #10a37f;
+    }
+    
+    .scene-info p {
+      color: #888;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+    
+    .stat {
+      background: #252525;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: #10a37f;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      color: #666;
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+    
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #888;
+      font-size: 14px;
+    }
+    
+    .time-controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+      padding: 12px;
+      background: #1a1a1a;
+      border-radius: 8px;
+    }
+    
+    .time-slider {
+      flex: 1;
+      -webkit-appearance: none;
+      height: 6px;
+      background: #333;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    
+    .time-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #10a37f;
+      border-radius: 50%;
+      cursor: grab;
+    }
+    
+    .time-label {
+      font-size: 13px;
+      color: #888;
+      font-variant-numeric: tabular-nums;
+      min-width: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🎬 Video Scene Debug</h1>
+    <p>Preview individual scenes for design review</p>
+  </div>
+  
+  <div class="container">
+    <div class="sidebar">
+      <div class="scene-list">
+        <h3>Scenes</h3>
+        <button class="scene-btn active" data-scene="intro" onclick="selectScene('intro', this)">
+          <span class="scene-num">1</span> Intro
+        </button>
+        <button class="scene-btn" data-scene="conversations" onclick="selectScene('conversations', this)">
+          <span class="scene-num">2</span> Conversations
+        </button>
+        <button class="scene-btn" data-scene="messages" onclick="selectScene('messages', this)">
+          <span class="scene-num">3</span> Messages
+        </button>
+        <button class="scene-btn" data-scene="topics" onclick="selectScene('topics', this)">
+          <span class="scene-num">4</span> Topics
+        </button>
+        <button class="scene-btn" data-scene="journey" onclick="selectScene('journey', this)">
+          <span class="scene-num">5</span> Journey
+        </button>
+        <button class="scene-btn" data-scene="personality" onclick="selectScene('personality', this)">
+          <span class="scene-num">6</span> Personality
+        </button>
+        <button class="scene-btn" data-scene="achievements" onclick="selectScene('achievements', this)">
+          <span class="scene-num">7</span> Achievements
+        </button>
+        <button class="scene-btn" data-scene="outro" onclick="selectScene('outro', this)">
+          <span class="scene-num">8</span> Outro
+        </button>
+      </div>
+      
+      <div class="scene-info">
+        <h3 id="sceneTitle">Intro Scene</h3>
+        <p id="sceneDescription">The opening scene with "Your Year with ChatGPT" title and animated text reveal.</p>
+        <div class="stats">
+          <div class="stat">
+            <div class="stat-value" id="sceneDuration">3.5s</div>
+            <div class="stat-label">Duration</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="sceneElements">4</div>
+            <div class="stat-label">Elements</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="sceneEffects">2</div>
+            <div class="stat-label">Effects</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="main">
+      <div class="canvas-container">
+        <div class="loading" id="loading">Loading scene...</div>
+        <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+      </div>
+      
+      <div class="format-toggle">
+        <button class="format-btn active" onclick="setFormat('portrait', this)">📱 Portrait (9:16)</button>
+        <button class="format-btn" onclick="setFormat('square', this)">⬜ Square (1:1)</button>
+      </div>
+      
+      <div class="time-controls">
+        <span class="time-label" id="currentTime">0:00.0</span>
+        <input type="range" class="time-slider" id="timeSlider" min="0" max="1000" value="0" oninput="seekTo(this.value)">
+        <span class="time-label" id="totalTime">/ 3.5s</span>
+      </div>
+      
+      <div class="controls">
+        <button class="control-btn" onclick="restartScene()">⏮ Restart</button>
+        <button class="control-btn primary" id="playPauseBtn" onclick="togglePlayPause()">▶ Play</button>
+        <button class="control-btn" onclick="prevScene()">← Prev</button>
+        <button class="control-btn" onclick="nextScene()">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Load video generation scripts -->
+  <script src="js/video/design-system.js"></script>
+  <script src="js/video/animations/tween.js"></script>
+  <script src="js/video/animations/counter.js"></script>
+  <script src="js/video/animations/text-reveal.js"></script>
+  <script src="js/video/animations/particles.js"></script>
+  <script src="js/video/scenes/scene-base.js"></script>
+  <script src="js/video/scenes/scene-intro.js"></script>
+  <script src="js/video/scenes/scene-conversations.js"></script>
+  <script src="js/video/scenes/scene-messages.js"></script>
+  <script src="js/video/scenes/scene-topics.js"></script>
+  <script src="js/video/scenes/scene-journey.js"></script>
+  <script src="js/video/scenes/scene-personality.js"></script>
+  <script src="js/video/scenes/scene-achievements.js"></script>
+  <script src="js/video/scenes/scene-outro.js"></script>
+
+  <script>
+    // Scene metadata
+    const sceneInfo = {
+      intro: {
+        title: 'Intro Scene',
+        description: 'The opening scene with "Your Year with ChatGPT" title and animated gradient background with particles.',
+        duration: 3500,
+        elements: 4,
+        effects: 3
+      },
+      conversations: {
+        title: 'Conversations Scene',
+        description: 'Shows the total conversation count with animated counter and burst effect.',
+        duration: 4000,
+        elements: 5,
+        effects: 2
+      },
+      messages: {
+        title: 'Messages Scene',
+        description: 'Displays total messages exchanged with animated typing effect.',
+        duration: 4000,
+        elements: 4,
+        effects: 2
+      },
+      topics: {
+        title: 'Topics Scene',
+        description: 'Shows top conversation topics with animated bars and labels.',
+        duration: 5000,
+        elements: 6,
+        effects: 2
+      },
+      journey: {
+        title: 'Journey Scene',
+        description: 'Timeline of AI usage throughout the year with monthly visualization.',
+        duration: 5000,
+        elements: 13,
+        effects: 2
+      },
+      personality: {
+        title: 'Personality Scene',
+        description: 'Your AI interaction style and communication patterns.',
+        duration: 4500,
+        elements: 5,
+        effects: 2
+      },
+      achievements: {
+        title: 'Achievements Scene',
+        description: 'Special milestones and accomplishments from your AI journey.',
+        duration: 4500,
+        elements: 6,
+        effects: 3
+      },
+      outro: {
+        title: 'Outro Scene',
+        description: 'Final thank you message with call-to-action and branding.',
+        duration: 4000,
+        elements: 4,
+        effects: 2
+      }
+    };
+
+    // Sample data for 2025
+    const sampleData = {
+      year: '2025',
+      // Basic stats (used by intro scene)
+      basic: {
+        dateRange: 'January 2025 - December 2025',
+        totalConversations: 847,
+        totalMessages: 12543,
+        avgConversationsPerDay: 2.3,
+        avgConversationsPerWeek: 16
+      },
+      totalConversations: 847,
+      totalMessages: 12543,
+      perDay: 2.3,
+      perWeek: 16,
+      topTopics: [
+        { name: 'Coding', count: 312, percentage: 37 },
+        { name: 'Writing', count: 189, percentage: 22 },
+        { name: 'Research', count: 156, percentage: 18 },
+        { name: 'Creative', count: 98, percentage: 12 },
+        { name: 'Learning', count: 92, percentage: 11 }
+      ],
+      monthlyActivity: [45, 62, 78, 85, 92, 110, 95, 88, 72, 65, 58, 47],
+      personality: {
+        style: 'Technical Explorer',
+        traits: ['Curious', 'Detail-oriented', 'Creative']
+      },
+      achievements: [
+        { icon: '🔥', title: 'Power User', description: '500+ conversations' },
+        { icon: '🌙', title: 'Night Owl', description: 'Most active at night' },
+        { icon: '📚', title: 'Deep Diver', description: '100+ research topics' }
+      ],
+      joinDate: 'January 2025',
+      streakDays: 45,
+      // Topics data
+      topics: {
+        top: [
+          { name: 'Coding', count: 312, percentage: 37 },
+          { name: 'Writing', count: 189, percentage: 22 },
+          { name: 'Research', count: 156, percentage: 18 },
+          { name: 'Creative', count: 98, percentage: 12 },
+          { name: 'Learning', count: 92, percentage: 11 }
+        ]
+      },
+      // Engagement data
+      engagement: {
+        totalConversations: 847,
+        totalMessages: 12543
+      }
+    };
+
+    // State
+    let currentScene = 'intro';
+    let format = 'portrait';
+    let isPlaying = false;
+    let scene = null;
+    let animationFrame = null;
+    let startTime = 0;
+    let pausedTime = 0;
+    let canvas, ctx;
+
+    // Scene classes map (classes are named Scene<Name>)
+    const sceneClasses = {
+      intro: typeof SceneIntro !== 'undefined' ? SceneIntro : null,
+      conversations: typeof SceneConversations !== 'undefined' ? SceneConversations : null,
+      messages: typeof SceneMessages !== 'undefined' ? SceneMessages : null,
+      topics: typeof SceneTopics !== 'undefined' ? SceneTopics : null,
+      journey: typeof SceneJourney !== 'undefined' ? SceneJourney : null,
+      personality: typeof ScenePersonality !== 'undefined' ? ScenePersonality : null,
+      achievements: typeof SceneAchievements !== 'undefined' ? SceneAchievements : null,
+      outro: typeof SceneOutro !== 'undefined' ? SceneOutro : null
+    };
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+      canvas = document.getElementById('previewCanvas');
+      ctx = canvas.getContext('2d');
+      
+      document.getElementById('loading').style.display = 'none';
+      
+      // Try to load first scene
+      selectScene('intro', document.querySelector('[data-scene="intro"]'));
+    });
+
+    function selectScene(sceneId, btn) {
+      currentScene = sceneId;
+      
+      // Update button states
+      document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      
+      // Update info panel
+      const info = sceneInfo[sceneId];
+      document.getElementById('sceneTitle').textContent = info.title;
+      document.getElementById('sceneDescription').textContent = info.description;
+      document.getElementById('sceneDuration').textContent = (info.duration / 1000).toFixed(1) + 's';
+      document.getElementById('sceneElements').textContent = info.elements;
+      document.getElementById('sceneEffects').textContent = info.effects;
+      document.getElementById('totalTime').textContent = '/ ' + (info.duration / 1000).toFixed(1) + 's';
+      
+      // Reset slider
+      document.getElementById('timeSlider').value = 0;
+      document.getElementById('currentTime').textContent = '0:00.0';
+      
+      // Stop current animation
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      isPlaying = false;
+      updatePlayPauseBtn();
+      
+      // Initialize scene
+      initScene(sceneId);
+    }
+
+    function initScene(sceneId) {
+      const SceneClass = sceneClasses[sceneId];
+      
+      if (!SceneClass) {
+        // Fallback: draw a placeholder
+        ctx.fillStyle = '#0d0d0d';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#10a37f';
+        ctx.font = 'bold 48px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Scene: ${sceneId}`, canvas.width / 2, canvas.height / 2);
+        ctx.fillStyle = '#888';
+        ctx.font = '24px Inter, sans-serif';
+        ctx.fillText('(Class not loaded)', canvas.width / 2, canvas.height / 2 + 50);
+        console.log(`Scene class "${sceneId}" not found`);
+        return;
+      }
+      
+      // Create scene instance with proper options
+      const duration = sceneInfo[sceneId].duration;
+      
+      // Create a mock renderer for the scene
+      const mockRenderer = {
+        width: canvas.width,
+        height: canvas.height,
+        canvas: canvas,
+        ctx: ctx
+      };
+      
+      const options = {
+        renderer: mockRenderer,
+        timeline: {
+          id: sceneId,
+          startTime: 0,
+          duration: duration,
+          endTime: duration
+        },
+        stats: sampleData,
+        identityData: sampleData.personality,
+        timePersonalityData: {
+          monthlyActivity: sampleData.monthlyActivity
+        }
+      };
+      
+      try {
+        scene = new SceneClass(options);
+        
+        // Enter scene
+        scene.enter();
+        
+        // Render first frame
+        renderFrame(0);
+        console.log(`Scene "${sceneId}" initialized successfully`);
+      } catch (error) {
+        console.error(`Error initializing scene "${sceneId}":`, error);
+        ctx.fillStyle = '#0d0d0d';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ff5555';
+        ctx.font = 'bold 32px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`Error: ${error.message}`, canvas.width / 2, canvas.height / 2);
+      }
+    }
+
+    function renderFrame(time) {
+      if (!scene) return;
+      
+      const duration = sceneInfo[currentScene].duration;
+      const progress = Math.min(time / duration, 1);
+      
+      // Clear canvas
+      ctx.fillStyle = '#0d0d0d';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      // Update and render scene
+      scene.update(time, 16.67); // Assume ~60fps delta
+      scene.render(ctx, progress);
+      
+      // Update time display
+      const seconds = Math.floor(time / 1000);
+      const ms = Math.floor((time % 1000) / 100);
+      document.getElementById('currentTime').textContent = `0:${seconds.toString().padStart(2, '0')}.${ms}`;
+      document.getElementById('timeSlider').value = progress * 1000;
+    }
+
+    function animate(timestamp) {
+      if (!isPlaying) return;
+      
+      if (!startTime) startTime = timestamp - pausedTime;
+      
+      const elapsed = timestamp - startTime;
+      const duration = sceneInfo[currentScene].duration;
+      
+      if (elapsed >= duration) {
+        // Scene complete
+        renderFrame(duration);
+        isPlaying = false;
+        updatePlayPauseBtn();
+        return;
+      }
+      
+      renderFrame(elapsed);
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    function togglePlayPause() {
+      if (isPlaying) {
+        // Pause
+        isPlaying = false;
+        pausedTime = performance.now() - startTime;
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+          animationFrame = null;
+        }
+      } else {
+        // Play
+        isPlaying = true;
+        startTime = 0;
+        animationFrame = requestAnimationFrame(animate);
+      }
+      updatePlayPauseBtn();
+    }
+
+    function updatePlayPauseBtn() {
+      const btn = document.getElementById('playPauseBtn');
+      btn.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+    }
+
+    function restartScene() {
+      isPlaying = false;
+      pausedTime = 0;
+      startTime = 0;
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      
+      // Re-initialize scene
+      initScene(currentScene);
+      updatePlayPauseBtn();
+    }
+
+    function seekTo(value) {
+      const progress = value / 1000;
+      const duration = sceneInfo[currentScene].duration;
+      const time = progress * duration;
+      
+      pausedTime = time;
+      startTime = 0;
+      
+      renderFrame(time);
+    }
+
+    function prevScene() {
+      const scenes = Object.keys(sceneInfo);
+      const currentIndex = scenes.indexOf(currentScene);
+      const prevIndex = (currentIndex - 1 + scenes.length) % scenes.length;
+      const prevBtn = document.querySelector(`[data-scene="${scenes[prevIndex]}"]`);
+      selectScene(scenes[prevIndex], prevBtn);
+    }
+
+    function nextScene() {
+      const scenes = Object.keys(sceneInfo);
+      const currentIndex = scenes.indexOf(currentScene);
+      const nextIndex = (currentIndex + 1) % scenes.length;
+      const nextBtn = document.querySelector(`[data-scene="${scenes[nextIndex]}"]`);
+      selectScene(scenes[nextIndex], nextBtn);
+    }
+
+    function setFormat(newFormat, btn) {
+      format = newFormat;
+      
+      // Update button states
+      document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update canvas size
+      if (format === 'portrait') {
+        canvas.width = 1080;
+        canvas.height = 1920;
+      } else {
+        canvas.width = 1080;
+        canvas.height = 1080;
+      }
+      
+      // Re-initialize scene with new size
+      initScene(currentScene);
+    }
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        togglePlayPause();
+      } else if (e.code === 'KeyR') {
+        restartScene();
+      } else if (e.code === 'ArrowLeft') {
+        prevScene();
+      } else if (e.code === 'ArrowRight') {
+        nextScene();
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChatGPT Wrapped</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <!-- Upload Screen -->
+  <div class="upload-screen" id="uploadScreen">
+    <div class="logo">ChatGPT Wrapped</div>
+    <div class="tagline">Your year in AI conversations</div>
+    
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-zone-icon">📁</div>
+      <div class="drop-zone-text">Drop your ChatGPT export here</div>
+      <div class="drop-zone-hint">or click to browse</div>
+    </div>
+    <input type="file" id="fileInput" accept=".zip,.json" style="display:none">
+    
+    <p class="privacy-note">
+      <strong>🔒 100% Private</strong><br>
+      Your data is processed entirely in your browser.<br>
+      Nothing is uploaded to any server.
+    </p>
+    
+    <div class="btn-row">
+      <button class="demo-btn primary-demo" onclick="loadMyData()">
+        🚀 Load My Data
+      </button>
+      <button class="demo-btn" onclick="loadSampleData()">
+        ✨ Try sample data
+      </button>
+    </div>
+  </div>
+
+  <!-- Processing Screen -->
+  <div class="processing-screen" id="processingScreen">
+    <div class="processing-text">Analyzing your conversations...</div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-label" id="progressLabel">Starting...</div>
+  </div>
+
+  <!-- Wrapped Screen -->
+  <div class="wrapped-screen" id="wrappedScreen">
+    <!-- Slides Container - Slides loaded dynamically -->
+    <div id="slidesContainer"></div>
+
+    <!-- Floating Evidence Bubbles Container -->
+    <div class="floating-bubbles-container" id="floatingBubblesContainer"></div>
+
+    <!-- Evidence Modal -->
+    <div class="evidence-modal" id="evidenceModal">
+      <div class="evidence-modal-header">
+        <div>
+          <div class="evidence-modal-title" id="evidenceModalTitle">Loading...</div>
+          <div class="sub-text" id="evidenceModalSubtitle"></div>
+        </div>
+        <button class="evidence-modal-close" onclick="closeEvidenceModal()">×</button>
+      </div>
+      <div class="evidence-list" id="evidenceList">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+
+    <!-- Video Generation Modal -->
+    <div class="video-modal" id="videoModal">
+      <div class="video-modal-content">
+        <div class="video-modal-header">
+          <div class="video-modal-title">🎬 Create Video</div>
+          <button class="video-modal-close" aria-label="Close">×</button>
+        </div>
+        
+        <div class="video-modal-body">
+          <!-- Unsupported Browser Warning (hidden by default) -->
+          <div class="video-unsupported" style="display: none;">
+            <div class="video-unsupported-icon">⚠️</div>
+            <div class="video-unsupported-title">Browser Not Supported</div>
+            <div class="video-unsupported-text">
+              Video recording is not supported in your browser. Please use Chrome, Firefox, or Edge.
+            </div>
+          </div>
+          
+          <!-- Supported Content -->
+          <div class="video-supported-content">
+            <!-- Preview Canvas -->
+            <div class="video-preview-container">
+              <canvas class="video-preview-canvas"></canvas>
+              <div class="video-preview-placeholder">
+                <div class="video-preview-placeholder-icon">🎥</div>
+                <div>Click Preview to see your video</div>
+              </div>
+            </div>
+            
+            <!-- Preview Controls (shown during preview) -->
+            <div class="video-preview-controls">
+              <!-- Playback Controls -->
+              <div class="video-playback-controls">
+                <button class="video-control-btn" data-action="restart" title="Restart (R)">
+                  <span class="video-control-icon">⏮</span>
+                </button>
+                <button class="video-control-btn video-control-btn-main" data-action="play-pause" title="Play/Pause (Space)">
+                  <span class="video-control-icon">▶</span>
+                </button>
+              </div>
+              
+              <!-- Timeline Scrubber -->
+              <div class="video-timeline-wrapper">
+                <div class="video-timeline-scrubber">
+                  <div class="video-timeline-track">
+                    <div class="video-timeline-progress"></div>
+                    <div class="video-timeline-handle"></div>
+                  </div>
+                  <div class="video-scene-markers"></div>
+                </div>
+                <div class="video-time-display">0:00 / 0:30</div>
+              </div>
+            </div>
+            
+            <!-- Scene Indicator -->
+            <div class="video-scene-indicator"></div>
+            
+            <!-- Recording Indicator -->
+            <div class="video-recording-indicator">
+              <div class="video-recording-dot"></div>
+              <span class="video-recording-text">Recording...</span>
+            </div>
+            
+            <!-- Options -->
+            <div class="video-options">
+              <!-- Format Selection -->
+              <div class="video-option">
+                <div class="video-option-label">Format</div>
+                <div class="video-option-buttons">
+                  <button class="video-option-btn active" data-format="portrait">
+                    📱 Portrait (9:16)
+                  </button>
+                  <button class="video-option-btn" data-format="square">
+                    ⬜ Square (1:1)
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Duration Selection -->
+              <div class="video-option">
+                <div class="video-option-label">Duration</div>
+                <div class="video-option-buttons">
+                  <button class="video-option-btn active" data-duration="short">
+                    30s
+                  </button>
+                  <button class="video-option-btn" data-duration="medium">
+                    45s
+                  </button>
+                  <button class="video-option-btn" data-duration="long">
+                    60s
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Progress Bar -->
+            <div class="video-progress">
+              <div class="video-progress-bar">
+                <div class="video-progress-fill"></div>
+              </div>
+              <div class="video-progress-text">0%</div>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="video-actions">
+              <button class="video-btn video-btn-secondary" data-action="preview">
+                <span>▶️</span>
+                <span>Preview</span>
+              </button>
+              <button class="video-btn video-btn-primary" data-action="generate">
+                <span>🎬</span>
+                <span>Generate Video</span>
+              </button>
+            </div>
+            
+            <!-- Download Section (shown after recording complete) -->
+            <div class="video-download">
+              <div class="video-download-info">
+                <span>Your video is ready!</span>
+                <span class="video-download-size">0 MB</span>
+              </div>
+              <button class="video-btn video-btn-primary" data-action="download">
+                <span>💾</span>
+                <span>Download Video</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <div class="nav" id="nav">
+      <button class="nav-btn" id="prevBtn" onclick="prevSlide()">← Back</button>
+      <button class="nav-btn primary" id="nextBtn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <!-- Dots -->
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <!-- Slide Loader - Loads all slide partials -->
+  <script>
+    // Slide files to load
+    const slideFiles = [
+      'slides/slide-01-conversations.html',
+      'slides/slide-02-messages.html',
+      'slides/slide-03-topics.html',
+      'slides/slide-04-identity.html',        // Combined: Personality + Spirit Animal
+      'slides/slide-05-obsession.html',
+      'slides/slide-07-time-personality.html',
+      'slides/slide-08-evolution.html',
+      'slides/slide-09-themes.html',
+      'slides/slide-10-gallery.html',
+      'slides/slide-13-fun-facts.html',
+      'slides/slide-14-heatmap.html',
+      'slides/slide-15-roast-compliment.html',
+      'slides/slide-16-achievements.html',
+      'slides/slide-17-word-bubbles.html',
+      'slides/slide-18-share.html'
+    ];
+
+    // Load all slides dynamically
+    async function loadSlides() {
+      const container = document.getElementById('slidesContainer');
+      
+      try {
+        const slidePromises = slideFiles.map(file => 
+          fetch(file).then(response => {
+            if (!response.ok) throw new Error(`Failed to load ${file}`);
+            return response.text();
+          })
+        );
+        
+        const slidesHTML = await Promise.all(slidePromises);
+        container.innerHTML = slidesHTML.join('\n');
+        
+        // Update total slides count in app.js after loading
+        if (typeof totalSlides !== 'undefined') {
+          totalSlides = slideFiles.length;
+        }
+      } catch (error) {
+        console.error('Error loading slides:', error);
+        // Fallback: load slides inline if fetch fails (for file:// protocol)
+        loadSlidesInline();
+      }
+    }
+
+    // Fallback for file:// protocol (direct file access)
+    function loadSlidesInline() {
+      // This will be populated if needed for local development without a server
+      console.log('Loading slides inline (server not available)');
+      const container = document.getElementById('slidesContainer');
+      
+      // Inline slide content as fallback
+      container.innerHTML = `
+        <!-- Slide 1: Total Conversations -->
+        <div class="slide active" id="slide1">
+          <div class="slide-label">This year, you had</div>
+          <div class="big-number" id="totalConvos">961</div>
+          <div class="big-text">conversations</div>
+          <div class="sub-text">with ChatGPT</div>
+        </div>
+
+        <!-- Slide 2: Messages -->
+        <div class="slide" id="slide2">
+          <div class="slide-label">That's over</div>
+          <div class="big-number" id="totalMessages">15,052</div>
+          <div class="big-text">messages</div>
+          <div class="sub-text" id="percentile">More than 95% of users</div>
+          <div class="sparkline-container" id="messagesSparkline">
+            <svg class="sparkline-svg" viewBox="0 0 120 40" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="sparklineGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.4"/>
+                  <stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path class="sparkline-area" id="sparklineArea"></path>
+              <path class="sparkline-line" id="sparklineLine"></path>
+              <circle class="sparkline-dot" id="sparklineDot" cx="0" cy="0" r="3" style="display:none;"/>
+            </svg>
+            <div>
+              <div class="sparkline-label">Monthly trend</div>
+              <div class="sparkline-trend" id="sparklineTrend">--</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 3: Topics -->
+        <div class="slide" id="slide3">
+          <div class="slide-label">Your top topics were</div>
+          <div class="topic-list" id="topicList"></div>
+        </div>
+
+        <!-- Slide 4: Your AI Identity (Combined Personality + Spirit Animal) -->
+        <div class="slide" id="slide4">
+          <div class="identity-card">
+            <div class="identity-animal">
+              <span class="identity-animal-emoji" id="spiritAnimalEmoji">🦉</span>
+              <div class="identity-animal-name" id="spiritAnimalName">The Owl</div>
+            </div>
+            <div class="identity-content">
+              <div class="identity-label">YOUR AI IDENTITY</div>
+              <h1 class="identity-title" id="personality">The Technical Thinker</h1>
+              <p class="identity-reason" id="spiritAnimalReason">Methodical, curious, always digging deeper into problems others overlook.</p>
+              <div class="identity-traits" id="identityTraits">
+                <span class="identity-trait">Analytical</span>
+                <span class="identity-trait">Nocturnal</span>
+                <span class="identity-trait">Detail-oriented</span>
+              </div>
+            </div>
+          </div>
+          <div class="identity-decoration"></div>
+        </div>
+
+        <!-- Slide 5: Top Obsession -->
+        <div class="slide" id="slide5">
+          <div class="slide-label">Your top obsession</div>
+          <div class="personality-title" id="obsessionTopic" style="font-size: 2.5rem;">🎯 Loading...</div>
+          <div class="roast-meter">
+            <div class="roast-meter-track">
+              <div class="roast-meter-needle" id="roastNeedle" style="left: 50%;"></div>
+            </div>
+            <div class="roast-meter-labels">
+              <span>Mild</span>
+              <span>Spicy</span>
+              <span>🔥</span>
+            </div>
+            <div class="roast-level" id="roastLevel">Medium roast</div>
+          </div>
+          <div class="insight-quote" id="obsessionRoast" style="margin-top: 1rem;">Analyzing your conversations...</div>
+        </div>
+
+        <!-- Slide 6: When You Think (file: slide-07) -->
+        <div class="slide" id="slide7">
+          <div class="time-particles-bg" id="timeParticlesBg"></div>
+          <div class="time-content">
+            <div class="slide-label">Your brain lights up at</div>
+            <div class="time-hero">
+              <div class="time-hero-hour">
+                <span class="time-hero-number" id="peakHourNum">--</span>
+                <span class="time-hero-period" id="peakHourPeriod">--</span>
+              </div>
+              <div class="time-hero-glow"></div>
+            </div>
+            <div class="time-hero-context">
+              <span class="time-hero-count" id="peakHourCount">0</span>
+              <span class="time-hero-label">messages at this hour</span>
+            </div>
+            <div class="time-wheel-container">
+              <div class="time-wheel">
+                <svg class="time-wheel-svg" viewBox="0 0 100 100" id="timeWheelSvg"></svg>
+                <div class="time-wheel-center">
+                  <div class="time-wheel-icon" id="timeWheelIcon">🌙</div>
+                </div>
+              </div>
+              <div class="time-wheel-tooltip" id="timeWheelTooltip">
+                <div class="tooltip-hour" id="tooltipHour">8pm</div>
+                <div class="tooltip-count" id="tooltipCount">1,090 messages</div>
+              </div>
+            </div>
+            <div class="time-breakdown">
+              <div class="time-party time-party-day">
+                <div class="time-party-icon">☀️</div>
+                <div class="time-party-details">
+                  <div class="time-party-value" id="dayMsgCount">0</div>
+                  <div class="time-party-label">Day hours</div>
+                  <div class="time-party-range">6am - 6pm</div>
+                </div>
+                <div class="time-party-bar">
+                  <div class="time-party-bar-fill day-fill" id="dayMsgBar"></div>
+                </div>
+              </div>
+              <div class="time-vs-icon"><span>vs</span></div>
+              <div class="time-party time-party-night">
+                <div class="time-party-icon">🌙</div>
+                <div class="time-party-details">
+                  <div class="time-party-value" id="nightMsgCount">0</div>
+                  <div class="time-party-label">Night hours</div>
+                  <div class="time-party-range">6pm - 6am</div>
+                </div>
+                <div class="time-party-bar">
+                  <div class="time-party-bar-fill night-fill" id="nightMsgBar"></div>
+                </div>
+              </div>
+            </div>
+            <div class="time-signature" id="timeSignature">
+              <span class="time-sig-icon" id="timeSigIcon">🌙</span>
+              <span class="time-sig-text" id="timeSigText">Night Owl</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 8: Evolution -->
+        <div class="slide" id="slide8">
+          <div class="slide-label">Your ChatGPT evolution</div>
+          <div class="time-range-selector" id="timeRangeSelector">
+            <button class="time-range-btn active" data-periods="2" onclick="changeEvolutionPeriod(2)">Early → Now</button>
+            <button class="time-range-btn" data-value="1year" onclick="changeEvolutionPeriod(2, '1year')">Past 12 Months</button>
+            <button class="time-range-btn" data-value="6months" onclick="changeEvolutionPeriod(2, '6months')">Past 6 Months</button>
+            <button class="time-range-btn" data-value="3months" onclick="changeEvolutionPeriod(2, '3months')">Past 3 Months</button>
+          </div>
+          <div class="personality-title" id="trendDirection" style="font-size: 2.5rem;">📈 Growing</div>
+          <div class="sub-text" id="trendInsight">Loading...</div>
+          <div class="comparison-container" id="evolutionComparison">
+            <div class="comparison-legend dynamic" id="evolutionLegend">
+              <span class="legend-item"><span class="legend-dot old"></span> <span id="legendOldLabel">Early days</span></span>
+              <span class="legend-item"><span class="legend-dot new"></span> <span id="legendNewLabel">Recent</span></span>
+            </div>
+            <div class="evolution-date-range" id="evolutionDateRange">Loading date range...</div>
+            <div class="comparison-row">
+              <div class="comparison-label"><span class="metric-name">Messages/week</span></div>
+              <div class="comparison-bars">
+                <div class="comparison-bar-old"><div class="bar-fill" id="activityOldFill"></div></div>
+                <div class="comparison-bar-new"><div class="bar-fill" id="activityNewFill"></div></div>
+              </div>
+              <div class="comparison-value" id="activityChange">+0%</div>
+            </div>
+            <div class="comparison-row">
+              <div class="comparison-label"><span class="metric-name">Avg msg length</span></div>
+              <div class="comparison-bars">
+                <div class="comparison-bar-old"><div class="bar-fill" id="depthOldFill"></div></div>
+                <div class="comparison-bar-new"><div class="bar-fill" id="depthNewFill"></div></div>
+              </div>
+              <div class="comparison-value" id="depthChange">+0%</div>
+            </div>
+            <div class="comparison-row">
+              <div class="comparison-label"><span class="metric-name">Topic variety</span></div>
+              <div class="comparison-bars">
+                <div class="comparison-bar-old"><div class="bar-fill" id="topicsOldFill"></div></div>
+                <div class="comparison-bar-new"><div class="bar-fill" id="topicsNewFill"></div></div>
+              </div>
+              <div class="comparison-value" id="topicsChange">+0%</div>
+            </div>
+          </div>
+          <div class="topic-evolution" style="margin-top: 1.5rem; display: flex; gap: 3rem; text-align: left;">
+            <div>
+              <div class="slide-label" style="margin-bottom: 0.5rem; text-align: center;">6+ months ago</div>
+              <div id="oldTopics" class="evolution-topics">Loading...</div>
+            </div>
+            <div style="font-size: 2rem; align-self: center;">→</div>
+            <div>
+              <div class="slide-label" style="margin-bottom: 0.5rem; text-align: center;">Recent</div>
+              <div id="recentTopics" class="evolution-topics">Loading...</div>
+            </div>
+          </div>
+          <div class="sub-text" id="evolutionNote" style="margin-top: 1rem; max-width: 500px;">Loading...</div>
+          <div class="timeline-container" id="interestTimeline">
+            <div class="timeline-events" id="timelineEvents"></div>
+            <div class="timeline-track"></div>
+            <div class="timeline-markers">
+              <span class="timeline-marker">Start</span>
+              <span class="timeline-marker">Now</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 9: Discovered Themes - AI Semantic Clusters -->
+        <div class="slide" id="slide9">
+          <!-- Floating orbs background -->
+          <div class="themes-orbs-bg" id="themesOrbsBg"></div>
+          
+          <div class="themes-content">
+            <div class="slide-label">What You Actually Talk About</div>
+            <div class="themes-subtitle">Discovered by AI embeddings, not keywords</div>
+            
+            <!-- Hero theme - the dominant pattern -->
+            <div class="theme-hero" id="themeHero">
+              <div class="theme-hero-glow"></div>
+              <div class="theme-hero-badge">DOMINANT THEME</div>
+              <div class="theme-hero-icon" id="themeHeroIcon">🎯</div>
+              <div class="theme-hero-name" id="themeHeroName">Loading...</div>
+              <div class="theme-hero-stats">
+                <span class="theme-hero-count" id="themeHeroCount">0</span>
+                <span class="theme-hero-label">messages analyzed</span>
+              </div>
+            </div>
+            
+            <!-- Other themes grid -->
+            <div class="themes-cluster" id="themesCluster"></div>
+            
+            <!-- Insight footer -->
+            <div class="themes-insight" id="themesInsight">
+              <span class="themes-insight-icon">🔮</span>
+              <span class="themes-insight-text">Your conversations reveal semantic patterns invisible to keyword search</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 10: AI Art Gallery - Redesigned -->
+        <div class="slide" id="slide10">
+          <div class="gallery-frames-bg" id="galleryFramesBg"></div>
+          <div class="gallery-content">
+            <div class="slide-label">Your AI art gallery</div>
+            <div class="gallery-hero">
+              <div class="gallery-hero-number-container">
+                <div class="gallery-hero-number" id="galleryHeroNumber" data-target="0">0</div>
+                <div class="gallery-hero-glow"></div>
+              </div>
+              <div class="gallery-hero-label">images created</div>
+              <div class="gallery-hero-sublabel">with ChatGPT</div>
+            </div>
+            <div class="gallery-stats-row">
+              <div class="gallery-stat-card" id="galleryStatGenerated">
+                <div class="gallery-stat-icon">🎨</div>
+                <div class="gallery-stat-value" id="galleryGeneratedCount" data-target="0">0</div>
+                <div class="gallery-stat-label">AI Generated</div>
+                <div class="gallery-stat-bar">
+                  <div class="gallery-stat-bar-fill generated-fill" id="galleryGeneratedBar"></div>
+                </div>
+              </div>
+              <div class="gallery-stat-divider">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div class="gallery-stat-card" id="galleryStatUploaded">
+                <div class="gallery-stat-icon">📤</div>
+                <div class="gallery-stat-value" id="galleryUploadedCount" data-target="0">0</div>
+                <div class="gallery-stat-label">Uploaded</div>
+                <div class="gallery-stat-bar">
+                  <div class="gallery-stat-bar-fill uploaded-fill" id="galleryUploadedBar"></div>
+                </div>
+              </div>
+            </div>
+            <div class="gallery-showcase" id="galleryShowcase">
+              <div class="gallery-filter-tabs">
+                <button class="gallery-filter-tab active" data-filter="all" onclick="setGalleryFilter('all')">All</button>
+                <button class="gallery-filter-tab" data-filter="generated" onclick="setGalleryFilter('generated')">🎨 Generated</button>
+                <button class="gallery-filter-tab" data-filter="uploaded" onclick="setGalleryFilter('uploaded')">📤 Uploaded</button>
+              </div>
+              <div class="gallery-grid-wrapper">
+                <button class="gallery-arrow gallery-arrow-left" onclick="scrollGalleryGrid(-1)" id="galleryScrollLeft">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <div class="gallery-grid" id="galleryGrid"></div>
+                <button class="gallery-arrow gallery-arrow-right" onclick="scrollGalleryGrid(1)" id="galleryScrollRight">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                    <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="gallery-no-data" id="galleryNoData" style="display: none;">
+              <div class="gallery-no-data-icon">🖼️</div>
+              <div class="gallery-no-data-text">No images yet</div>
+              <div class="gallery-no-data-hint">Ask ChatGPT to generate some images for you!</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 13: Cosmic Revelations - Fun Facts -->
+        <div class="slide" id="slide13">
+          <!-- Cosmic background with stars -->
+          <div class="cosmic-bg" id="cosmicBg">
+            <div class="cosmic-stars"></div>
+            <div class="cosmic-glow"></div>
+          </div>
+          
+          <div class="cosmic-content">
+            <div class="slide-label">✨ Cosmic Revelations</div>
+            <div class="cosmic-subtitle">Secrets from your ChatGPT journey</div>
+            
+            <!-- Horizontal scrolling revelation cards -->
+            <div class="revelation-cards" id="revelationCards">
+              <!-- Generated by JS -->
+            </div>
+            
+            <!-- Scroll hint -->
+            <div class="revelation-scroll-hint">
+              <span>Swipe to explore</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 12h14M12 5l7 7-7 7"/>
+              </svg>
+            </div>
+            
+            <!-- No data state -->
+            <div class="revelation-no-data" id="revelationNoData" style="display: none;">
+              <div class="revelation-no-data-icon">🔮</div>
+              <div class="revelation-no-data-text">No revelations yet</div>
+              <div class="revelation-no-data-hint">The cosmos needs more data to reveal your secrets</div>
+            </div>
+            
+            <!-- Bottom accent -->
+            <div class="cosmic-footer">
+              <div class="cosmic-line"></div>
+              <div class="cosmic-orb"></div>
+              <div class="cosmic-line"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 14: Activity Heatmap (Redesigned) -->
+        <div class="slide" id="slide14">
+          <!-- Subtle floating grid background -->
+          <div class="heatmap-bg">
+            <div class="heatmap-bg-grid"></div>
+            <div class="heatmap-bg-glow"></div>
+          </div>
+          
+          <div class="heatmap-content">
+            <!-- Headline with icon -->
+            <div class="heatmap-headline">
+              <span class="heatmap-icon">📊</span>
+              <span class="heatmap-title">Your Activity Map</span>
+            </div>
+            <div class="heatmap-subtitle">Every day you chatted with ChatGPT</div>
+            
+            <!-- Main heatmap grid -->
+            <div class="heatmap-container" id="heatmapContainer">
+              <div class="heatmap-month-labels" id="heatmapMonths"></div>
+              <div class="heatmap-wrapper">
+                <div class="heatmap-day-labels">
+                  <div class="heatmap-day-label"></div>
+                  <div class="heatmap-day-label">Mon</div>
+                  <div class="heatmap-day-label"></div>
+                  <div class="heatmap-day-label">Wed</div>
+                  <div class="heatmap-day-label"></div>
+                  <div class="heatmap-day-label">Fri</div>
+                  <div class="heatmap-day-label"></div>
+                </div>
+                <div class="heatmap-grid" id="heatmapGrid"></div>
+              </div>
+              <div class="heatmap-legend">
+                <span>Less</span>
+                <div class="heatmap-legend-cell level-0"></div>
+                <div class="heatmap-legend-cell level-1"></div>
+                <div class="heatmap-legend-cell level-2"></div>
+                <div class="heatmap-legend-cell level-3"></div>
+                <div class="heatmap-legend-cell level-4"></div>
+                <span>More</span>
+              </div>
+            </div>
+            
+            <!-- Stats cards with enhanced styling -->
+            <div class="heatmap-stats-grid" id="heatmapStats">
+              <div class="heatmap-stat-card">
+                <div class="heatmap-stat-icon">🔥</div>
+                <div class="heatmap-stat-value" id="heatmapActiveDays" data-target="0">0</div>
+                <div class="heatmap-stat-label">Active Days</div>
+                <div class="heatmap-stat-bar">
+                  <div class="heatmap-stat-bar-fill" id="heatmapActiveDaysBar"></div>
+                </div>
+              </div>
+              <div class="heatmap-stat-card">
+                <div class="heatmap-stat-icon">⚡</div>
+                <div class="heatmap-stat-value" id="heatmapStreak" data-target="0">0</div>
+                <div class="heatmap-stat-label">Longest Streak</div>
+                <div class="heatmap-stat-streak-dots" id="heatmapStreakDots"></div>
+              </div>
+              <div class="heatmap-stat-card">
+                <div class="heatmap-stat-icon">📈</div>
+                <div class="heatmap-stat-value" id="heatmapRate" data-target="0">0%</div>
+                <div class="heatmap-stat-label">of days used</div>
+                <div class="heatmap-stat-ring">
+                  <svg viewBox="0 0 36 36" class="heatmap-ring-svg">
+                    <path class="heatmap-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    <path class="heatmap-ring-fill" id="heatmapRingFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Busiest day highlight -->
+            <div class="heatmap-highlight" id="heatmapHighlight">
+              <span class="heatmap-highlight-icon">🏆</span>
+              <span class="heatmap-highlight-text">Busiest day: <strong id="heatmapBusiestDay">--</strong></span>
+            </div>
+          </div>
+          
+          <!-- Tooltip (hidden by default) -->
+          <div class="heatmap-tooltip" id="heatmapTooltip">
+            <div class="heatmap-tooltip-date" id="tooltipDate"></div>
+            <div class="heatmap-tooltip-count"><span id="tooltipCount">0</span> messages</div>
+          </div>
+        </div>
+
+        <!-- Slide 15: Verdict Cards (Roast + Compliment) - Redesigned -->
+        <div class="slide" id="slide15">
+          <!-- Floating verdict icons background -->
+          <div class="verdict-bg" id="verdictBg">
+            <!-- Generated by JS -->
+          </div>
+          
+          <div class="verdict-content">
+            <div class="slide-label">One final thing...</div>
+            
+            <!-- Roast Card -->
+            <div class="verdict-card-v2 roast-card" id="verdictRoastCard">
+              <div class="verdict-card-glow roast-glow"></div>
+              <div class="verdict-card-inner">
+                <div class="verdict-header">
+                  <span class="verdict-icon" id="roastIcon">🔥</span>
+                  <span class="verdict-title" id="roastHeadline">The Verdict</span>
+                </div>
+                
+                <div class="verdict-quote">
+                  <span class="verdict-quote-mark">"</span>
+                  <span class="verdict-text" id="finalRoast">
+                    <span class="verdict-cursor"></span>
+                  </span>
+                  <span class="verdict-quote-mark">"</span>
+                </div>
+                
+                <div class="verdict-meter">
+                  <div class="verdict-meter-label">
+                    <span>Confidence</span>
+                    <span class="verdict-confidence" id="roastConfidence">0%</span>
+                  </div>
+                  <div class="verdict-meter-bar">
+                    <div class="verdict-meter-fill roast-fill" id="roastConfidenceFill"></div>
+                  </div>
+                </div>
+                
+                <div class="verdict-footer" id="roastEvidence">
+                  💬 Based on <span class="verdict-count" id="roastMsgCount">0</span> messages analyzed
+                </div>
+              </div>
+            </div>
+            
+            <!-- Compliment Card -->
+            <div class="verdict-card-v2 compliment-card" id="verdictComplimentCard">
+              <div class="verdict-card-glow compliment-glow"></div>
+              <div class="verdict-card-inner">
+                <div class="verdict-header">
+                  <span class="verdict-icon" id="complimentIcon">✨</span>
+                  <span class="verdict-title" id="complimentHeadline">The Good News</span>
+                </div>
+                
+                <div class="verdict-quote">
+                  <span class="verdict-quote-mark">"</span>
+                  <span class="verdict-text" id="finalCompliment">
+                    <span class="verdict-cursor"></span>
+                  </span>
+                  <span class="verdict-quote-mark">"</span>
+                </div>
+                
+                <div class="verdict-meter">
+                  <div class="verdict-meter-label">
+                    <span>Confidence</span>
+                    <span class="verdict-confidence" id="complimentConfidence">0%</span>
+                  </div>
+                  <div class="verdict-meter-bar">
+                    <div class="verdict-meter-fill compliment-fill" id="complimentConfidenceFill"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 16: Achievements Trophy Room - Redesigned -->
+        <div class="slide" id="slide16">
+          <!-- Animated background with floating trophy particles -->
+          <div class="achievements-bg" id="achievementsBg">
+            <div class="achievements-glow"></div>
+          </div>
+          
+          <div class="achievements-content">
+            <!-- Header -->
+            <div class="achievements-header">
+              <span class="achievements-icon">🏆</span>
+              <span class="achievements-title">Trophy Room</span>
+            </div>
+            <div class="achievements-subtitle">Your ChatGPT journey milestones</div>
+            
+            <!-- Progress summary -->
+            <div class="achievements-summary" id="achievementsSummary">
+              <div class="achievements-progress-ring">
+                <svg viewBox="0 0 36 36" class="achievements-ring-svg">
+                  <path class="achievements-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path class="achievements-ring-fill" id="achievementsRingFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                </svg>
+                <div class="achievements-ring-text">
+                  <span class="achievements-unlocked-count" id="achievementsUnlockedCount">0</span>
+                  <span class="achievements-ring-label">unlocked</span>
+                </div>
+              </div>
+              <div class="achievements-summary-text">
+                <span id="achievementsSummaryText">Loading achievements...</span>
+              </div>
+            </div>
+            
+            <!-- Main achievements grid -->
+            <div class="achievements-grid-new" id="achievementsGrid">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 17: Your Vocabulary Universe - Redesigned -->
+        <div class="slide" id="slide17">
+          <!-- Animated background with floating particles -->
+          <div class="vocab-bg">
+            <div class="vocab-bg-particles" id="vocabParticles"></div>
+            <div class="vocab-bg-glow"></div>
+          </div>
+          
+          <div class="vocab-content">
+            <!-- Headline matching slide-01/02/08 pattern -->
+            <div class="vocab-headline">
+              <span class="vocab-icon">💬</span>
+              <span class="vocab-title">Your Vocabulary Universe</span>
+            </div>
+            <div class="vocab-subtitle">The words that define your conversations</div>
+            
+            <!-- Hero word - the #1 most used -->
+            <div class="vocab-hero" id="vocabHero">
+              <div class="vocab-hero-glow"></div>
+              <div class="vocab-hero-badge">#1 WORD</div>
+              <div class="vocab-hero-word" id="vocabHeroWord">--</div>
+              <div class="vocab-hero-count">
+                <span class="vocab-hero-number" id="vocabHeroCount" data-target="0">0</span>
+                <span class="vocab-hero-label">times used</span>
+              </div>
+            </div>
+            
+            <!-- Word bubbles container -->
+            <div class="word-bubbles-wrapper">
+              <div class="word-bubbles-container" id="wordBubblesContainer">
+                <!-- Filled by JS -->
+              </div>
+            </div>
+            
+            <!-- Stats footer -->
+            <div class="vocab-stats">
+              <div class="vocab-stat">
+                <span class="vocab-stat-value" id="vocabTotalWords" data-target="0">0</span>
+                <span class="vocab-stat-label">unique words</span>
+              </div>
+              <div class="vocab-stat-divider"></div>
+              <div class="vocab-stat">
+                <span class="vocab-stat-value" id="vocabAvgLength" data-target="0">0</span>
+                <span class="vocab-stat-label">avg word length</span>
+              </div>
+            </div>
+            
+            <!-- Hint text -->
+            <div class="vocab-hint">
+              <span>Bigger bubble = more frequent</span>
+              <span class="vocab-hint-dot">•</span>
+              <span>Your words, not ChatGPT's</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Slide 18: Share - Journey Complete -->
+        <div class="slide" id="slide18">
+          <!-- Subtle celebration background -->
+          <div class="share-sparkles-bg" id="shareSparklesBg">
+            <!-- Generated by JS -->
+          </div>
+          
+          <div class="share-content">
+            <div class="slide-label share-label">That's a wrap!</div>
+            
+            <!-- Main title with glow -->
+            <div class="share-title-container">
+              <div class="share-title">Your ChatGPT Wrapped</div>
+              <div class="share-title-glow"></div>
+            </div>
+            
+            <!-- Quick stats summary -->
+            <div class="share-summary">
+              <div class="share-stat">
+                <span class="share-stat-value" id="shareConvos">0</span>
+                <span class="share-stat-label">conversations</span>
+              </div>
+              <div class="share-stat-divider"></div>
+              <div class="share-stat">
+                <span class="share-stat-value" id="shareMessages">0</span>
+                <span class="share-stat-label">messages</span>
+              </div>
+            </div>
+            
+            <!-- Share buttons -->
+            <div class="share-buttons">
+              <button class="share-btn share-btn-primary" onclick="downloadImage()">
+                <span class="share-btn-icon">📸</span>
+                <span>Save Image</span>
+              </button>
+              <button class="share-btn" onclick="shareTwitter()">
+                <span class="share-btn-icon">𝕏</span>
+                <span>Share</span>
+              </button>
+              <button class="share-btn" onclick="restart()">
+                <span class="share-btn-icon">🔄</span>
+                <span>Start Over</span>
+              </button>
+            </div>
+            
+            <!-- Hashtag with subtle pulse -->
+            <div class="share-hashtag">#ChatGPTWrapped</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // Try to load slides when document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check if we're running on a server (fetch will work)
+      if (window.location.protocol === 'file:') {
+        // Running locally without server, use inline slides
+        loadSlidesInline();
+      } else {
+        // Running on server, try to load from files
+        loadSlides();
+      }
+    });
+  </script>
+
+  <!-- ============================================
+       JavaScript Entry Point
+       ============================================
+       app.js provides the base functionality including state, utils,
+       initialization, file handling, analysis, and navigation.
+       
+       Slide modules load after and override specific slide functions.
+       
+       Note: Core modules (js/core/*) are extracted but not loaded
+       separately because app.js already provides this functionality.
+       They exist for documentation and future modularization.
+       ============================================ -->
+  
+  <!-- Main Application Script (contains all core functionality) -->
+  <script src="js/app.js"></script>
+  
+  <!-- Video Export System (Canvas + MediaRecorder) -->
+  <script src="js/video/design-system.js"></script>
+  <script src="js/video/animations/tween.js"></script>
+  <script src="js/video/animations/counter.js"></script>
+  <script src="js/video/animations/text-reveal.js"></script>
+  <script src="js/video/animations/particles.js"></script>
+  <script src="js/video/animations/transitions.js"></script>
+  <script src="js/video/scenes/scene-base.js"></script>
+  <script src="js/video/scenes/scene-intro.js"></script>
+  <script src="js/video/scenes/scene-conversations.js"></script>
+  <script src="js/video/scenes/scene-messages.js"></script>
+  <script src="js/video/scenes/scene-topics.js"></script>
+  <script src="js/video/scenes/scene-personality.js"></script>
+  <script src="js/video/scenes/scene-journey.js"></script>
+  <script src="js/video/scenes/scene-achievements.js"></script>
+  <script src="js/video/scenes/scene-outro.js"></script>
+  <script src="js/video/renderer.js"></script>
+  <script src="js/video/video-generator.js"></script>
+  <script src="js/video/ui/video-modal.js"></script>
+  
+  <!-- Slide Modules (override specific slide functions from app.js) -->
+  <script src="js/slides/slide-01-conversations.js"></script>
+  <script src="js/slides/slide-02-messages.js"></script>
+  <script src="js/slides/slide-03-topics.js"></script>
+  <script src="js/slides/slide-04-identity.js"></script>
+  <script src="js/slides/slide-05-obsession.js"></script>
+  <script src="js/slides/slide-07-time-personality.js"></script>
+  <script src="js/slides/slide-08-evolution.js"></script>
+  <script src="js/slides/slide-09-themes.js"></script>
+  <script src="js/slides/slide-10-gallery.js"></script>
+  <script src="js/slides/slide-13-fun-facts.js"></script>
+  <script src="js/slides/slide-14-heatmap.js"></script>
+  <script src="js/slides/slide-15-verdict.js"></script>
+  <script src="js/slides/slide-16-achievements.js"></script>
+  <script src="js/slides/slide-17-word-bubbles.js"></script>
+  <script src="js/slides/slide-18-share.js"></script>
+</body>
+</html>

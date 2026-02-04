@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: personal-operator-db
+    environment:
+      POSTGRES_USER: operator
+      POSTGRES_PASSWORD: operator_dev_password
+      POSTGRES_DB: personal_operator
+    ports:
+      - "5433:5432"  # Using 5433 to avoid conflict with local Postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schemas/db-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./migrations:/docker-entrypoint-initdb.d/migrations
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U operator -d personal_operator"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+

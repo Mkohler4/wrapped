@@ -1,0 +1,329 @@
+/* ============================================
+   Slide 2: Messages - The Exchange
+   ============================================ */
+
+/* Animated message stream background */
+.msg-stream-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.msg-stream-item {
+  position: absolute;
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  max-width: 150px;
+  opacity: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-stream-item.user-msg {
+  background: rgba(16, 163, 127, 0.1);
+  border: 1px solid rgba(16, 163, 127, 0.2);
+  color: rgba(16, 163, 127, 0.7);
+  border-radius: 16px 16px 4px 16px;
+  animation: streamMsgRight 12s linear infinite;
+}
+
+.msg-stream-item.ai-msg {
+  background: rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.15);
+  color: rgba(102, 126, 234, 0.6);
+  border-radius: 16px 16px 16px 4px;
+  animation: streamMsgLeft 12s linear infinite;
+}
+
+@keyframes streamMsgRight {
+  0% {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(calc(100vw + 100px));
+  }
+}
+
+@keyframes streamMsgLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(calc(100vw + 100px));
+  }
+  10% {
+    opacity: 0.5;
+  }
+  90% {
+    opacity: 0.5;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(-100px);
+  }
+}
+
+/* Main content */
+.msg-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Number styling - reuse convo pattern */
+.msg-number-container {
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.msg-number {
+  font-size: 8rem;
+  font-weight: 900;
+  line-height: 1;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  position: relative;
+  z-index: 1;
+}
+
+.msg-number-glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, rgba(16, 163, 127, 0.15) 0%, transparent 70%);
+  filter: blur(40px);
+  z-index: 0;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.msg-label {
+  font-size: 2.5rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-top: 0.25rem;
+}
+
+.msg-sublabel {
+  font-size: 1.1rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
+
+/* Message breakdown */
+.msg-breakdown {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding: 1.25rem 2rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 20px;
+}
+
+.msg-party {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 120px;
+}
+
+.msg-party-icon {
+  font-size: 1.5rem;
+}
+
+.msg-party-details {
+  text-align: center;
+}
+
+.msg-party-value {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.msg-party-user .msg-party-value {
+  color: var(--accent);
+}
+
+.msg-party-ai .msg-party-value {
+  color: #667eea;
+}
+
+.msg-party-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.msg-party-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 0.25rem;
+}
+
+.msg-party-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 2px;
+  transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.msg-party-bar-fill.user-fill {
+  background: var(--accent);
+}
+
+.msg-party-bar-fill.ai-fill {
+  background: #667eea;
+}
+
+.msg-exchange-icon {
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+/* Trend chart */
+.msg-trend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 0.75rem 1.25rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+.msg-trend-chart {
+  width: 120px;
+  height: 40px;
+}
+
+.msg-trend-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.msg-trend-line {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.msg-trend-info {
+  text-align: left;
+}
+
+.msg-trend-label {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.msg-trend-value {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.msg-trend-value .trend-arrow {
+  font-size: 0.9rem;
+}
+
+.msg-trend-value.down {
+  color: #f5576c;
+}
+
+.msg-trend-value.down .trend-arrow {
+  transform: rotate(180deg);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .msg-number {
+    font-size: 5rem;
+  }
+  
+  .msg-label {
+    font-size: 1.8rem;
+  }
+  
+  .msg-breakdown {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+  }
+  
+  .msg-party {
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-between;
+    min-width: unset;
+  }
+  
+  .msg-party-details {
+    text-align: left;
+    flex: 1;
+    margin-left: 0.75rem;
+  }
+  
+  .msg-party-bar {
+    width: 80px;
+  }
+  
+  .msg-exchange-icon {
+    transform: rotate(90deg);
+  }
+  
+  .msg-trend {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .msg-trend-info {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .msg-number {
+    font-size: 3.5rem;
+  }
+  
+  .msg-label {
+    font-size: 1.5rem;
+  }
+  
+  .msg-party-value {
+    font-size: 1.2rem;
+  }
+}
+

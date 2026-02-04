@@ -1,0 +1,18 @@
+/* ============================================
+   ChatGPT Wrapped - CSS Variables & Fonts
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #0f0f0f;
+  --card: #1a1a1a;
+  --accent: #10a37f;
+  --accent-glow: rgba(16, 163, 127, 0.3);
+  --text: #ffffff;
+  --text-muted: #888888;
+  --gradient-1: linear-gradient(135deg, #10a37f 0%, #1a7f64 100%);
+  --gradient-2: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-3: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+

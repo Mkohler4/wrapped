@@ -1,0 +1,127 @@
+<!-- Slide 8: Your ChatGPT Journey - Interactive Timeline -->
+<div class="slide" id="slide8">
+  <!-- Time Range Selector -->
+  <div class="time-range-selector" id="timeRangeSelector">
+    <button class="time-range-btn" data-range="3months" onclick="changeEvolutionRange('3months')">3 Months</button>
+    <button class="time-range-btn" data-range="6months" onclick="changeEvolutionRange('6months')">6 Months</button>
+    <button class="time-range-btn" data-range="1year" onclick="changeEvolutionRange('1year')">1 Year</button>
+    <button class="time-range-btn active" data-range="all" onclick="changeEvolutionRange('all')">Full History</button>
+  </div>
+  
+  <!-- Headline with dynamic summary -->
+  <div class="evolution-headline" id="evolutionHeadline">
+    <span class="evolution-icon" id="evolutionIcon">📈</span>
+    <span class="evolution-title" id="evolutionTitle">Power User Rising</span>
+  </div>
+  <div class="evolution-subtitle" id="evolutionSubtitle">Your conversations are 45% deeper now. Quality over quantity!</div>
+  
+  <!-- Main Timeline Visualization -->
+  <div class="evolution-timeline-viz">
+    <!-- SVG Area Chart -->
+    <div class="evolution-chart-container">
+      <svg id="evolutionChart" class="evolution-chart" viewBox="0 0 800 200" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" style="stop-color:rgba(16, 163, 127, 0.6)"/>
+            <stop offset="100%" style="stop-color:rgba(16, 163, 127, 0.05)"/>
+          </linearGradient>
+          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#667eea"/>
+            <stop offset="50%" style="stop-color:#10a37f"/>
+            <stop offset="100%" style="stop-color:#f5576c"/>
+          </linearGradient>
+        </defs>
+        <!-- Grid lines -->
+        <g class="evolution-grid" id="evolutionGrid"></g>
+        <!-- Area fill -->
+        <path class="evolution-area" id="evolutionArea" fill="url(#areaGradient)"/>
+        <!-- Line -->
+        <path class="evolution-line" id="evolutionLine" fill="none" stroke="url(#lineGradient)" stroke-width="3"/>
+        <!-- Data points -->
+        <g class="evolution-points" id="evolutionPoints"></g>
+        <!-- Hover indicator line -->
+        <line class="evolution-hover-line" id="evolutionHoverLine" x1="0" y1="0" x2="0" y2="200" stroke="rgba(255,255,255,0.3)" stroke-width="1" stroke-dasharray="4" style="display:none"/>
+      </svg>
+      
+      <!-- Hover tooltip -->
+      <div class="evolution-tooltip" id="evolutionTooltip">
+        <div class="evolution-tooltip-month" id="tooltipMonth">Jan 2024</div>
+        <div class="evolution-tooltip-value" id="tooltipValue">1,234 messages</div>
+        <div class="evolution-tooltip-topics" id="tooltipTopics"></div>
+      </div>
+    </div>
+    
+    <!-- Timeline X-axis labels -->
+    <div class="evolution-axis" id="evolutionAxis">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+  
+  <!-- Key Metrics Cards (compact) -->
+  <div class="evolution-metrics">
+    <div class="evolution-metric">
+      <div class="evolution-metric-delta" id="messagesChange">+21%</div>
+      <div class="evolution-metric-label">Messages/week</div>
+      <div class="evolution-metric-comparison">
+        <span class="metric-old" id="messagesOld">42</span>
+        <span class="metric-arrow">→</span>
+        <span class="metric-new" id="messagesNew">51</span>
+      </div>
+    </div>
+    <div class="evolution-metric">
+      <div class="evolution-metric-delta" id="depthChange">+45%</div>
+      <div class="evolution-metric-label">Avg msg length</div>
+      <div class="evolution-metric-comparison">
+        <span class="metric-old" id="depthOld">89</span>
+        <span class="metric-arrow">→</span>
+        <span class="metric-new" id="depthNew">129</span>
+      </div>
+    </div>
+    <div class="evolution-metric">
+      <div class="evolution-metric-delta decrease" id="varietyChange">-16%</div>
+      <div class="evolution-metric-label">Topic variety</div>
+      <div class="evolution-metric-comparison">
+        <span class="metric-old" id="varietyOld">8</span>
+        <span class="metric-arrow">→</span>
+        <span class="metric-new" id="varietyNew">6</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Interest Evolution: Then vs Now -->
+  <div class="evolution-interests">
+    <div class="evolution-era">
+      <div class="era-label">
+        <span class="era-dot era-dot-old"></span>
+        Early Days
+      </div>
+      <div class="era-topics" id="oldTopics">
+        <span class="era-topic">coding</span>
+        <span class="era-topic">general</span>
+        <span class="era-topic">writing</span>
+      </div>
+    </div>
+    <div class="evolution-era-arrow">
+      <svg width="40" height="24" viewBox="0 0 40 24">
+        <path d="M0 12 H32 M24 4 L34 12 L24 20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="evolution-era">
+      <div class="era-label">
+        <span class="era-dot era-dot-new"></span>
+        Now
+      </div>
+      <div class="era-topics" id="recentTopics">
+        <span class="era-topic">coding</span>
+        <span class="era-topic">research</span>
+        <span class="era-topic">planning</span>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Peak Month Highlight -->
+  <div class="evolution-milestone" id="evolutionMilestone">
+    <span class="milestone-icon">🔥</span>
+    <span class="milestone-text">Peak month: <strong id="peakMonthValue">1,172 messages</strong></span>
+  </div>
+</div>

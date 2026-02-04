@@ -1,0 +1,88 @@
+<!-- Slide 14: Activity Heatmap (GitHub-style) - Redesigned -->
+<div class="slide" id="slide14">
+  <!-- Subtle floating grid background -->
+  <div class="heatmap-bg">
+    <div class="heatmap-bg-grid"></div>
+    <div class="heatmap-bg-glow"></div>
+  </div>
+  
+  <div class="heatmap-content">
+    <!-- Headline with icon -->
+    <div class="heatmap-headline">
+      <span class="heatmap-icon">📊</span>
+      <span class="heatmap-title">Your Activity Map</span>
+    </div>
+    <div class="heatmap-subtitle">Every day you chatted with ChatGPT</div>
+    
+    <!-- Main heatmap grid -->
+    <div class="heatmap-container" id="heatmapContainer">
+      <div class="heatmap-month-labels" id="heatmapMonths"></div>
+      <div class="heatmap-wrapper">
+        <div class="heatmap-day-labels">
+          <div class="heatmap-day-label"></div>
+          <div class="heatmap-day-label">Mon</div>
+          <div class="heatmap-day-label"></div>
+          <div class="heatmap-day-label">Wed</div>
+          <div class="heatmap-day-label"></div>
+          <div class="heatmap-day-label">Fri</div>
+          <div class="heatmap-day-label"></div>
+        </div>
+        <div class="heatmap-grid" id="heatmapGrid">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      <div class="heatmap-legend">
+        <span>Less</span>
+        <div class="heatmap-legend-cell level-0"></div>
+        <div class="heatmap-legend-cell level-1"></div>
+        <div class="heatmap-legend-cell level-2"></div>
+        <div class="heatmap-legend-cell level-3"></div>
+        <div class="heatmap-legend-cell level-4"></div>
+        <span>More</span>
+      </div>
+    </div>
+    
+    <!-- Stats cards with enhanced styling -->
+    <div class="heatmap-stats-grid" id="heatmapStats">
+      <div class="heatmap-stat-card">
+        <div class="heatmap-stat-icon">🔥</div>
+        <div class="heatmap-stat-value" id="heatmapActiveDays" data-target="0">0</div>
+        <div class="heatmap-stat-label">Active Days</div>
+        <div class="heatmap-stat-bar">
+          <div class="heatmap-stat-bar-fill" id="heatmapActiveDaysBar"></div>
+        </div>
+      </div>
+      <div class="heatmap-stat-card">
+        <div class="heatmap-stat-icon">⚡</div>
+        <div class="heatmap-stat-value" id="heatmapStreak" data-target="0">0</div>
+        <div class="heatmap-stat-label">Longest Streak</div>
+        <div class="heatmap-stat-streak-dots" id="heatmapStreakDots">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+      <div class="heatmap-stat-card">
+        <div class="heatmap-stat-icon">📈</div>
+        <div class="heatmap-stat-value" id="heatmapRate" data-target="0">0%</div>
+        <div class="heatmap-stat-label">of days used</div>
+        <div class="heatmap-stat-ring">
+          <svg viewBox="0 0 36 36" class="heatmap-ring-svg">
+            <path class="heatmap-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+            <path class="heatmap-ring-fill" id="heatmapRingFill" stroke-dasharray="0, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Busiest day highlight -->
+    <div class="heatmap-highlight" id="heatmapHighlight">
+      <span class="heatmap-highlight-icon">🏆</span>
+      <span class="heatmap-highlight-text">Busiest day: <strong id="heatmapBusiestDay">--</strong></span>
+    </div>
+  </div>
+  
+  <!-- Tooltip (hidden by default) -->
+  <div class="heatmap-tooltip" id="heatmapTooltip">
+    <div class="heatmap-tooltip-date" id="tooltipDate"></div>
+    <div class="heatmap-tooltip-count"><span id="tooltipCount">0</span> messages</div>
+  </div>
+</div>

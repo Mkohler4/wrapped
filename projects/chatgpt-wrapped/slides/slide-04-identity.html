@@ -1,0 +1,91 @@
+<!-- Slide 4: Your AI DNA - Behavioral Fingerprint -->
+<div class="slide" id="slide4">
+  <!-- Background pattern -->
+  <div class="dna-bg"></div>
+  
+  <div class="dna-content">
+    <div class="slide-label">Your AI Identity</div>
+    
+    <!-- Main identity card -->
+    <div class="dna-card">
+      <!-- Left: Radar visualization of traits -->
+      <div class="dna-radar-container">
+        <svg class="dna-radar" viewBox="0 0 200 200" id="dnaRadar">
+          <!-- Grid circles -->
+          <circle cx="100" cy="100" r="80" class="radar-grid" />
+          <circle cx="100" cy="100" r="60" class="radar-grid" />
+          <circle cx="100" cy="100" r="40" class="radar-grid" />
+          <circle cx="100" cy="100" r="20" class="radar-grid" />
+          
+          <!-- Axis lines -->
+          <line x1="100" y1="20" x2="100" y2="180" class="radar-axis" />
+          <line x1="20" y1="100" x2="180" y2="100" class="radar-axis" />
+          <line x1="43" y1="43" x2="157" y2="157" class="radar-axis" />
+          <line x1="157" y1="43" x2="43" y2="157" class="radar-axis" />
+          
+          <!-- Data polygon (filled by JS) -->
+          <polygon class="radar-polygon" id="radarPolygon" points="100,100" />
+          <polygon class="radar-polygon-glow" id="radarPolygonGlow" points="100,100" />
+          
+          <!-- Data points -->
+          <g class="radar-points" id="radarPoints"></g>
+        </svg>
+        
+        <!-- Trait labels around radar -->
+        <div class="radar-labels">
+          <span class="radar-label" data-pos="top" id="radarLabelTop">Night Owl</span>
+          <span class="radar-label" data-pos="right" id="radarLabelRight">Deep Diver</span>
+          <span class="radar-label" data-pos="bottom" id="radarLabelBottom">Consistent</span>
+          <span class="radar-label" data-pos="left" id="radarLabelLeft">Explorer</span>
+        </div>
+      </div>
+      
+      <!-- Right: Identity text -->
+      <div class="dna-identity">
+        <div class="dna-title" id="dnaTitle">The Code Maestro</div>
+        <div class="dna-subtitle" id="dnaSubtitle">Your unique AI fingerprint</div>
+        
+        <!-- Key stat callout -->
+        <div class="dna-stat-hero" id="dnaStatHero">
+          <span class="stat-value" id="dnaHeroValue">28%</span>
+          <span class="stat-context" id="dnaHeroContext">of your messages sent between 10 PM and 4 AM</span>
+        </div>
+        
+        <!-- Spirit animal badge -->
+        <div class="dna-animal-badge">
+          <div class="animal-image-container" id="animalImageContainer">
+            <img src="" alt="" class="animal-image" id="animalImage" />
+          </div>
+          <div class="animal-details">
+            <span class="animal-name" id="animalName">Owl</span>
+            <span class="animal-reason" id="animalReason">Nocturnal coder energy</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Bottom: Key behavioral metrics -->
+    <div class="dna-metrics" id="dnaMetrics">
+      <div class="dna-metric">
+        <div class="metric-icon">🌙</div>
+        <div class="metric-value" id="nightOwlValue">--</div>
+        <div class="metric-label">Night Owl Score</div>
+      </div>
+      <div class="dna-metric">
+        <div class="metric-icon">🏃</div>
+        <div class="metric-value" id="marathonValue">--</div>
+        <div class="metric-label">Marathon Sessions</div>
+      </div>
+      <div class="dna-metric">
+        <div class="metric-icon">⚡</div>
+        <div class="metric-value" id="quickChatsValue">--</div>
+        <div class="metric-label">Quick Chats</div>
+      </div>
+      <div class="dna-metric">
+        <div class="metric-icon">📅</div>
+        <div class="metric-value" id="peakDayValue">--</div>
+        <div class="metric-label">Peak Day</div>
+      </div>
+    </div>
+  </div>
+</div>
