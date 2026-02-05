@@ -104,6 +104,7 @@
     
     .main {
       flex: 1;
+      min-width: 0; /* Allow flex item to shrink */
     }
     
     .canvas-container {
@@ -114,13 +115,39 @@
       background: #000;
       border-radius: 16px;
       padding: 20px;
-      min-height: 600px;
+      height: 600px; /* Fixed height for container */
+      overflow: hidden;
+    }
+    
+    .canvas-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
     }
     
     #previewCanvas {
-      max-width: 100%;
       border-radius: 8px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      /* Scale to fit container while maintaining aspect ratio */
+      max-height: 100%;
+      max-width: 100%;
+      object-fit: contain;
+    }
+    
+    /* Show actual dimensions badge */
+    .canvas-dimensions {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(16, 163, 127, 0.9);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
     }
     
     .controls {
@@ -334,12 +361,16 @@
     <div class="main">
       <div class="canvas-container">
         <div class="loading" id="loading">Loading scene...</div>
-        <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+        <div class="canvas-wrapper">
+          <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+          <div class="canvas-dimensions" id="canvasDimensions">1080 × 1920</div>
+        </div>
       </div>
       
       <div class="format-toggle">
-        <button class="format-btn active" onclick="setFormat('portrait', this)">📱 Portrait (9:16)</button>
-        <button class="format-btn" onclick="setFormat('square', this)">⬜ Square (1:1)</button>
+        <button class="format-btn active" onclick="setFormat('portrait', this)">📱 Portrait 9:16</button>
+        <button class="format-btn" onclick="setFormat('square', this)">⬜ Square 1:1</button>
+        <button class="format-btn" onclick="setFormat('landscape', this)">🖥️ Landscape 16:9</button>
       </div>
       
       <div class="time-controls">
@@ -553,16 +584,19 @@
     function initScene(sceneId) {
       const SceneClass = sceneClasses[sceneId];
       
+      // Update dimensions badge
+      document.getElementById('canvasDimensions').textContent = `${canvas.width} × ${canvas.height}`;
+      
       if (!SceneClass) {
         // Fallback: draw a placeholder
         ctx.fillStyle = '#0d0d0d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#10a37f';
-        ctx.font = 'bold 48px Inter, sans-serif';
+        ctx.font = `bold ${Math.round(canvas.width * 0.044)}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(`Scene: ${sceneId}`, canvas.width / 2, canvas.height / 2);
         ctx.fillStyle = '#888';
-        ctx.font = '24px Inter, sans-serif';
+        ctx.font = `${Math.round(canvas.width * 0.022)}px Inter, sans-serif`;
         ctx.fillText('(Class not loaded)', canvas.width / 2, canvas.height / 2 + 50);
         console.log(`Scene class "${sceneId}" not found`);
         return;
@@ -602,13 +636,13 @@
         
         // Render first frame
         renderFrame(0);
-        console.log(`Scene "${sceneId}" initialized successfully`);
+        console.log(`Scene "${sceneId}" initialized successfully (${canvas.width}×${canvas.height})`);
       } catch (error) {
         console.error(`Error initializing scene "${sceneId}":`, error);
         ctx.fillStyle = '#0d0d0d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#ff5555';
-        ctx.font = 'bold 32px Inter, sans-serif';
+        ctx.font = `bold ${Math.round(canvas.width * 0.03)}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(`Error: ${error.message}`, canvas.width / 2, canvas.height / 2);
       }
@@ -726,14 +760,19 @@
       document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
-      // Update canvas size
-      if (format === 'portrait') {
-        canvas.width = 1080;
-        canvas.height = 1920;
-      } else {
-        canvas.width = 1080;
-        canvas.height = 1080;
-      }
+      // Update canvas size based on format
+      const formats = {
+        portrait: { width: 1080, height: 1920 },  // 9:16 (TikTok, Reels, Shorts)
+        square: { width: 1080, height: 1080 },     // 1:1 (Instagram Feed)
+        landscape: { width: 1920, height: 1080 }   // 16:9 (YouTube, Desktop)
+      };
+      
+      const dimensions = formats[format] || formats.portrait;
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
+      
+      // Update dimensions badge
+      document.getElementById('canvasDimensions').textContent = `${canvas.width} × ${canvas.height}`;
       
       // Re-initialize scene with new size
       initScene(currentScene);
