@@ -15,13 +15,17 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: #0d0d0d;
       color: #ffffff;
-      min-height: 100vh;
+      height: 100vh;
       padding: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
+      flex-shrink: 0;
     }
     
     .header h1 {
@@ -40,11 +44,15 @@
       margin: 0 auto;
       display: flex;
       gap: 30px;
+      flex: 1;
+      min-height: 0; /* Allow container to shrink */
+      overflow: hidden;
     }
     
     .sidebar {
       width: 250px;
       flex-shrink: 0;
+      overflow-y: auto;
     }
     
     .scene-list {
@@ -105,6 +113,8 @@
     .main {
       flex: 1;
       min-width: 0; /* Allow flex item to shrink */
+      display: flex;
+      flex-direction: column;
     }
     
     .canvas-container {
@@ -115,7 +125,9 @@
       background: #000;
       border-radius: 16px;
       padding: 20px;
-      height: 600px; /* Fixed height for container */
+      flex: 1;
+      min-height: 300px;
+      max-height: 500px;
       overflow: hidden;
     }
     
@@ -134,27 +146,31 @@
       /* Scale to fit container while maintaining aspect ratio */
       max-height: 100%;
       max-width: 100%;
-      object-fit: contain;
+      width: auto;
+      height: auto;
     }
     
     /* Show actual dimensions badge */
     .canvas-dimensions {
       position: absolute;
-      bottom: 10px;
-      right: 10px;
+      bottom: -30px;
+      left: 50%;
+      transform: translateX(-50%);
       background: rgba(16, 163, 127, 0.9);
       color: white;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: 4px;
       font-size: 11px;
       font-weight: 600;
+      white-space: nowrap;
     }
     
     .controls {
       display: flex;
       justify-content: center;
       gap: 12px;
-      margin-top: 20px;
+      margin-top: 12px;
+      flex-shrink: 0;
     }
     
     .control-btn {
@@ -186,8 +202,9 @@
     .format-toggle {
       display: flex;
       gap: 8px;
-      margin-top: 20px;
+      margin-top: 12px;
       justify-content: center;
+      flex-shrink: 0;
     }
     
     .format-btn {
@@ -270,10 +287,11 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 16px;
-      padding: 12px;
+      margin-top: 12px;
+      padding: 10px 12px;
       background: #1a1a1a;
       border-radius: 8px;
+      flex-shrink: 0;
     }
     
     .time-slider {
