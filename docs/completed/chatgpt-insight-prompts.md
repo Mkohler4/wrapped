@@ -526,5 +526,295 @@ npm run import:chatgpt ./path/to/export.zip
 
 ---
 
+## Data Flow: Server → GPT Wrapped Frontend
+
+This section documents exactly how insights flow from the backend to the GPT Wrapped UI, enabling safe iteration.
+
+### Architecture Overview
+
+```mermaid
+flowchart LR
+    subgraph Backend["Server (src/server.ts)"]
+        DB[(PostgreSQL)]
+        EMB[Embeddings]
+        LLM[GPT-4o-mini]
+        CACHE[Cache File]
+        
+        DB --> |stats| API_STATS
+        DB --> |messages| EMB
+        EMB --> |theme discovery| API_INSIGHTS
+        LLM --> |AI generation| API_INSIGHTS
+        API_INSIGHTS --> |save| CACHE
+        CACHE --> |load| API_INSIGHTS
+    end
+
+    subgraph APIs["REST Endpoints"]
+        API_STATS["/api/wrapped/stats"]
+        API_INSIGHTS["/api/wrapped/insights"]
+        API_EVIDENCE["/api/wrapped/evidence/:theme"]
+        API_IMAGES["/api/wrapped/images"]
+    end
+
+    subgraph Frontend["GPT Wrapped (app.js)"]
+        LOAD[loadMyData]
+        STATE["Global State\n- stats\n- aiInsights\n- discoveredThemes"]
+        SLIDES[populateSlides]
+        UI[Slide Components]
+    end
+
+    API_STATS --> LOAD
+    API_INSIGHTS --> LOAD
+    API_EVIDENCE --> LOAD
+    API_IMAGES --> LOAD
+    LOAD --> STATE
+    STATE --> SLIDES
+    SLIDES --> UI
+```
+
+### API Contract: `/api/wrapped/insights`
+
+This is the **primary endpoint** that powers the AI-driven slides.
+
+#### Response Schema
+
+```typescript
+interface InsightsResponse {
+  insights: {
+    // AI-Generated (from LLM prompt)
+    personality: {
+      title: string;        // e.g., "The Midnight Architect"
+      description: string;  // 1-2 sentence description
+    };
+    topObsession: {
+      topic: string;        // What they can't stop talking about
+      roast: string;        // Funny one-liner
+    };
+    hiddenPattern: string;  // Surprising pattern found
+    aiPrediction: string;   // Funny prediction
+    spiritAnimal: {
+      animal: string;
+      reason: string;
+    };
+    funFacts: string[];     // 5-6 personalized facts
+    oneLineRoast: string;
+    compliment: string;
+    trendInsight: string;
+    timePersonality: string;
+    evolutionNote: string;
+    hiddenTheme: string;
+    questionStyle: string;
+  };
+  
+  // Data-Driven (from embeddings, NOT AI-generated)
+  discoveredThemes: Array<{
+    name: string;           // Theme name (e.g., "Business & Entrepreneurship")
+    messageCount: number;   // How many messages match
+    sampleMessage: string;  // First 100 chars of a sample
+  }>;
+  
+  generatedAt: string;      // ISO timestamp
+  samplesAnalyzed: number;
+  fromCache: boolean;
+}
+```
+
+### Frontend Data Consumption
+
+The frontend stores insights in global variables:
+
+```javascript
+// app.js lines 8-11
+let stats = null;           // From /api/wrapped/stats
+let aiInsights = null;      // From /api/wrapped/insights → insights
+let discoveredThemes = [];  // From /api/wrapped/insights → discoveredThemes
+let imagePrompts = [];      // From /api/wrapped/images
+```
+
+### Which Slides Use Which Fields
+
+| Slide | Field Used | Location in Frontend |
+|-------|------------|---------------------|
+| **DNA Identity** (Slide 4) | `personality.title`, `personality.description` | `populateDNAIdentity()` |
+| **Roast Chamber** (Slide 5) | `topObsession.topic`, `topObsession.roast` | `populateRoastChamber()` |
+| **Time Personality** (Slide 7) | `timePersonality` | `populateTimeSlide()` |
+| **Evolution** (Slide 8) | `trendInsight`, `evolutionNote` | In `populateSlides()` |
+| **Discovered Themes** (Slide 9) | `discoveredThemes[]` | `populateThemesSlide()` |
+| **Hidden Insights** (Slide 12) | `hiddenTheme`, `questionStyle` | Direct DOM update |
+| **Cosmic Revelations** (Slide 13) | `funFacts[]`, `spiritAnimal` | `populateCosmicRevelations()` |
+| **Verdict** (Slide 15) | `oneLineRoast`, `compliment` | `populateVerdictSlide()` |
+| **Achievements** (Slide 16) | `aiPrediction` | `renderAchievements()` |
+
+---
+
+## Safe Modification Guide
+
+### ✅ SAFE: Adding New Insight Fields
+
+You can add new fields to the LLM output without breaking anything:
+
+1. **Add to the prompt** in `src/server.ts` (~line 1276):
+```javascript
+{
+  // Existing fields...
+  "newField": "Your new insight here"  // ← Add new field
+}
+```
+
+2. **Frontend will gracefully ignore it** until you add a slide to use it.
+
+3. **To use it**, add to a slide function:
+```javascript
+if (aiInsights?.newField) {
+  document.getElementById('newElement').textContent = aiInsights.newField;
+}
+```
+
+### ✅ SAFE: Modifying Prompt Instructions
+
+You can safely change:
+- The tone (more funny, less roast-y, etc.)
+- The length constraints ("2-4 word" → "3-5 word")
+- Additional instructions ("Reference actual numbers")
+- Temperature setting (`temperature: 0.9` for more creative)
+
+Example safe change:
+```javascript
+// BEFORE
+"title": "A fun 2-4 word personality title..."
+
+// AFTER - More specific instruction
+"title": "A hilarious 2-4 word personality title that references their top topic..."
+```
+
+### ✅ SAFE: Adding New Semantic Theme Probes
+
+You can add themes to discover new patterns:
+
+```javascript
+// In src/server.ts, themeProbes array (~line 1185)
+const themeProbes = [
+  // ... existing themes ...
+  { name: 'Health & Fitness',    // ← NEW
+    probe: 'workout routine, diet, nutrition, exercise, health goals...' },
+  { name: 'Travel & Adventure',  // ← NEW  
+    probe: 'trip planning, destinations, travel tips, vacation...' },
+];
+```
+
+The frontend already handles dynamic themes via `themeIcons` with a `default` fallback.
+
+### ⚠️ CAUTION: Changing Field Names
+
+If you rename a field, you MUST update both:
+1. The prompt in `src/server.ts`
+2. The frontend code that reads it
+
+**Example (WRONG):**
+```javascript
+// Server: renamed field
+"spiritAnimal" → "patronus"
+
+// Frontend: still expects old name - WILL BREAK
+aiInsights.spiritAnimal  // undefined!
+```
+
+**Safe approach:** Keep old field, add new one:
+```javascript
+"spiritAnimal": { ... },
+"patronus": { ... }  // ← Add new, keep old
+```
+
+### ⚠️ CAUTION: Removing Fields
+
+The frontend has fallback handling, but you should check for usage first:
+
+```javascript
+// Frontend fallback pattern (safe)
+if (aiInsights?.hiddenTheme) {
+  // Use AI value
+} else {
+  // Fallback text
+}
+```
+
+### 🚫 DANGER: Changing JSON Structure
+
+Don't change nesting without updating frontend:
+
+```javascript
+// BEFORE
+"personality": { "title": "...", "description": "..." }
+
+// AFTER (BREAKING)
+"personalityTitle": "...",
+"personalityDescription": "..."
+```
+
+This will break `aiInsights.personality.title` references.
+
+---
+
+## Testing Changes Safely
+
+### 1. Test API Response First
+```bash
+# Regenerate insights (bypasses cache)
+curl "http://localhost:3333/api/wrapped/insights?regenerate=true" | jq .
+```
+
+### 2. Check Frontend Console
+The frontend logs what it receives:
+```javascript
+console.log('✓ AI insights generated:', aiInsights);
+console.log('✓ Discovered themes:', discoveredThemes);
+```
+
+### 3. Cache Behavior
+
+Insights are cached in `wrapped-insights-cache.json`:
+- **Don't edit cache directly** - regenerate via API
+- Cache is bypassed with `?regenerate=true`
+- New imports don't auto-invalidate cache
+
+```bash
+# Force fresh generation
+curl "http://localhost:3333/api/wrapped/insights?regenerate=true"
+```
+
+---
+
+## Iteration Checklist
+
+When improving prompts:
+
+- [ ] Check which slides use the field(s) you're changing
+- [ ] Verify frontend has fallback for optional fields
+- [ ] Test with `?regenerate=true` to bypass cache
+- [ ] Check browser console for errors
+- [ ] Verify data appears correctly in slides
+
+When adding new insights:
+
+- [ ] Add field to JSON schema in prompt
+- [ ] Test API response includes new field
+- [ ] Add frontend code to consume it (optional)
+- [ ] Update this documentation
+
+---
+
+## Key Files for Modifications
+
+| What to Change | File | Line Range |
+|----------------|------|------------|
+| Wrapped prompt instructions | `src/server.ts` | ~1267-1305 |
+| Wrapped prompt data context | `src/server.ts` | ~1306-1335 |
+| Semantic theme probes | `src/server.ts` | ~1185-1195 |
+| Similarity threshold | `src/server.ts` | ~1213 (`> 0.40`) |
+| Frontend insight consumption | `projects/chatgpt-wrapped/js/app.js` | ~951-1014 |
+| Slide population | `projects/chatgpt-wrapped/js/app.js` | ~343-456 |
+| Theme icons/fallbacks | `projects/chatgpt-wrapped/js/app.js` | ~56-66 |
+
+---
+
 *This document catalogs all LLM prompts used to extract insights from ChatGPT data.*
 

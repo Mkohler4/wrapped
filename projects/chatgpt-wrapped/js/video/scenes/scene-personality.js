@@ -185,7 +185,8 @@ class ScenePersonality extends SceneBase {
   drawYouAreLabel(ctx) {
     if (this.youAreOpacity <= 0) return;
     
-    this.drawText(ctx, 'You are', this.centerX, this.centerY - 350, {
+    // Position higher up with more space before archetype
+    this.drawText(ctx, 'You are', this.centerX, this.centerY - 380, {
       font: '400 40px Outfit, sans-serif',
       color: this.colors.textMuted,
       opacity: this.youAreOpacity,
@@ -195,7 +196,7 @@ class ScenePersonality extends SceneBase {
   drawArchetype(ctx) {
     if (this.archetypeOpacity <= 0) return;
     
-    const y = this.centerY - 200;
+    const y = this.centerY - 220;  // Moved down slightly for better spacing from "You are"
     
     ctx.save();
     
@@ -204,15 +205,15 @@ class ScenePersonality extends SceneBase {
     ctx.scale(this.archetypeScale, this.archetypeScale);
     ctx.translate(-this.centerX, -y);
     
-    // Draw icon
-    ctx.font = '100px sans-serif';
+    // Draw icon (closer to title)
+    ctx.font = '80px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.globalAlpha = this.archetypeOpacity;
-    ctx.fillText(this.getArchetypeIcon(), this.centerX, y - 80);
+    ctx.fillText(this.getArchetypeIcon(), this.centerX, y - 60);
     
-    // Draw archetype name with glow
-    this.drawGlowText(ctx, this.archetype, this.centerX, y + 30, {
+    // Draw archetype name with glow (more space below icon)
+    this.drawGlowText(ctx, this.archetype, this.centerX, y + 40, {
       font: 'bold 72px Outfit, sans-serif',
       color: this.colors.text,
       glowColor: `rgba(16, 163, 127, ${0.5 * this.archetypeGlow})`,
@@ -226,7 +227,7 @@ class ScenePersonality extends SceneBase {
   drawTimePersonality(ctx) {
     if (this.timeOpacity <= 0) return;
     
-    const y = this.centerY + 150;
+    const y = this.centerY + 120;
     
     ctx.save();
     ctx.globalAlpha = this.timeOpacity;
@@ -235,19 +236,39 @@ class ScenePersonality extends SceneBase {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(this.centerX - 200, y - 80);
-    ctx.lineTo(this.centerX + 200, y - 80);
+    ctx.moveTo(this.centerX - 200, y - 60);
+    ctx.lineTo(this.centerX + 200, y - 60);
     ctx.stroke();
     
-    // Draw mini clock
-    const clockX = this.centerX - 150;
-    const clockRadius = 40;
+    // Calculate component dimensions for centering
+    const clockRadius = 35;
+    const clockDiameter = clockRadius * 2;
+    const gapBetweenClockAndText = 25;
+    
+    // Measure text widths
+    ctx.font = 'bold 44px Outfit, sans-serif';
+    const titleWidth = ctx.measureText(this.timeType).width;
+    
+    const hourStr = this.formatHour(this.peakHour);
+    const subtitleText = `${this.getTimeIcon()} Peak activity: ${hourStr}`;
+    ctx.font = '28px Outfit, sans-serif';
+    const subtitleWidth = ctx.measureText(subtitleText).width;
+    
+    const textWidth = Math.max(titleWidth, subtitleWidth);
+    
+    // Total component width: clock + gap + text
+    const totalWidth = clockDiameter + gapBetweenClockAndText + textWidth;
+    
+    // Center the entire component
+    const startX = this.centerX - totalWidth / 2;
+    const clockX = startX + clockRadius;
+    const textX = startX + clockDiameter + gapBetweenClockAndText;
     
     // Clock face
     ctx.strokeStyle = this.colors.textMuted;
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(clockX, y + 20, clockRadius, 0, Math.PI * 2);
+    ctx.arc(clockX, y + 30, clockRadius, 0, Math.PI * 2);
     ctx.stroke();
     
     // Clock hand
@@ -255,35 +276,30 @@ class ScenePersonality extends SceneBase {
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(clockX, y + 20);
+    ctx.moveTo(clockX, y + 30);
     ctx.lineTo(
       clockX + Math.sin(this.clockAngle) * (clockRadius - 10),
-      y + 20 - Math.cos(this.clockAngle) * (clockRadius - 10)
+      y + 30 - Math.cos(this.clockAngle) * (clockRadius - 10)
     );
     ctx.stroke();
     
     // Clock center dot
     ctx.fillStyle = this.colors.accent;
     ctx.beginPath();
-    ctx.arc(clockX, y + 20, 4, 0, Math.PI * 2);
+    ctx.arc(clockX, y + 30, 4, 0, Math.PI * 2);
     ctx.fill();
     
-    // Time personality text
-    ctx.font = 'bold 48px Outfit, sans-serif';
+    // Time personality name (e.g., "Night Owl")
+    ctx.font = 'bold 44px Outfit, sans-serif';
     ctx.fillStyle = this.colors.text;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(this.timeType, this.centerX - 80, y);
+    ctx.fillText(this.timeType, textX, y + 10);
     
-    // Icon
-    ctx.font = '48px sans-serif';
-    ctx.fillText(this.getTimeIcon(), this.centerX - 80, y + 60);
-    
-    // Peak hour
-    const hourStr = this.formatHour(this.peakHour);
+    // Peak hour with icon on same line, below the title
     ctx.font = '28px Outfit, sans-serif';
     ctx.fillStyle = this.colors.textMuted;
-    ctx.fillText(`Peak activity: ${hourStr}`, this.centerX - 30, y + 60);
+    ctx.fillText(subtitleText, textX, y + 55);
     
     ctx.restore();
   }
@@ -296,34 +312,49 @@ class ScenePersonality extends SceneBase {
   }
 
   drawTraits(ctx) {
-    const startX = this.centerX - 200;
-    const y = this.centerY + 320;
-    const spacing = 140;
+    const y = this.centerY + 280;
+    const traits = this.traits.slice(0, 3);
+    const pillPadding = 24;  // Horizontal padding inside pill
+    const pillHeight = 44;
+    const gapBetweenPills = 20;  // Space between pills
     
     ctx.save();
+    ctx.font = '22px Outfit, sans-serif';
     
-    this.traits.slice(0, 3).forEach((trait, index) => {
+    // Calculate pill widths based on text
+    const pillWidths = traits.map(trait => {
+      return ctx.measureText(trait).width + (pillPadding * 2);
+    });
+    
+    // Calculate total width for centering
+    const totalWidth = pillWidths.reduce((sum, w) => sum + w, 0) + (gapBetweenPills * (traits.length - 1));
+    let currentX = this.centerX - totalWidth / 2;
+    
+    traits.forEach((trait, index) => {
       const opacity = this.traitsOpacity[index] ?? 0;
       if (opacity <= 0) return;
       
-      const x = startX + (index * spacing);
+      const pillWidth = pillWidths[index];
       
       ctx.globalAlpha = opacity;
       
-      // Trait pill
-      const pillWidth = 120;
-      const pillHeight = 40;
+      // Pill background
       ctx.fillStyle = 'rgba(16, 163, 127, 0.2)';
+      ctx.strokeStyle = 'rgba(16, 163, 127, 0.4)';
+      ctx.lineWidth = 1;
       ctx.beginPath();
-      ctx.roundRect(x - pillWidth / 2, y - pillHeight / 2, pillWidth, pillHeight, 20);
+      ctx.roundRect(currentX, y - pillHeight / 2, pillWidth, pillHeight, pillHeight / 2);
       ctx.fill();
+      ctx.stroke();
       
       // Trait text
-      ctx.font = '24px Outfit, sans-serif';
       ctx.fillStyle = this.colors.accent;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(trait, x, y);
+      ctx.fillText(trait, currentX + pillWidth / 2, y);
+      
+      // Move to next pill position
+      currentX += pillWidth + gapBetweenPills;
     });
     
     ctx.restore();

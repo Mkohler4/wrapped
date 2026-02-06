@@ -35,11 +35,28 @@ class SceneJourney extends SceneBase {
     // Particles
     this.particles = new ParticleSystem({ maxParticles: 50 });
     
-    // Graph dimensions
-    this.graphPadding = 100;
+    // Responsive layout based on aspect ratio
+    this.isPortrait = this.height > this.width;
+    
+    if (this.isPortrait) {
+      // Portrait (mobile): Fill vertical space properly
+      // Use percentage-based positioning to distribute content
+      this.titleY = this.height * 0.08;           // 8% from top
+      this.peakBaseY = this.height * 0.15;        // 15% from top
+      this.graphPadding = 60;
+      this.graphY = this.height * 0.38;           // Graph starts at 38%
+      this.graphHeight = this.height * 0.28;      // Graph is 28% of height
+      // Graph ends at ~66% from top, leaving comfortable bottom margin
+    } else {
+      // Landscape (desktop): More spacious layout
+      this.titleY = 120;
+      this.peakBaseY = 220;
+      this.graphPadding = 120;
+      this.graphHeight = 300;
+      this.graphY = this.height - this.graphHeight - 100;
+    }
+    
     this.graphWidth = this.width - (this.graphPadding * 2);
-    this.graphHeight = 350;
-    this.graphY = this.centerY + 100;
   }
 
   formatMonth(monthStr) {
@@ -166,15 +183,11 @@ class SceneJourney extends SceneBase {
   drawTitle(ctx) {
     if (this.titleOpacity <= 0) return;
     
-    this.drawText(ctx, 'Your ChatGPT Journey', this.centerX, 250, {
-      font: 'bold 56px Outfit, sans-serif',
+    // Responsive title size and position
+    const fontSize = this.isPortrait ? 48 : 56;
+    this.drawText(ctx, 'Your ChatGPT Journey', this.centerX, this.titleY, {
+      font: `bold ${fontSize}px Outfit, sans-serif`,
       color: this.colors.text,
-      opacity: this.titleOpacity,
-    });
-    
-    this.drawText(ctx, 'Messages per month', this.centerX, 320, {
-      font: '32px Outfit, sans-serif',
-      color: this.colors.textMuted,
       opacity: this.titleOpacity,
     });
   }
@@ -234,43 +247,68 @@ class SceneJourney extends SceneBase {
     }
     ctx.stroke();
     
-    // Draw points
+    // Draw regular points (not peak)
     for (let i = 0; i <= drawCount && i < points.length; i++) {
       const isPeak = points[i].count === maxCount;
-      const radius = isPeak ? 10 : 6;
+      if (isPeak) continue; // Draw peak separately
       
-      // Outer glow for peak
-      if (isPeak && this.peakOpacity > 0) {
-        const pulseRadius = radius + (5 * Math.sin(this.highlightPulse * Math.PI * 4));
-        ctx.fillStyle = `rgba(255, 215, 0, ${0.3 * this.peakOpacity})`;
-        ctx.beginPath();
-        ctx.arc(points[i].x, points[i].y, pulseRadius + 10, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      
-      // Point
-      ctx.fillStyle = isPeak ? '#ffd700' : this.colors.accent;
+      // Small dot
+      ctx.fillStyle = this.colors.accent;
       ctx.beginPath();
-      ctx.arc(points[i].x, points[i].y, radius, 0, Math.PI * 2);
-      ctx.fill();
-      
-      // Inner highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-      ctx.beginPath();
-      ctx.arc(points[i].x - 2, points[i].y - 2, radius * 0.4, 0, Math.PI * 2);
+      ctx.arc(points[i].x, points[i].y, 5, 0, Math.PI * 2);
       ctx.fill();
     }
     
-    // Draw month labels (every 3rd month)
-    ctx.font = '24px Outfit, sans-serif';
+    // Draw peak point with elegant design
+    const peakPoint = points.find(p => p.count === maxCount);
+    if (peakPoint && this.peakOpacity > 0) {
+      const px = peakPoint.x;
+      const py = peakPoint.y;
+      
+      // Subtle outer ring glow (breathing animation)
+      const breathe = 1 + Math.sin(this.highlightPulse * Math.PI * 2) * 0.15;
+      const ringRadius = 18 * breathe;
+      
+      // Outer glow
+      const gradient = ctx.createRadialGradient(px, py, 0, px, py, ringRadius + 10);
+      gradient.addColorStop(0, `rgba(16, 163, 127, ${0.4 * this.peakOpacity})`);
+      gradient.addColorStop(0.5, `rgba(16, 163, 127, ${0.2 * this.peakOpacity})`);
+      gradient.addColorStop(1, 'rgba(16, 163, 127, 0)');
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.arc(px, py, ringRadius + 10, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Ring stroke
+      ctx.strokeStyle = `rgba(16, 163, 127, ${0.8 * this.peakOpacity})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(px, py, ringRadius, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      // Center dot (accent color, not gold)
+      ctx.fillStyle = this.colors.accent;
+      ctx.beginPath();
+      ctx.arc(px, py, 7, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // White center highlight
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      ctx.beginPath();
+      ctx.arc(px, py, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Draw month labels (every 2nd month for better readability)
+    ctx.font = '20px Outfit, sans-serif';
     ctx.fillStyle = this.colors.textMuted;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     
-    for (let i = 0; i < points.length; i += 3) {
+    for (let i = 0; i < points.length; i += 2) {
       if (i <= drawCount) {
         const label = this.getMonthLabel(data[i].month);
-        ctx.fillText(label, points[i].x, this.graphY + this.graphHeight + 20);
+        ctx.fillText(label, points[i].x, this.graphY + this.graphHeight + 15);
       }
     }
     
@@ -280,7 +318,7 @@ class SceneJourney extends SceneBase {
   getMonthLabel(monthStr) {
     const match = monthStr?.match(/(\d{4})-(\d{2})/);
     if (match) {
-      const months = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
       return months[parseInt(match[2]) - 1];
     }
     return monthStr?.slice(0, 3) || '';
@@ -289,40 +327,54 @@ class SceneJourney extends SceneBase {
   drawPeakHighlight(ctx) {
     if (this.peakOpacity <= 0) return;
     
-    const y = this.centerY - 180;
+    // Use responsive baseY from constructor
+    const baseY = this.peakBaseY;
+    
+    // Responsive font sizes
+    const labelSize = this.isPortrait ? 24 : 28;
+    const monthSize = this.isPortrait ? 52 : 64;
+    const countSize = this.isPortrait ? 40 : 48;
+    
+    // Responsive vertical spacing (tighter on mobile)
+    const monthOffset = this.isPortrait ? 55 : 70;
+    const countOffset = this.isPortrait ? 120 : 150;
+    const messagesOffset = this.isPortrait ? 160 : 200;
     
     ctx.save();
     ctx.globalAlpha = this.peakOpacity;
     
-    // Scale transform
-    ctx.translate(this.centerX, y);
+    // Scale transform around the center of the content
+    const contentCenterY = baseY + (messagesOffset / 2);
+    ctx.translate(this.centerX, contentCenterY);
     ctx.scale(this.peakScale, this.peakScale);
-    ctx.translate(-this.centerX, -y);
+    ctx.translate(-this.centerX, -contentCenterY);
     
-    // "Peak month" label
-    ctx.font = '28px Outfit, sans-serif';
-    ctx.fillStyle = this.colors.textMuted;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('🏆 Peak Month', this.centerX, y - 60);
     
-    // Month name
-    this.drawGlowText(ctx, this.peakMonthName, this.centerX, y, {
-      font: 'bold 64px Outfit, sans-serif',
+    // "Peak Month" label with trophy
+    ctx.font = `${labelSize}px Outfit, sans-serif`;
+    ctx.fillStyle = this.colors.textMuted;
+    ctx.fillText('🏆 Peak Month', this.centerX, baseY);
+    
+    // Month name (the big golden text)
+    this.drawGlowText(ctx, this.peakMonthName, this.centerX, baseY + monthOffset, {
+      font: `bold ${monthSize}px Outfit, sans-serif`,
       color: '#ffd700',
       glowColor: 'rgba(255, 215, 0, 0.4)',
       glowBlur: 25,
     });
     
-    // Count
+    // Message count
     const countDisplay = this.peakCounter.getDisplayValue();
-    ctx.font = 'bold 48px Outfit, sans-serif';
+    ctx.font = `bold ${countSize}px Outfit, sans-serif`;
     ctx.fillStyle = this.colors.text;
-    ctx.fillText(countDisplay, this.centerX, y + 60);
+    ctx.fillText(countDisplay, this.centerX, baseY + countOffset);
     
-    ctx.font = '28px Outfit, sans-serif';
+    // "messages" label
+    ctx.font = `${labelSize}px Outfit, sans-serif`;
     ctx.fillStyle = this.colors.textMuted;
-    ctx.fillText('messages', this.centerX, y + 105);
+    ctx.fillText('messages', this.centerX, baseY + messagesOffset);
     
     ctx.restore();
   }

@@ -193,53 +193,58 @@ function drawRevealingText(ctx, reveal, x, y, options = {}) {
     ctx.fillStyle = color;
     let currentX = x;
     
-    // Calculate total width for centering
+    // Calculate total width for centering (use ALL units, not just visible)
     if (align === 'center') {
-      const visibleText = reveal.units
-        .filter((_, i) => reveal.unitStates[i]?.opacity > 0)
-        .join('');
-      const totalWidth = ctx.measureText(visibleText).width;
+      const fullText = reveal.units.join('');
+      const totalWidth = ctx.measureText(fullText).width;
       currentX = x - totalWidth / 2;
     }
     
+    // Use left alignment for individual word positioning
+    ctx.textAlign = 'left';
+    
     reveal.units.forEach((word, i) => {
       const state = reveal.unitStates[i];
-      if (state.opacity === 0) return;
-      
-      ctx.save();
-      ctx.globalAlpha = state.opacity;
-      
       const wordWidth = ctx.measureText(word).width;
       
-      // Apply transform
-      ctx.translate(currentX + wordWidth / 2, y + state.y);
-      ctx.scale(state.scale, state.scale);
-      ctx.translate(-(currentX + wordWidth / 2), -(y + state.y));
+      // Only draw if visible, but ALWAYS advance position
+      if (state.opacity > 0) {
+        ctx.save();
+        ctx.globalAlpha = state.opacity;
+        
+        // Apply transform
+        ctx.translate(currentX + wordWidth / 2, y + state.y);
+        ctx.scale(state.scale, state.scale);
+        ctx.translate(-(currentX + wordWidth / 2), -(y + state.y));
+        
+        ctx.fillText(word, currentX, y);
+        ctx.restore();
+      }
       
-      ctx.fillText(word, currentX, y);
-      ctx.restore();
-      
+      // Always advance position to maintain proper spacing
       currentX += wordWidth;
     });
   } else {
     // Character mode
     ctx.fillStyle = color;
     
-    // Measure for centering
-    const visibleText = reveal.units
-      .filter((_, i) => reveal.unitStates[i]?.opacity > 0)
-      .join('');
+    // Pre-calculate all character widths for consistent positioning
+    const charWidths = reveal.units.map(char => ctx.measureText(char).width);
+    const totalWidth = charWidths.reduce((sum, w) => sum + w, 0) + (letterSpacing * (reveal.unitCount - 1));
     
     let currentX = x;
     if (align === 'center') {
-      const totalWidth = ctx.measureText(reveal.text).width + (letterSpacing * (reveal.unitCount - 1));
       currentX = x - totalWidth / 2;
     }
     
+    // Use left alignment for individual character positioning
+    ctx.textAlign = 'left';
+    
     reveal.units.forEach((char, i) => {
       const state = reveal.unitStates[i];
-      const charWidth = ctx.measureText(char).width;
+      const charWidth = charWidths[i];
       
+      // Only draw if visible, but ALWAYS advance position
       if (state.opacity > 0) {
         ctx.save();
         ctx.globalAlpha = state.opacity;
