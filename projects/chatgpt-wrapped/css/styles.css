@@ -14,6 +14,7 @@
 @import 'core/processing.css';
 @import 'core/navigation.css';
 @import 'core/modals.css';
+@import 'core/debug-panel.css';
 
 /* ============================================
    Slide-Specific Styles

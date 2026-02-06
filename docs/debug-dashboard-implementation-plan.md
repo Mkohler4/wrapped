@@ -1,6 +1,6 @@
 # Debug Dashboard Implementation Plan
 
-> **Status:** Draft (pre-implementation)
+> **Status:** Implemented
 > **Date:** February 6, 2026
 > **Purpose:** Define the approach, required changes, and long-term value of the Debug & Testing Dashboard (Bug 0).
 
@@ -8,7 +8,7 @@
 
 ## Summary
 
-We will add a **non-intrusive debug overlay panel** that can be toggled with **Ctrl+Shift+D** (and an optional hidden UI trigger), displaying **live, structured diagnostics** for all key data pipelines in ChatGPT Wrapped. The panel will **read existing in-memory globals** (e.g., `stats`, `aiInsights`, `imagePrompts`, `imageStats`, `heatmapData`, `discoveredThemes`) and **auto-refresh after data changes** (e.g., after `populateSlides()` runs). It will provide **immediate, auditable visibility** into every stat and derived output to accelerate debugging and prevent regressions.
+We will add a **non-intrusive debug overlay panel** that can be toggled with **Ctrl+Alt+D** (and an optional hidden UI trigger), displaying **live, structured diagnostics** for all key data pipelines in ChatGPT Wrapped. The panel will **read existing in-memory globals** (e.g., `stats`, `aiInsights`, `imagePrompts`, `imageStats`, `heatmapData`, `discoveredThemes`) and **auto-refresh after data changes** (e.g., after `populateSlides()` runs). It will provide **immediate, auditable visibility** into every stat and derived output to accelerate debugging and prevent regressions.
 
 ---
 

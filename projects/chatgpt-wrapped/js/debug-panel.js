@@ -47,13 +47,25 @@
   }
 
   function formatPercent(value) {
-    if (value === null || value === undefined || Number.isNaN(value)) return '—';
-    return `${value.toFixed(1)}%`;
+    if (value === null || value === undefined) return '—';
+    const num = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(num)) return '—';
+    return `${num.toFixed(1)}%`;
   }
 
   function safeText(value) {
     if (value === null || value === undefined) return '—';
-    return String(value);
+    const str = String(value);
+    return str.replace(/[&<>"']/g, (ch) => {
+      switch (ch) {
+        case '&': return '&amp;';
+        case '<': return '&lt;';
+        case '>': return '&gt;';
+        case '"': return '&quot;';
+        case "'": return '&#39;';
+        default: return ch;
+      }
+    });
   }
 
   function getGlobal(name, fallback) {
@@ -90,8 +102,6 @@
   }
 
   function buildAchievementsSnapshot(stats, imageStats, heatmapData) {
-    const longestStreak = stats?.enhanced?.longestStreak ?? stats?.streaks?.longestStreak;
-    const totalActiveDays = stats?.enhanced?.totalActiveDays ?? stats?.streaks?.totalActiveDays;
     const heatmapStreak = heatmapData?.stats?.longestStreak;
     const heatmapActive = heatmapData?.stats?.activeDays;
 
@@ -175,8 +185,10 @@
     return definitions
       .map((def) => {
         const currentValue = def.currentValue ?? 0;
-        const tier = def.tiers.find((t) => (def.isYearBased ? currentValue <= t.threshold : currentValue >= t.threshold));
-        const threshold = tier ? tier.threshold : def.tiers?.[0]?.threshold;
+        const tiers = Array.isArray(def.tiers) ? def.tiers.slice() : [];
+        const ordered = def.isYearBased ? tiers.slice().sort((a, b) => a.threshold - b.threshold) : tiers;
+        const tier = ordered.find((t) => (def.isYearBased ? currentValue <= t.threshold : currentValue >= t.threshold));
+        const threshold = tier ? tier.threshold : ordered?.[0]?.threshold;
         const unlocked = !!tier;
         return `
           <div class="debug-kv">
@@ -280,10 +292,18 @@
     const panel = ensurePanel();
     const isOpen = panel.classList.contains('is-open');
     const shouldOpen = typeof forceState === 'boolean' ? forceState : !isOpen;
-    panel.classList.toggle('is-open', shouldOpen);
-    panel.style.display = shouldOpen ? 'block' : 'none';
-    panel.style.pointerEvents = shouldOpen ? 'auto' : 'none';
-    if (shouldOpen) renderDebugPanel();
+    if (shouldOpen) {
+      renderDebugPanel();
+      panel.style.display = 'block';
+      panel.style.pointerEvents = 'auto';
+      requestAnimationFrame(() => {
+        panel.classList.add('is-open');
+      });
+    } else {
+      panel.classList.remove('is-open');
+      panel.style.pointerEvents = 'none';
+      panel.style.display = 'none';
+    }
   }
 
   function focusDebugSection(sectionKey) {
