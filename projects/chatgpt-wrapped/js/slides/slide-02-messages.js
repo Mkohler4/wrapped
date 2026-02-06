@@ -126,7 +126,7 @@ function renderMsgTrendChart(monthlyData) {
   if (!svg || !monthlyData || monthlyData.length < 2) return;
   
   const data = monthlyData.slice(-12); // Last 12 months
-  const values = data.map(d => d.count);
+  const values = data.map(d => d.count ?? d.conversations ?? 0);
   const maxVal = Math.max(...values, 1);
   const minVal = Math.min(...values);
   
@@ -161,7 +161,8 @@ function renderMsgTrendChart(monthlyData) {
   const trendPct = firstAvg > 0 ? Math.round(((secondAvg - firstAvg) / firstAvg) * 100) : 0;
   
   if (trendPercentEl) {
-    trendPercentEl.textContent = `${Math.abs(trendPct)}%`;
+    const sign = trendPct > 0 ? '+' : trendPct < 0 ? '−' : '';
+    trendPercentEl.textContent = `${sign}${Math.abs(trendPct)}%`;
   }
   
   if (trendValueEl) {
