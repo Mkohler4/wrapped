@@ -25,7 +25,6 @@ let themesSlideAnimated = false;
 let obsessionSlideAnimated = false;
 let cosmicRevelationsAnimated = false;
 let gallerySlideAnimated = false;
-let heatmapSlideAnimated = false;
 let verdictSlideAnimated = false;
 let achievementsSlideAnimated = false;
 let wordBubblesSlideAnimated = false;
@@ -41,7 +40,6 @@ let cosmicRevelationsData = null;
 let gallerySlideData = null;
 let galleryCurrentPage = 0;
 let galleryScrollTimeout = null;
-let heatmapData = null;
 let verdictSlideData = null;
 let achievementsSlideData = null;
 let storedTopWords = null;
@@ -75,6 +73,16 @@ document.addEventListener('DOMContentLoaded', function() {
   initKeyboardNavigation();
   initModalHandlers();
 });
+
+function syncDebugGlobals() {
+  if (typeof window === 'undefined') return;
+  window.stats = stats;
+  window.aiInsights = aiInsights;
+  window.discoveredThemes = discoveredThemes;
+  window.imagePrompts = imagePrompts;
+  window.imageStats = imageStats;
+  window.heatmapData = heatmapData;
+}
 
 function initFileHandling() {
   const dropZone = document.getElementById('dropZone');
@@ -114,6 +122,12 @@ function initFileHandling() {
 
 function initKeyboardNavigation() {
   document.onkeydown = (e) => {
+    const isDebugToggle = (e.ctrlKey || e.metaKey) && e.altKey && (e.key === 'D' || e.key === 'd');
+    if (isDebugToggle && typeof window.toggleDebugPanel === 'function') {
+      e.preventDefault();
+      window.toggleDebugPanel();
+      return;
+    }
     if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
     if (e.key === 'ArrowLeft') prevSlide();
     if (e.key === 'Escape') closeEvidenceModal();
@@ -151,25 +165,31 @@ async function processFile(file) {
 
     updateProgress(40, 'Analyzing conversations...');
     stats = analyzeConversations(data);
+    syncDebugGlobals();
     
     updateProgress(60, 'Extracting themes...');
     // Generate enhanced data for evolution slides
     stats.enhanced = generateEnhancedAnalysis(data);
+    syncDebugGlobals();
     
     // Generate semantic themes
     discoveredThemes = generateDiscoveredThemes(stats, data);
+    syncDebugGlobals();
     
     updateProgress(75, 'Extracting vocabulary...');
     // Extract top words
     stats.topWords = extractTopWords(data);
+    syncDebugGlobals();
     
     updateProgress(80, 'Mapping activity...');
     // Generate heatmap data
     heatmapData = generateHeatmapData(data);
+    syncDebugGlobals();
     
     updateProgress(85, 'Generating insights...');
     // Generate AI insights from the data
     aiInsights = generateDataInsights(stats, data);
+    syncDebugGlobals();
     await new Promise(r => setTimeout(r, 500));
     
     updateProgress(100, 'Done!');
@@ -177,6 +197,7 @@ async function processFile(file) {
     
     populateSlides(stats);
     showScreen('wrapped');
+    syncDebugGlobals();
     
   } catch (err) {
     console.error(err);
@@ -358,26 +379,6 @@ function truncateText(text, maxLength) {
 // SLIDES POPULATION (Main orchestrator)
 // Individual slide functions are in js/slides/*.js
 // ============================================
-
-let themesSlideData = null;
-let themesSlideAnimated = false;
-
-// Theme icon mapping
-const themeIcons = {
-  'Business & Entrepreneurship': '💼',
-  'AI Image Generation': '🎨',
-  'Career & Growth': '📈',
-  'Learning & Education': '📚',
-  'Creative Writing': '✍️',
-  'Technical Architecture': '⚙️',
-  'Personal Life': '🏠',
-  'Productivity & Organization': '⚡',
-  'coding': '💻',
-  'research': '🔬',
-  'planning': '📋',
-  'general': '💬',
-  'default': '🎯'
-};
 
 /**
  * Slide 9: Discovered Themes - AI Semantic Clusters
@@ -716,11 +717,10 @@ function populateSlides(s) {
       `<div class="dot ${i === 0 ? 'active' : ''}"></div>`
     ).join('');
   }
-}
 
-// Stub for renderImageGallery (implemented in slide-10-gallery.js)
-function renderImageGallery() {
-  populateGallerySlide();
+  if (typeof window.refreshDebugPanel === 'function') {
+    window.refreshDebugPanel();
+  }
 }
 
 // ============================================
@@ -941,10 +941,6 @@ function closeEvidenceModal() {
 // AI IMAGE GALLERY (Redesigned)
 // ============================================
 
-let gallerySlideData = null;
-let gallerySlideAnimated = false;
-let galleryCurrentPage = 0;
-
 /**
  * Generate floating image frame background
  */
@@ -1035,7 +1031,6 @@ function populateGallerySlide() {
 /**
  * Initialize scroll listener for gallery grid
  */
-let galleryScrollTimeout = null;
 function initGalleryScrollListener() {
   const grid = document.getElementById('galleryGrid');
   if (!grid || grid.dataset.scrollListenerAdded) return;
@@ -1093,14 +1088,6 @@ function renderGalleryGrid(images) {
       </div>
     </div>
   `).join('');
-}
-
-/**
- * Truncate text helper
- */
-function truncateText(text, maxLength) {
-  if (!text || text.length <= maxLength) return text;
-  return text.substring(0, maxLength) + '...';
 }
 
 /**
@@ -1276,9 +1263,6 @@ function scrollGallery(direction) {
 // ============================================
 // D3.5: EVOLUTION TIMELINE VISUALIZATION
 // ============================================
-
-let currentEvolutionData = null;
-let monthlyTrendData = null;
 
 async function fetchEvolutionData(periods = 2, dateRange = null) {
   try {
@@ -1681,9 +1665,6 @@ function renderSparkline(monthlyData, containerId = 'messagesSparkline') {
 // D4: WORD FREQUENCY BUBBLES - Redesigned
 // ============================================
 
-let wordBubblesSlideAnimated = false;
-let storedTopWords = null;
-
 function renderWordBubbles(topWords) {
   const container = document.getElementById('wordBubblesContainer');
   if (!container || !topWords || topWords.length === 0) {
@@ -1855,8 +1836,6 @@ function animateWordBubblesSlide() {
 // ============================================
 // SLIDE 18: SHARE - Journey Complete
 // ============================================
-
-let shareSlideAnimated = false;
 
 /**
  * Generate sparkle background elements for the share slide
@@ -2177,9 +2156,6 @@ function hideHeatmapTooltip() {
 // SLIDE 15: VERDICT CARDS (ROAST + COMPLIMENT) - REDESIGNED
 // ============================================
 
-let verdictSlideData = null;
-let verdictSlideAnimated = false;
-
 /**
  * Generate floating background icons for verdict slide
  */
@@ -2352,9 +2328,6 @@ function verdictTypewriter(element, text, speed = 30, onComplete) {
 // ============================================
 // SLIDE 16: ACHIEVEMENTS TROPHY ROOM - REDESIGNED
 // ============================================
-
-let achievementsSlideData = null;
-let achievementsSlideAnimated = false;
 
 /**
  * Define all achievements with tiered progression
@@ -2883,6 +2856,29 @@ function showSlide(n) {
   } else {
     clearFloatingBubbles();
   }
+
+  if (typeof window.focusDebugSection === 'function') {
+    const sectionMap = {
+      0: 'raw',
+      1: 'raw',
+      2: 'topics',
+      3: 'insights',
+      4: 'insights',
+      5: 'raw',
+      7: 'insights',
+      8: 'images',
+      9: 'insights',
+      10: 'achievements-sources',
+      11: 'insights',
+      12: 'achievements-results',
+      13: 'raw',
+      14: 'raw'
+    };
+    const sectionKey = sectionMap[n];
+    if (sectionKey) {
+      window.focusDebugSection(sectionKey);
+    }
+  }
 }
 
 function nextSlide() {
@@ -2951,78 +2947,6 @@ function downloadImage() {
 }
 
 // ============================================
-// SPARKLINE RENDERER
-// ============================================
-function renderSparkline(monthlyData, containerId = 'messagesSparkline') {
-  if (!monthlyData || monthlyData.length < 2) {
-    console.log('Sparkline: insufficient data');
-    return;
-  }
-  
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  
-  // Get the last 12 months or all data if less
-  const data = monthlyData.slice(-12);
-  const counts = data.map(d => d.count);
-  
-  const width = 120;
-  const height = 40;
-  const padding = 4;
-  
-  const maxVal = Math.max(...counts, 1);
-  const minVal = Math.min(...counts);
-  const range = maxVal - minVal || 1;
-  
-  // Generate points
-  const points = counts.map((val, i) => {
-    const x = padding + (i / (counts.length - 1)) * (width - 2 * padding);
-    const y = height - padding - ((val - minVal) / range) * (height - 2 * padding);
-    return { x, y, val };
-  });
-  
-  // Create line path
-  const linePath = points.map((p, i) => 
-    (i === 0 ? 'M' : 'L') + ` ${p.x.toFixed(1)} ${p.y.toFixed(1)}`
-  ).join(' ');
-  
-  // Create area path (close to bottom)
-  const areaPath = linePath + 
-    ` L ${points[points.length - 1].x.toFixed(1)} ${height - padding}` +
-    ` L ${padding} ${height - padding} Z`;
-  
-  // Update SVG elements
-  const lineEl = container.querySelector('#sparklineLine, .sparkline-line');
-  const areaEl = container.querySelector('#sparklineArea, .sparkline-area');
-  const dotEl = container.querySelector('#sparklineDot, .sparkline-dot');
-  const trendEl = container.querySelector('#sparklineTrend, .sparkline-trend');
-  
-  if (lineEl) lineEl.setAttribute('d', linePath);
-  if (areaEl) areaEl.setAttribute('d', areaPath);
-  
-  // Position dot at the end
-  if (dotEl && points.length > 0) {
-    const lastPoint = points[points.length - 1];
-    dotEl.setAttribute('cx', lastPoint.x);
-    dotEl.setAttribute('cy', lastPoint.y);
-    dotEl.style.display = 'block';
-  }
-  
-  // Calculate trend
-  if (trendEl && counts.length >= 2) {
-    const firstHalf = counts.slice(0, Math.floor(counts.length / 2));
-    const secondHalf = counts.slice(Math.floor(counts.length / 2));
-    const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-    const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-    
-    const percentChange = firstAvg > 0 ? Math.round(((secondAvg - firstAvg) / firstAvg) * 100) : 0;
-    
-    trendEl.className = 'sparkline-trend ' + (percentChange > 5 ? 'up' : percentChange < -5 ? 'down' : 'neutral');
-    trendEl.textContent = percentChange > 0 ? `↑ ${percentChange}%` : percentChange < 0 ? `↓ ${Math.abs(percentChange)}%` : '→ Steady';
-  }
-}
-
-// ============================================
 // LOAD MY DATA (from API or fallback to embedded)
 // ============================================
 async function loadMyData() {
@@ -3073,6 +2997,7 @@ async function loadMyData() {
       // Phase B: Enhanced stats
       enhanced: dbStats.enhanced || {},
     };
+    syncDebugGlobals();
 
     // Fetch AI insights (only when on server)
     try {
@@ -3082,6 +3007,7 @@ async function loadMyData() {
         const data = await insightsResponse.json();
         aiInsights = data.insights;
         discoveredThemes = data.discoveredThemes || [];
+        syncDebugGlobals();
         console.log('✓ AI insights generated:', aiInsights);
         console.log('✓ Discovered themes:', discoveredThemes);
       }
@@ -3097,6 +3023,7 @@ async function loadMyData() {
         const data = await imagesResponse.json();
         imagePrompts = data.images || [];
         imageStats = data.stats || { generated: 0, uploaded: 0, total: imagePrompts.length };
+        syncDebugGlobals();
         console.log('✓ Image prompts loaded:', imagePrompts.length, 'stats:', imageStats);
       }
     } catch (e) {
@@ -3118,6 +3045,7 @@ async function loadMyData() {
     try {
       updateProgress(97, '📊 Building your activity map...');
       heatmapData = await fetchHeatmapData();
+      syncDebugGlobals();
       if (heatmapData) {
         console.log('✓ Heatmap data loaded:', heatmapData.stats.activeDays, 'active days');
       }
@@ -3130,6 +3058,7 @@ async function loadMyData() {
 
     await new Promise(r => setTimeout(r, 300));
     populateSlides(stats);
+    syncDebugGlobals();
     
     // Apply evolution data to UI after populateSlides
     if (currentEvolutionData) {
@@ -3213,12 +3142,15 @@ async function loadSampleData() {
   updateProgress(60, 'Analyzing patterns...');
   
   stats = analyzeConversations(sampleConversations);
+  syncDebugGlobals();
   
   // Generate AI insights for sample data
   aiInsights = generateSampleInsights(stats);
+  syncDebugGlobals();
   
   // Generate themes
   discoveredThemes = generateDiscoveredThemes(stats, sampleConversations);
+  syncDebugGlobals();
   
   // Add enhanced data
   stats.enhanced = {
@@ -3242,6 +3174,7 @@ async function loadSampleData() {
     mostProductiveDay: 'Thursday',
     weekendRatio: 35
   };
+  syncDebugGlobals();
   
   // Add top words for vocabulary slide
   stats.topWords = [
@@ -3256,9 +3189,11 @@ async function loadSampleData() {
     { word: 'design', count: 87 },
     { word: 'build', count: 76 }
   ];
+  syncDebugGlobals();
   
   // Add heatmap data for activity map slide
   heatmapData = generateHeatmapData(sampleConversations);
+  syncDebugGlobals();
   
   await new Promise(r => setTimeout(r, 300));
   updateProgress(90, 'Generating insights...');
