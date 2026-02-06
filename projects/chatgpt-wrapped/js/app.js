@@ -14,6 +14,8 @@ let currentImageFilter = 'all';
 let currentSlide = 0;
 let totalSlides = 15;
 let wrappedData = null; // Global store for stats/themes data
+let heatmapData = null; // Global store for heatmap/activity map data
+let heatmapSlideAnimated = false; // Track if heatmap slide has been animated
 
 // ============================================
 // INITIALIZATION
@@ -100,7 +102,24 @@ async function processFile(file) {
     updateProgress(40, 'Analyzing conversations...');
     stats = analyzeConversations(data);
     
-    updateProgress(80, 'Generating insights...');
+    updateProgress(60, 'Extracting themes...');
+    // Generate enhanced data for evolution slides
+    stats.enhanced = generateEnhancedAnalysis(data);
+    
+    // Generate semantic themes
+    discoveredThemes = generateDiscoveredThemes(stats, data);
+    
+    updateProgress(75, 'Extracting vocabulary...');
+    // Extract top words
+    stats.topWords = extractTopWords(data);
+    
+    updateProgress(80, 'Mapping activity...');
+    // Generate heatmap data
+    heatmapData = generateHeatmapData(data);
+    
+    updateProgress(85, 'Generating insights...');
+    // Generate AI insights from the data
+    aiInsights = generateDataInsights(stats, data);
     await new Promise(r => setTimeout(r, 500));
     
     updateProgress(100, 'Done!');
@@ -1046,7 +1065,7 @@ function renderMsgTrendChart(monthlyData) {
   if (!svg || !monthlyData || monthlyData.length < 2) return;
   
   const data = monthlyData.slice(-12); // Last 12 months
-  const values = data.map(d => d.count);
+  const values = data.map(d => d.count ?? d.conversations ?? 0);
   const maxVal = Math.max(...values, 1);
   const minVal = Math.min(...values);
   
@@ -1081,7 +1100,8 @@ function renderMsgTrendChart(monthlyData) {
   const trendPct = firstAvg > 0 ? Math.round(((secondAvg - firstAvg) / firstAvg) * 100) : 0;
   
   if (trendPercentEl) {
-    trendPercentEl.textContent = `${Math.abs(trendPct)}%`;
+    const sign = trendPct > 0 ? '+' : trendPct < 0 ? '−' : '';
+    trendPercentEl.textContent = `${sign}${Math.abs(trendPct)}%`;
   }
   
   if (trendValueEl) {
@@ -1122,6 +1142,11 @@ function populateSlides(s) {
   // Render Word Frequency Bubbles (D4)
   if (s.topWords && s.topWords.length > 0) {
     renderWordBubbles(s.topWords);
+  }
+
+  // Render heatmap if data is available (file uploads & sample data)
+  if (heatmapData) {
+    renderHeatmap(heatmapData);
   }
 
   // Slide 8 - Evolution Timeline
@@ -2298,14 +2323,15 @@ function renderEvolutionChart(monthlyData, peakMonth = null) {
   const chartHeight = height - padding.top - padding.bottom;
   
   // Get values and find max
-  const values = monthlyData.map(d => d.count);
+  const values = monthlyData.map(d => d.count ?? d.conversations ?? 0);
   const maxValue = Math.max(...values, 1);
   const minValue = Math.min(...values);
   
   // Generate points
   const points = monthlyData.map((d, i) => {
     const x = padding.left + (i / (monthlyData.length - 1)) * chartWidth;
-    const y = padding.top + chartHeight - ((d.count - minValue) / (maxValue - minValue || 1)) * chartHeight;
+    const value = d.count ?? d.conversations ?? 0;
+    const y = padding.top + chartHeight - ((value - minValue) / (maxValue - minValue || 1)) * chartHeight;
     return { x, y, data: d, index: i };
   });
   
@@ -2355,7 +2381,7 @@ function renderEvolutionChart(monthlyData, peakMonth = null) {
   axisContainer.innerHTML = monthlyData
     .filter((_, i) => i % labelInterval === 0 || i === monthlyData.length - 1)
     .map((d, i, arr) => {
-      const date = new Date(d.month + '-01');
+      const date = d.date ? new Date(d.date) : new Date(d.month + '-01');
       const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       const isLast = i === arr.length - 1;
       return `<span class="evolution-axis-label ${isLast ? 'highlight' : ''}">${label}</span>`;
@@ -2882,9 +2908,6 @@ function animateShareSlide() {
 // ============================================
 // D4: ACTIVITY HEATMAP - Redesigned with animations
 // ============================================
-
-let heatmapData = null;
-let heatmapSlideAnimated = false;
 
 async function fetchHeatmapData() {
   try {
@@ -4098,6 +4121,52 @@ async function loadSampleData() {
   
   stats = analyzeConversations(sampleConversations);
   
+  // Generate AI insights for sample data
+  aiInsights = generateSampleInsights(stats);
+  
+  // Generate themes
+  discoveredThemes = generateDiscoveredThemes(stats, sampleConversations);
+  
+  // Add enhanced data
+  stats.enhanced = {
+    topicsOld: [
+      { topic: 'coding', score: 45 },
+      { topic: 'learning', score: 32 },
+      { topic: 'writing', score: 18 },
+      { topic: 'planning', score: 12 }
+    ],
+    topicsRecent: [
+      { topic: 'coding', score: 52 },
+      { topic: 'ai', score: 38 },
+      { topic: 'learning', score: 25 },
+      { topic: 'creative', score: 15 }
+    ],
+    monthlyTrend: generateMonthlyTrend(),
+    trendDirection: 15,
+    nightOwlScore: 35,
+    marathonConvos: 12,
+    quickConvos: 84,
+    mostProductiveDay: 'Thursday',
+    weekendRatio: 35
+  };
+  
+  // Add top words for vocabulary slide
+  stats.topWords = [
+    { word: 'function', count: 234 },
+    { word: 'component', count: 187 },
+    { word: 'api', count: 156 },
+    { word: 'react', count: 145 },
+    { word: 'javascript', count: 132 },
+    { word: 'data', count: 128 },
+    { word: 'code', count: 121 },
+    { word: 'error', count: 98 },
+    { word: 'design', count: 87 },
+    { word: 'build', count: 76 }
+  ];
+  
+  // Add heatmap data for activity map slide
+  heatmapData = generateHeatmapData(sampleConversations);
+  
   await new Promise(r => setTimeout(r, 300));
   updateProgress(90, 'Generating insights...');
   
@@ -4107,6 +4176,492 @@ async function loadSampleData() {
   await new Promise(r => setTimeout(r, 300));
   populateSlides(stats);
   showScreen('wrapped');
+}
+
+function generateSampleInsights(stats) {
+  return {
+    profileSummary: 'You\'re a tech enthusiast with a passion for building things. Your conversations span from coding challenges to creative brainstorming.',
+    obsession: 'coding',
+    obsessionDetail: 'JavaScript and React are your jam. You spend significant time debugging, learning new patterns, and optimizing performance.',
+    hiddenTheme: 'You\'re constantly learning and pushing your technical boundaries',
+    questionStyle: 'You ask detailed, specific questions—the kind that show you\'ve already done some research.',
+    roastPoint: 'You have 847 conversations but somehow still ask "why doesn\'t this work?" without including the actual error message.',
+    complimentPoint: 'Your ability to articulate complex technical problems in simple terms is genuinely impressive.',
+    personality: 'Curious, detail-oriented, and always iterating.',
+    trendInsight: 'Your usage has been growing steadily. You\'re definitely a power user now.',
+    achievements: ['Code Wizard', 'Conversation King', 'Night Owl']
+  };
+}
+
+function generateMonthlyTrend() {
+  const trend = [];
+  const now = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const baseValue = 45;
+    const variation = Math.sin(i / 3) * 20 + Math.random() * 15;
+    trend.push({
+      month: date.toLocaleString('default', { month: 'short' }),
+      count: Math.max(10, Math.round(baseValue + variation)),
+      date: date
+    });
+  }
+  return trend;
+}
+
+// ============================================
+// REAL DATA ANALYSIS
+// ============================================
+
+function generateEnhancedAnalysis(conversations) {
+  // Analyze conversation distribution over time
+  const monthlyData = {};
+  const now = new Date();
+  
+  // Initialize last 12 months
+  for (let i = 11; i >= 0; i--) {
+    const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const key = `${year}-${month}`;
+    monthlyData[key] = 0;
+  }
+  
+  // Count conversations by month
+  const topicsOverTime = { old: {}, recent: {} };
+  const daysOfWeek = [0, 0, 0, 0, 0, 0, 0]; // Sunday-Saturday
+  let convCount = 0;
+  let marathonCount = 0; // 50+ messages
+  let quickCount = 0; // <5 messages
+  let mostProductiveDay = null;
+  let maxDayCount = 0;
+  
+  for (const conv of conversations) {
+    if (!conv.create_time) continue;
+    const date = new Date(conv.create_time * 1000);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const key = `${year}-${month}`;
+    
+    if (monthlyData.hasOwnProperty(key)) {
+      monthlyData[key]++;
+      convCount++;
+    }
+    
+    // Day of week tracking
+    const dayOfWeek = date.getDay();
+    daysOfWeek[dayOfWeek]++;
+    if (daysOfWeek[dayOfWeek] > maxDayCount) {
+      maxDayCount = daysOfWeek[dayOfWeek];
+      const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      mostProductiveDay = dayNames[dayOfWeek];
+    }
+    
+    // Count messages in conversation
+    const messages = conv.mapping ? Object.values(conv.mapping) : [];
+    const userMsgCount = messages.filter(m => m.message?.author?.role === 'user').length;
+    if (userMsgCount >= 50) marathonCount++;
+    if (userMsgCount < 5) quickCount++;
+    
+    // Topic tracking
+    const title = (conv.title || '').toLowerCase();
+    let topic = 'general';
+    if (title.match(/code|function|api|bug|error|typescript|javascript|python|react|html|css/i)) topic = 'coding';
+    else if (title.match(/write|email|blog|article|copy|draft/i)) topic = 'writing';
+    else if (title.match(/learn|explain|how|what|why|tutorial/i)) topic = 'learning';
+    else if (title.match(/plan|strategy|roadmap|todo|list/i)) topic = 'planning';
+    else if (title.match(/design|creative|art|image|visual/i)) topic = 'creative';
+    
+    const isOld = date < new Date(now.getFullYear(), now.getMonth() - 6, 1);
+    const bucket = isOld ? topicsOverTime.old : topicsOverTime.recent;
+    bucket[topic] = (bucket[topic] || 0) + 1;
+  }
+  
+  // Weekend vs weekday ratio
+  const weekdayCount = daysOfWeek.slice(1, 6).reduce((a, b) => a + b, 0); // Mon-Fri
+  const weekendCount = daysOfWeek[0] + daysOfWeek[6]; // Sat-Sun
+  const weekendRatio = weekdayCount + weekendCount > 0 
+    ? Math.round((weekendCount / (weekdayCount + weekendCount)) * 100) 
+    : 0;
+  
+  // Convert to arrays
+  const oldTopics = Object.entries(topicsOverTime.old)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([topic, count]) => ({ topic, count }));
+  
+  const recentTopics = Object.entries(topicsOverTime.recent)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([topic, count]) => ({ topic, count }));
+  
+  // Build monthly trend
+  const monthlyTrend = Object.entries(monthlyData).map(([key, count]) => {
+    const [year, month] = key.split('-');
+    const date = new Date(year, parseInt(month) - 1, 1);
+    return {
+      month: date.toLocaleString('default', { month: 'short' }),
+      count,
+      date
+    };
+  });
+  
+  // Calculate trend direction
+  const firstHalf = monthlyTrend.slice(0, 6).reduce((sum, m) => sum + (m.count ?? 0), 0);
+  const secondHalf = monthlyTrend.slice(6).reduce((sum, m) => sum + (m.count ?? 0), 0);
+  const trendDirection = ((secondHalf - firstHalf) / (firstHalf || 1)) * 100;
+  
+  return {
+    topicsOld: oldTopics,
+    topicsRecent: recentTopics,
+    monthlyTrend,
+    trendDirection: Math.round(trendDirection),
+    nightOwlScore: calculateNightOwlScore(conversations),
+    marathonConvos: marathonCount,
+    quickConvos: quickCount,
+    mostProductiveDay: mostProductiveDay || 'Monday',
+    weekendRatio: weekendRatio
+  };
+}
+
+function calculateNightOwlScore(conversations) {
+  const nightHours = [22, 23, 0, 1, 2, 3, 4, 5]; // 10 PM - 5 AM
+  let nightMessages = 0;
+  let totalMessages = 0;
+  
+  for (const conv of conversations) {
+    const messages = conv.mapping ? Object.values(conv.mapping) : [];
+    for (const node of messages) {
+      if (!node.message || node.message.author?.role !== 'user') continue;
+      totalMessages++;
+      
+      if (node.message.create_time) {
+        const hour = new Date(node.message.create_time * 1000).getHours();
+        if (nightHours.includes(hour)) nightMessages++;
+      }
+    }
+  }
+  
+  return totalMessages > 0 ? Math.round((nightMessages / totalMessages) * 100) : 0;
+}
+
+function extractTopWords(conversations) {
+  const wordFreq = {};
+  const stopwords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'is', 'are', 'was', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could', 'should', 'may', 'might', 'must', 'can', 'this', 'that', 'these', 'those', 'i', 'you', 'he', 'she', 'it', 'we', 'they', 'what', 'which', 'who', 'when', 'where', 'why', 'how']);
+  
+  for (const conv of conversations) {
+    const title = (conv.title || '').toLowerCase();
+    const words = title.split(/\W+/).filter(w => w.length > 3 && !stopwords.has(w));
+    
+    for (const word of words) {
+      wordFreq[word] = (wordFreq[word] || 0) + 1;
+    }
+    
+    const messages = conv.mapping ? Object.values(conv.mapping) : [];
+    for (const node of messages) {
+      if (!node.message || node.message.author?.role !== 'user') continue;
+      const text = node.message.content?.parts?.join(' ') || '';
+      const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 4 && !stopwords.has(w));
+      
+      for (const word of words) {
+        wordFreq[word] = (wordFreq[word] || 0) + 1;
+      }
+    }
+  }
+  
+  return Object.entries(wordFreq)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10)
+    .map(([word, count]) => ({ word, count }));
+}
+
+function generateDiscoveredThemes(stats, conversations) {
+  // Create semantic themes based on conversation patterns
+  const themePatterns = {
+    'Learning & Education': /learn|tutorial|explain|how|understand|teach|course|study|guide/i,
+    'Creative Writing': /write|article|blog|story|narrative|script|poem|fiction|novel/i,
+    'Technical Architecture': /architecture|design|system|pattern|structure|framework|implementation/i,
+    'Business & Entrepreneurship': /business|startup|entrepreneurship|company|team|management|leadership|strategy/i,
+    'AI Image Generation': /image|visual|generate|dall|midjourney|artwork|design|creative/i,
+    'Career & Growth': /career|job|interview|resume|opportunity|growth|skill|development|promotion/i,
+    'Productivity & Organization': /productivity|organize|organize|todo|task|schedule|plan|time management/i,
+    'Personal Life': /personal|relationship|family|health|hobby|lifestyle|hobby|interest/i
+  };
+  
+  const themeCounts = {};
+  
+  for (const conv of conversations) {
+    const title = conv.title || '';
+    const messages = conv.mapping ? Object.values(conv.mapping) : [];
+    let messageText = title;
+    
+    for (const node of messages) {
+      if (node.message?.content?.parts) {
+        messageText += ' ' + node.message.content.parts.join(' ');
+      }
+    }
+    
+    for (const [themeName, pattern] of Object.entries(themePatterns)) {
+      if (pattern.test(messageText)) {
+        themeCounts[themeName] = (themeCounts[themeName] || 0) + messages.length;
+      }
+    }
+  }
+  
+  // Convert to array and sort by count
+  return Object.entries(themeCounts)
+    .map(([name, messageCount]) => ({ name, messageCount }))
+    .sort((a, b) => b.messageCount - a.messageCount)
+    .slice(0, 6);
+}
+
+function generateHeatmapData(conversations) {
+  // Build daily activity breakdown for heatmap
+  const dailyActivity = {};
+  let earliestDate = new Date();
+  let latestDate = new Date();
+  let messagesByHour = new Array(24).fill(0);
+  let busiestDay = { date: null, count: 0 };
+  let maxCount = 0;
+  
+  for (const conv of conversations) {
+    const messages = conv.mapping ? Object.values(conv.mapping) : [];
+    for (const node of messages) {
+      if (!node.message || node.message.author?.role !== 'user') continue;
+      
+      const timestamp = node.message.metadata?.timestamp ?? node.message.create_time;
+      if (!timestamp) continue;
+      
+      const date = new Date(timestamp * 1000);
+      const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD
+      const hour = date.getHours();
+      
+      dailyActivity[dateKey] = (dailyActivity[dateKey] || 0) + 1;
+      messagesByHour[hour]++;
+      
+      // Track busiest day
+      if (dailyActivity[dateKey] > busiestDay.count) {
+        busiestDay = { date: dateKey, count: dailyActivity[dateKey] };
+        maxCount = dailyActivity[dateKey];
+      }
+      
+      if (date < earliestDate) earliestDate = date;
+      if (date > latestDate) latestDate = date;
+    }
+  }
+  
+  // If no data, return empty structure with safe defaults
+  if (Object.keys(dailyActivity).length === 0) {
+    return {
+      stats: {
+        activeDays: 0,
+        longestStreak: 0,
+        totalDays: 1,
+        activityRate: 0,
+        hoursWithActivity: 0,
+        averageMessagesPerDay: 0,
+        busiestDay: null,
+        maxCount: 1
+      },
+      days: [],
+      hourlyDistribution: messagesByHour,
+      peakHours: []
+    };
+  }
+  
+  // Convert to continuous day range (ensures weeks render correctly)
+  const days = [];
+  const start = new Date(earliestDate);
+  const end = new Date(latestDate);
+  start.setHours(0, 0, 0, 0);
+  end.setHours(0, 0, 0, 0);
+  
+  for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+    const dateKey = d.toISOString().split('T')[0];
+    const count = dailyActivity[dateKey] || 0;
+    maxCount = Math.max(maxCount, count);
+    days.push({
+      date: new Date(d),
+      dateStr: dateKey,
+      count,
+      dayOfWeek: d.getDay()
+    });
+  }
+  
+  // Calculate streak (consecutive days with activity)
+  let longestStreak = 0;
+  let currentStreak = 0;
+  let activeDays = 0;
+  
+  for (const day of days) {
+    if (day.count > 0) {
+      activeDays++;
+      currentStreak++;
+      longestStreak = Math.max(longestStreak, currentStreak);
+    } else {
+      currentStreak = 0;
+    }
+  }
+  
+  const totalDays = Math.max(1, days.length);
+  const activityRate = Math.round((activeDays / totalDays) * 100);
+  
+  return {
+    stats: {
+      activeDays,
+      longestStreak,
+      totalDays,
+      activityRate,
+      hoursWithActivity: messagesByHour.filter(h => h > 0).length,
+      averageMessagesPerDay: Math.round(Object.values(dailyActivity).reduce((a, b) => a + b, 0) / Math.max(activeDays, 1)),
+      busiestDay: busiestDay.date ? { date: busiestDay.date, count: busiestDay.count } : null,
+      maxCount: Math.max(maxCount, 1)
+    },
+    days: days.slice(-365), // Last 365 days
+    hourlyDistribution: messagesByHour,
+    peakHours: messagesByHour
+      .map((count, hour) => ({ hour, count }))
+      .filter(h => h.count > 0)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+  };
+}
+
+function generateDataInsights(stats, conversations) {
+  // Determine primary obsession from topic distribution
+  const topTopic = stats.topics && stats.topics.length > 0 ? stats.topics[0][0] : 'technology';
+  const topicCount = stats.topics && stats.topics.length > 0 ? stats.topics[0][1] : 0;
+  const totalConvs = stats.totalConversations || 1;
+  const totalMsgs = stats.totalMessages || 1;
+  const avgMsgsPerConv = Math.round(totalMsgs / totalConvs);
+  
+  // Get session data
+  const enhanced = stats.enhanced || {};
+  const marathonCount = enhanced.marathonConvos || 0;
+  const quickCount = enhanced.quickConvos || 0;
+  const nightOwl = enhanced.nightOwlScore || 0;
+  
+  // Generate contextual roasts based on actual usage patterns
+  const generateContextualRoast = () => {
+    const roastPool = [];
+    
+    if (marathonCount > 0) {
+      roastPool.push(`You logged ${marathonCount} marathon sessions. That's not a chat, that's a lifestyle.`);
+      roastPool.push(`${marathonCount} deep dives? At this point ChatGPT should be on your payroll.`);
+    }
+    if (quickCount > 0) {
+      roastPool.push(`${quickCount} quick chats out of ${totalConvs}. You treat ChatGPT like a search bar with feelings.`);
+      roastPool.push(`Your short chats are efficient. Your long chats are... rare.`);
+    }
+    if (nightOwl > 35) {
+      roastPool.push(`${nightOwl}% of your messages land after 10 PM. Sleep is optional, apparently.`);
+      roastPool.push(`Night‑owl ratio: ${nightOwl}%. You and ChatGPT are in a committed late‑night relationship.`);
+    }
+    if (avgMsgsPerConv < 6) {
+      roastPool.push(`Average ${avgMsgsPerConv} messages per conversation. Blink and it's over.`);
+    }
+    if (totalConvs > 300) {
+      roastPool.push(`${totalConvs} conversations and you're still "just exploring". Sure.`);
+    }
+    
+    const topicRoasts = {
+      coding: `You ask ChatGPT to debug your code more than you run your tests.`,
+      writing: `You've rewritten the same sentence with ChatGPT's help at least 47 times.`,
+      learning: `Your learning backlog is impressive. Your implementation backlog is larger.`,
+      planning: `You plan in ChatGPT. You execute... with reminders from ChatGPT.`,
+      creative: `You have amazing ideas, but finishing them? That's the optional DLC.`
+    };
+    roastPool.push(topicRoasts[topTopic] || `You use ChatGPT for everything, which is great but also... you use it for everything.`);
+    
+    const index = Math.abs(totalMsgs + totalConvs + marathonCount - quickCount) % roastPool.length;
+    return roastPool[index];
+  };
+  
+  // Generate contextual compliments
+  const generateContextualCompliment = () => {
+    const complimentPool = [];
+    
+    if (marathonCount > 5) {
+      complimentPool.push(`Your long‑form sessions show real depth and persistence.`);
+      complimentPool.push(`You stick with problems until they break. That's rare.`);
+    }
+    if (avgMsgsPerConv >= 10) {
+      complimentPool.push(`Average ${avgMsgsPerConv} messages per conversation means you actually explore ideas.`);
+    }
+    if (nightOwl > 30) {
+      complimentPool.push(`Late‑night energy, high‑quality questions. Your focus is strong.`);
+    }
+    if (totalConvs > 150) {
+      complimentPool.push(`You consistently show up and ask better questions. That compounds fast.`);
+    }
+    
+    const topicCompliments = {
+      coding: `Your technical depth and problem‑solving approach show real mastery.`,
+      writing: `Your attention to detail in language and communication is genuinely impressive.`,
+      learning: `Your constant drive to understand and grow is the hallmark of a true learner.`,
+      planning: `Your strategic thinking and ability to organize your thoughts is exceptional.`,
+      creative: `Your willingness to experiment and explore new ideas is inspiring.`
+    };
+    complimentPool.push(topicCompliments[topTopic] || `Your conversations show genuine curiosity and thoughtfulness.`);
+    
+    const index = Math.abs(totalMsgs + totalConvs + quickCount) % complimentPool.length;
+    return complimentPool[index];
+  };
+  
+  const topicDescriptions = {
+    coding: 'JavaScript, React, and APIs are your favorite tools. You\'re constantly solving technical problems.',
+    writing: 'You love crafting emails, articles, and creative content. Communication is your strength.',
+    learning: 'You\'re a knowledge seeker. You ask great questions and love understanding how things work.',
+    planning: 'You\'re strategically minded. You think ahead and organize your projects well.',
+    creative: 'You explore creative and artistic ideas with ChatGPT.'
+  };
+  
+  const spiritAnimals = {
+    coding: { animal: 'owl', reason: 'Night owl who debugs at 3 AM' },
+    writing: { animal: 'peacock', reason: 'Expressing yourself with flair' },
+    learning: { animal: 'dolphin', reason: 'Curious and intelligent explorer' },
+    planning: { animal: 'beaver', reason: 'Building structures with intent' },
+    creative: { animal: 'phoenix', reason: 'Creating and iterating endlessly' }
+  };
+  
+  const personalities = {
+    coding: { title: 'The Architect', subtitle: 'Building logic, one function at a time' },
+    writing: { title: 'The Wordsmith', subtitle: 'Crafting the perfect phrase' },
+    learning: { title: 'The Scholar', subtitle: 'Perpetually curious and questioning' },
+    planning: { title: 'The Strategist', subtitle: 'Always thinking three steps ahead' },
+    creative: { title: 'The Creator', subtitle: 'Bringing ideas to life' }
+  };
+  
+  const roastText = generateContextualRoast();
+  const complimentText = generateContextualCompliment();
+  
+  return {
+    // Obsession slide specific
+    topObsession: {
+      topic: topTopic,
+      count: topicCount,
+      roast: roastText
+    },
+    
+    // Verdict slide specific (roast + compliment)
+    oneLineRoast: roastText,
+    compliment: complimentText,
+    
+    // DNA Identity slide specific
+    personality: personalities[topTopic] || { title: 'The Seeker', subtitle: 'Multi-disciplinary explorer' },
+    spiritAnimal: spiritAnimals[topTopic] || { animal: 'owl', reason: 'Wise and observant' },
+    
+    // General insights
+    profileSummary: `Based on ${stats.totalConversations} conversations and ${stats.totalMessages} messages, you're deeply engaged with ChatGPT.`,
+    obsession: topTopic,
+    obsessionDetail: topicDescriptions[topTopic] || 'You\'re a multi-disciplinary explorer.',
+    hiddenTheme: 'You\'re driven by curiosity and the desire to understand and create.',
+    questionStyle: 'You ask thoughtful, specific questions that show genuine engagement.',
+    roastPoint: roastText,
+    complimentPoint: complimentText,
+    trendInsight: `Your ${stats.totalConversations} conversations show you\'re actively using ChatGPT as a thinking tool.`,
+    achievements: ['Conversation Explorer', 'Curious Mind', 'AI Companion User']
+  };
 }
 
 function generateSampleConversations() {

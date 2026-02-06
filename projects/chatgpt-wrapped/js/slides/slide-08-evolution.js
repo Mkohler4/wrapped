@@ -133,14 +133,15 @@ function renderEvolutionChart(monthlyData, peakMonth = null) {
   const chartHeight = height - padding.top - padding.bottom;
   
   // Get values and find max
-  const values = monthlyData.map(d => d.count);
+  const values = monthlyData.map(d => d.count ?? d.conversations ?? 0);
   const maxValue = Math.max(...values, 1);
   const minValue = Math.min(...values);
   
   // Generate points
   const points = monthlyData.map((d, i) => {
     const x = padding.left + (i / (monthlyData.length - 1)) * chartWidth;
-    const y = padding.top + chartHeight - ((d.count - minValue) / (maxValue - minValue || 1)) * chartHeight;
+    const value = d.count ?? d.conversations ?? 0;
+    const y = padding.top + chartHeight - ((value - minValue) / (maxValue - minValue || 1)) * chartHeight;
     return { x, y, data: d, index: i };
   });
   
@@ -190,7 +191,7 @@ function renderEvolutionChart(monthlyData, peakMonth = null) {
   axisContainer.innerHTML = monthlyData
     .filter((_, i) => i % labelInterval === 0 || i === monthlyData.length - 1)
     .map((d, i, arr) => {
-      const date = new Date(d.month + '-01');
+      const date = d.date ? new Date(d.date) : new Date(d.month + '-01');
       const label = date.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
       const isLast = i === arr.length - 1;
       return `<span class="evolution-axis-label ${isLast ? 'highlight' : ''}">${label}</span>`;
@@ -221,11 +222,12 @@ function renderEvolutionChart(monthlyData, peakMonth = null) {
     hoverLine.style.display = 'block';
     
     // Update tooltip
-    const date = new Date(nearestPoint.data.month + '-01');
-    const monthLabel = date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const rawDate = nearestPoint.data.date ? new Date(nearestPoint.data.date) : new Date(nearestPoint.data.month + '-01');
+    const monthLabel = rawDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
     
     document.getElementById('tooltipMonth').textContent = monthLabel;
-    document.getElementById('tooltipValue').textContent = `${nearestPoint.data.count.toLocaleString()} messages`;
+    const value = nearestPoint.data.count ?? nearestPoint.data.conversations ?? 0;
+    document.getElementById('tooltipValue').textContent = `${value.toLocaleString()} messages`;
     
     // Show top topics if available
     const topicsEl = document.getElementById('tooltipTopics');
@@ -445,8 +447,10 @@ async function changeEvolutionRange(range) {
     }
     
     if (fromDate) {
-      const fromStr = fromDate.toISOString().slice(0, 7); // YYYY-MM
-      filteredData = fullMonthlyData.filter(d => d.month >= fromStr);
+      filteredData = fullMonthlyData.filter(d => {
+        const dDate = d.date ? new Date(d.date) : new Date(d.month + '-01');
+        return dDate >= fromDate;
+      });
     }
   }
   
@@ -473,8 +477,8 @@ function updateEvolutionHeadline(monthlyData) {
   const firstHalf = monthlyData.slice(0, midpoint);
   const secondHalf = monthlyData.slice(midpoint);
   
-  const firstAvg = firstHalf.reduce((a, b) => a + b.count, 0) / (firstHalf.length || 1);
-  const secondAvg = secondHalf.reduce((a, b) => a + b.count, 0) / (secondHalf.length || 1);
+  const firstAvg = firstHalf.reduce((a, b) => a + (b.count ?? b.conversations ?? 0), 0) / (firstHalf.length || 1);
+  const secondAvg = secondHalf.reduce((a, b) => a + (b.count ?? b.conversations ?? 0), 0) / (secondHalf.length || 1);
   
   const trendPct = firstAvg > 0 ? Math.round((secondAvg - firstAvg) / firstAvg * 100) : 0;
   
@@ -492,9 +496,11 @@ function updateEvolutionHeadline(monthlyData) {
   
   // Generate a dynamic subtitle
   if (subtitleEl) {
-    const totalMsgs = monthlyData.reduce((a, b) => a + b.count, 0);
-    const startDate = new Date(monthlyData[0].month + '-01');
-    const endDate = new Date(monthlyData[monthlyData.length - 1].month + '-01');
+    const totalMsgs = monthlyData.reduce((a, b) => a + (b.count ?? b.conversations ?? 0), 0);
+    const startDate = monthlyData[0].date ? new Date(monthlyData[0].date) : new Date(monthlyData[0].month + '-01');
+    const endDate = monthlyData[monthlyData.length - 1].date
+      ? new Date(monthlyData[monthlyData.length - 1].date)
+      : new Date(monthlyData[monthlyData.length - 1].month + '-01');
     const startLabel = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     const endLabel = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     
