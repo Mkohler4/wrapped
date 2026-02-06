@@ -39,35 +39,24 @@ class SceneMessages extends SceneBase {
     
     // Animation state
     this.numberScale = 1;
-    this.slideX = -100; // Slide in from left
-    this.slideOpacity = 0;
+    this.contentOpacity = 0;
   }
 
   setupAnimations() {
     const duration = this.timeline.duration;
     
-    // Slide in animation
-    this.createTween({
-      from: -100,
-      to: 0,
-      duration: 600,
-      easing: Easing.easeOutCubic,
-      onUpdate: (v) => { this.slideX = v; },
-    });
-    
+    // Fade in animation (no slide - keeps number centered while counting)
     this.createTween({
       from: 0,
       to: 1,
       duration: 400,
       easing: Easing.easeOutCubic,
-      onUpdate: (v) => { this.slideOpacity = v; },
+      onUpdate: (v) => { this.contentOpacity = v; },
     });
     
-    // Start counter after slide
-    setTimeout(() => {
-      this.counter.start(performance.now());
-      this.labelReveal.start(performance.now());
-    }, 300);
+    // Start counter immediately
+    this.counter.start(performance.now());
+    this.labelReveal.start(performance.now());
     
     // Number scale pulse when counter completes
     this.counter.onComplete = () => {
@@ -134,10 +123,9 @@ class SceneMessages extends SceneBase {
       outerRadius: this.height * 0.6,
     });
     
-    // Apply slide transform
+    // Apply fade (no slide - number stays centered while counting up)
     ctx.save();
-    ctx.translate(this.slideX, 0);
-    ctx.globalAlpha = this.slideOpacity;
+    ctx.globalAlpha = this.contentOpacity;
     
     // Draw the big number
     this.drawNumber(ctx);

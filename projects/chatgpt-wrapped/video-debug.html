@@ -15,13 +15,17 @@
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
       background: #0d0d0d;
       color: #ffffff;
-      min-height: 100vh;
+      height: 100vh;
       padding: 20px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
+      flex-shrink: 0;
     }
     
     .header h1 {
@@ -40,11 +44,15 @@
       margin: 0 auto;
       display: flex;
       gap: 30px;
+      flex: 1;
+      min-height: 0; /* Allow container to shrink */
+      overflow: hidden;
     }
     
     .sidebar {
       width: 250px;
       flex-shrink: 0;
+      overflow-y: auto;
     }
     
     .scene-list {
@@ -104,6 +112,9 @@
     
     .main {
       flex: 1;
+      min-width: 0; /* Allow flex item to shrink */
+      display: flex;
+      flex-direction: column;
     }
     
     .canvas-container {
@@ -114,20 +125,38 @@
       background: #000;
       border-radius: 16px;
       padding: 20px;
-      min-height: 600px;
+      flex: 1;
+      min-height: 300px;
+      max-height: 500px;
+      overflow: hidden;
+    }
+    
+    .canvas-wrapper {
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100%;
+      width: 100%;
     }
     
     #previewCanvas {
-      max-width: 100%;
       border-radius: 8px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      /* Scale to fit container while maintaining aspect ratio */
+      max-height: 100%;
+      max-width: 100%;
+      width: auto;
+      height: auto;
     }
+    
     
     .controls {
       display: flex;
       justify-content: center;
       gap: 12px;
-      margin-top: 20px;
+      margin-top: 12px;
+      flex-shrink: 0;
     }
     
     .control-btn {
@@ -159,8 +188,9 @@
     .format-toggle {
       display: flex;
       gap: 8px;
-      margin-top: 20px;
+      margin-top: 12px;
       justify-content: center;
+      flex-shrink: 0;
     }
     
     .format-btn {
@@ -184,51 +214,6 @@
       color: #fff;
     }
     
-    .scene-info {
-      background: #1a1a1a;
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 20px;
-    }
-    
-    .scene-info h3 {
-      font-size: 16px;
-      margin-bottom: 12px;
-      color: #10a37f;
-    }
-    
-    .scene-info p {
-      color: #888;
-      font-size: 13px;
-      line-height: 1.6;
-    }
-    
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-top: 16px;
-    }
-    
-    .stat {
-      background: #252525;
-      padding: 12px;
-      border-radius: 8px;
-      text-align: center;
-    }
-    
-    .stat-value {
-      font-size: 20px;
-      font-weight: bold;
-      color: #10a37f;
-    }
-    
-    .stat-label {
-      font-size: 11px;
-      color: #666;
-      text-transform: uppercase;
-      margin-top: 4px;
-    }
     
     .loading {
       position: absolute;
@@ -243,10 +228,11 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-top: 16px;
-      padding: 12px;
+      margin-top: 12px;
+      padding: 10px 12px;
       background: #1a1a1a;
       border-radius: 8px;
+      flex-shrink: 0;
     }
     
     .time-slider {
@@ -273,9 +259,49 @@
       font-variant-numeric: tabular-nums;
       min-width: 80px;
     }
+    
+    .control-btn.play-all {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      border-color: #764ba2;
+    }
+    
+    .control-btn.play-all:hover {
+      background: linear-gradient(135deg, #764ba2, #667eea);
+    }
+    
+    .control-btn.play-all.active {
+      background: linear-gradient(135deg, #ee0979, #ff6a00);
+      border-color: #ee0979;
+      animation: pulse-glow 1.5s infinite;
+    }
+    
+    @keyframes pulse-glow {
+      0%, 100% { box-shadow: 0 0 5px rgba(238, 9, 121, 0.5); }
+      50% { box-shadow: 0 0 20px rgba(238, 9, 121, 0.8); }
+    }
+    
+    .play-all-indicator {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(238, 9, 121, 0.9);
+      color: white;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 14px;
+      z-index: 1000;
+      display: none;
+    }
+    
+    .play-all-indicator.visible {
+      display: block;
+    }
   </style>
 </head>
 <body>
+  <div class="play-all-indicator" id="playAllIndicator">Playing: Scene 1/10</div>
+  
   <div class="header">
     <h1>🎬 Video Scene Debug</h1>
     <p>Preview individual scenes for design review</p>
@@ -297,49 +323,39 @@
         <button class="scene-btn" data-scene="topics" onclick="selectScene('topics', this)">
           <span class="scene-num">4</span> Topics
         </button>
+        <button class="scene-btn" data-scene="heatmap" onclick="selectScene('heatmap', this)">
+          <span class="scene-num">5</span> Heatmap
+        </button>
+        <button class="scene-btn" data-scene="gallery" onclick="selectScene('gallery', this)">
+          <span class="scene-num">6</span> Gallery
+        </button>
         <button class="scene-btn" data-scene="journey" onclick="selectScene('journey', this)">
-          <span class="scene-num">5</span> Journey
+          <span class="scene-num">7</span> Journey
         </button>
         <button class="scene-btn" data-scene="personality" onclick="selectScene('personality', this)">
-          <span class="scene-num">6</span> Personality
+          <span class="scene-num">8</span> Personality
         </button>
         <button class="scene-btn" data-scene="achievements" onclick="selectScene('achievements', this)">
-          <span class="scene-num">7</span> Achievements
+          <span class="scene-num">9</span> Achievements
         </button>
         <button class="scene-btn" data-scene="outro" onclick="selectScene('outro', this)">
-          <span class="scene-num">8</span> Outro
+          <span class="scene-num">10</span> Outro
         </button>
-      </div>
-      
-      <div class="scene-info">
-        <h3 id="sceneTitle">Intro Scene</h3>
-        <p id="sceneDescription">The opening scene with "Your Year with ChatGPT" title and animated text reveal.</p>
-        <div class="stats">
-          <div class="stat">
-            <div class="stat-value" id="sceneDuration">3.5s</div>
-            <div class="stat-label">Duration</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value" id="sceneElements">4</div>
-            <div class="stat-label">Elements</div>
-          </div>
-          <div class="stat">
-            <div class="stat-value" id="sceneEffects">2</div>
-            <div class="stat-label">Effects</div>
-          </div>
-        </div>
       </div>
     </div>
     
     <div class="main">
       <div class="canvas-container">
         <div class="loading" id="loading">Loading scene...</div>
-        <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+        <div class="canvas-wrapper">
+          <canvas id="previewCanvas" width="1080" height="1920"></canvas>
+        </div>
       </div>
       
       <div class="format-toggle">
-        <button class="format-btn active" onclick="setFormat('portrait', this)">📱 Portrait (9:16)</button>
-        <button class="format-btn" onclick="setFormat('square', this)">⬜ Square (1:1)</button>
+        <button class="format-btn active" onclick="setFormat('portrait', this)">📱 Portrait 9:16</button>
+        <button class="format-btn" onclick="setFormat('square', this)">⬜ Square 1:1</button>
+        <button class="format-btn" onclick="setFormat('landscape', this)">🖥️ Landscape 16:9</button>
       </div>
       
       <div class="time-controls">
@@ -353,6 +369,7 @@
         <button class="control-btn primary" id="playPauseBtn" onclick="togglePlayPause()">▶ Play</button>
         <button class="control-btn" onclick="prevScene()">← Prev</button>
         <button class="control-btn" onclick="nextScene()">Next →</button>
+        <button class="control-btn play-all" id="playAllBtn" onclick="togglePlayAll()">🎬 Play All</button>
       </div>
     </div>
   </div>
@@ -368,6 +385,8 @@
   <script src="js/video/scenes/scene-conversations.js"></script>
   <script src="js/video/scenes/scene-messages.js"></script>
   <script src="js/video/scenes/scene-topics.js"></script>
+  <script src="js/video/scenes/scene-heatmap.js"></script>
+  <script src="js/video/scenes/scene-gallery.js"></script>
   <script src="js/video/scenes/scene-journey.js"></script>
   <script src="js/video/scenes/scene-personality.js"></script>
   <script src="js/video/scenes/scene-achievements.js"></script>
@@ -403,6 +422,20 @@
         duration: 5000,
         elements: 6,
         effects: 2
+      },
+      heatmap: {
+        title: 'Heatmap Scene',
+        description: 'GitHub-style activity calendar showing daily ChatGPT usage patterns.',
+        duration: 5000,
+        elements: 8,
+        effects: 3
+      },
+      gallery: {
+        title: 'Gallery Scene',
+        description: 'Scrolling angled image gallery showcasing AI-generated creations.',
+        duration: 5000,
+        elements: 6,
+        effects: 4
       },
       journey: {
         title: 'Journey Scene',
@@ -482,6 +515,61 @@
       engagement: {
         totalConversations: 847,
         totalMessages: 12543
+      },
+      // Heatmap data - FULL YEAR 2025
+      heatmap: (() => {
+        const days = [];
+        // Use 2025 as a complete year for demo
+        const startDate = new Date(2025, 0, 1); // Jan 1, 2025
+        const endDate = new Date(2025, 11, 31); // Dec 31, 2025
+        let activeDays = 0;
+        let maxCount = 0;
+        let currentStreak = 0;
+        let longestStreak = 0;
+        let busiestDay = null;
+        
+        for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+          const dayOfWeek = d.getDay();
+          const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+          const count = Math.random() < (isWeekend ? 0.45 : 0.75) ? Math.floor(Math.random() * 50) + 1 : 0;
+          
+          days.push({
+            date: d.toISOString().split('T')[0],
+            count,
+            dayOfWeek,
+          });
+          
+          if (count > 0) {
+            activeDays++;
+            currentStreak++;
+            if (currentStreak > longestStreak) longestStreak = currentStreak;
+          } else {
+            currentStreak = 0;
+          }
+          
+          if (count > maxCount) {
+            maxCount = count;
+            busiestDay = { date: d.toISOString().split('T')[0], count };
+          }
+        }
+        
+        return {
+          days,
+          stats: {
+            activeDays,
+            totalDays: days.length,
+            longestStreak,
+            activityRate: Math.round((activeDays / days.length) * 100),
+            maxCount,
+            busiestDay,
+          }
+        };
+      })(),
+      // Gallery data
+      gallery: {
+        total: 847,
+        generated: 312,
+        uploaded: 535,
       }
     };
 
@@ -494,6 +582,11 @@
     let startTime = 0;
     let pausedTime = 0;
     let canvas, ctx;
+    
+    // Play All state
+    let playAllMode = false;
+    let playAllSceneIndex = 0;
+    const sceneOrder = ['intro', 'conversations', 'messages', 'topics', 'heatmap', 'gallery', 'journey', 'personality', 'achievements', 'outro'];
 
     // Scene classes map (classes are named Scene<Name>)
     const sceneClasses = {
@@ -501,6 +594,8 @@
       conversations: typeof SceneConversations !== 'undefined' ? SceneConversations : null,
       messages: typeof SceneMessages !== 'undefined' ? SceneMessages : null,
       topics: typeof SceneTopics !== 'undefined' ? SceneTopics : null,
+      heatmap: typeof SceneHeatmap !== 'undefined' ? SceneHeatmap : null,
+      gallery: typeof SceneGallery !== 'undefined' ? SceneGallery : null,
       journey: typeof SceneJourney !== 'undefined' ? SceneJourney : null,
       personality: typeof ScenePersonality !== 'undefined' ? ScenePersonality : null,
       achievements: typeof SceneAchievements !== 'undefined' ? SceneAchievements : null,
@@ -525,13 +620,8 @@
       document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
       if (btn) btn.classList.add('active');
       
-      // Update info panel
+      // Update time display
       const info = sceneInfo[sceneId];
-      document.getElementById('sceneTitle').textContent = info.title;
-      document.getElementById('sceneDescription').textContent = info.description;
-      document.getElementById('sceneDuration').textContent = (info.duration / 1000).toFixed(1) + 's';
-      document.getElementById('sceneElements').textContent = info.elements;
-      document.getElementById('sceneEffects').textContent = info.effects;
       document.getElementById('totalTime').textContent = '/ ' + (info.duration / 1000).toFixed(1) + 's';
       
       // Reset slider
@@ -558,11 +648,11 @@
         ctx.fillStyle = '#0d0d0d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#10a37f';
-        ctx.font = 'bold 48px Inter, sans-serif';
+        ctx.font = `bold ${Math.round(canvas.width * 0.044)}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(`Scene: ${sceneId}`, canvas.width / 2, canvas.height / 2);
         ctx.fillStyle = '#888';
-        ctx.font = '24px Inter, sans-serif';
+        ctx.font = `${Math.round(canvas.width * 0.022)}px Inter, sans-serif`;
         ctx.fillText('(Class not loaded)', canvas.width / 2, canvas.height / 2 + 50);
         console.log(`Scene class "${sceneId}" not found`);
         return;
@@ -602,13 +692,13 @@
         
         // Render first frame
         renderFrame(0);
-        console.log(`Scene "${sceneId}" initialized successfully`);
+        console.log(`Scene "${sceneId}" initialized successfully (${canvas.width}×${canvas.height})`);
       } catch (error) {
         console.error(`Error initializing scene "${sceneId}":`, error);
         ctx.fillStyle = '#0d0d0d';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.fillStyle = '#ff5555';
-        ctx.font = 'bold 32px Inter, sans-serif';
+        ctx.font = `bold ${Math.round(canvas.width * 0.03)}px Inter, sans-serif`;
         ctx.textAlign = 'center';
         ctx.fillText(`Error: ${error.message}`, canvas.width / 2, canvas.height / 2);
       }
@@ -646,8 +736,30 @@
       if (elapsed >= duration) {
         // Scene complete
         renderFrame(duration);
-        isPlaying = false;
-        updatePlayPauseBtn();
+        
+        if (playAllMode) {
+          // Move to next scene
+          playAllSceneIndex++;
+          if (playAllSceneIndex < sceneOrder.length) {
+            // Transition to next scene
+            const nextSceneId = sceneOrder[playAllSceneIndex];
+            const btn = document.querySelector(`[data-scene="${nextSceneId}"]`);
+            selectScene(nextSceneId, btn);
+            updatePlayAllIndicator();
+            
+            // Continue playing
+            startTime = 0;
+            pausedTime = 0;
+            isPlaying = true;
+            animationFrame = requestAnimationFrame(animate);
+          } else {
+            // All scenes complete
+            stopPlayAll();
+          }
+        } else {
+          isPlaying = false;
+          updatePlayPauseBtn();
+        }
         return;
       }
       
@@ -702,6 +814,61 @@
       
       renderFrame(time);
     }
+    
+    function togglePlayAll() {
+      if (playAllMode) {
+        stopPlayAll();
+      } else {
+        startPlayAll();
+      }
+    }
+    
+    function startPlayAll() {
+      playAllMode = true;
+      playAllSceneIndex = 0;
+      
+      // Update UI
+      document.getElementById('playAllBtn').classList.add('active');
+      document.getElementById('playAllBtn').textContent = '⏹ Stop All';
+      document.getElementById('playAllIndicator').classList.add('visible');
+      
+      // Start from first scene
+      const firstSceneId = sceneOrder[0];
+      const btn = document.querySelector(`[data-scene="${firstSceneId}"]`);
+      selectScene(firstSceneId, btn);
+      updatePlayAllIndicator();
+      
+      // Start playing
+      isPlaying = true;
+      startTime = 0;
+      pausedTime = 0;
+      updatePlayPauseBtn();
+      animationFrame = requestAnimationFrame(animate);
+    }
+    
+    function stopPlayAll() {
+      playAllMode = false;
+      isPlaying = false;
+      
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+        animationFrame = null;
+      }
+      
+      // Update UI
+      document.getElementById('playAllBtn').classList.remove('active');
+      document.getElementById('playAllBtn').textContent = '🎬 Play All';
+      document.getElementById('playAllIndicator').classList.remove('visible');
+      updatePlayPauseBtn();
+    }
+    
+    function updatePlayAllIndicator() {
+      const indicator = document.getElementById('playAllIndicator');
+      const sceneNum = playAllSceneIndex + 1;
+      const totalScenes = sceneOrder.length;
+      const sceneName = sceneOrder[playAllSceneIndex];
+      indicator.textContent = `Playing: ${sceneName.charAt(0).toUpperCase() + sceneName.slice(1)} (${sceneNum}/${totalScenes})`;
+    }
 
     function prevScene() {
       const scenes = Object.keys(sceneInfo);
@@ -726,14 +893,16 @@
       document.querySelectorAll('.format-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       
-      // Update canvas size
-      if (format === 'portrait') {
-        canvas.width = 1080;
-        canvas.height = 1920;
-      } else {
-        canvas.width = 1080;
-        canvas.height = 1080;
-      }
+      // Update canvas size based on format
+      const formats = {
+        portrait: { width: 1080, height: 1920 },  // 9:16 (TikTok, Reels, Shorts)
+        square: { width: 1080, height: 1080 },     // 1:1 (Instagram Feed)
+        landscape: { width: 1920, height: 1080 }   // 16:9 (YouTube, Desktop)
+      };
+      
+      const dimensions = formats[format] || formats.portrait;
+      canvas.width = dimensions.width;
+      canvas.height = dimensions.height;
       
       // Re-initialize scene with new size
       initScene(currentScene);

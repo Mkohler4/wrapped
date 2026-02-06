@@ -17,6 +17,56 @@ let wrappedData = null; // Global store for stats/themes data
 let heatmapData = null; // Global store for heatmap/activity map data
 let heatmapSlideAnimated = false; // Track if heatmap slide has been animated
 
+// Slide animation flags
+let messagesSlideAnimated = false;
+let topicsSlideAnimated = false;
+let timeSlideAnimated = false;
+let themesSlideAnimated = false;
+let obsessionSlideAnimated = false;
+let cosmicRevelationsAnimated = false;
+let gallerySlideAnimated = false;
+let heatmapSlideAnimated = false;
+let verdictSlideAnimated = false;
+let achievementsSlideAnimated = false;
+let wordBubblesSlideAnimated = false;
+let shareSlideAnimated = false;
+
+// Slide data stores
+let messagesSlideData = null;
+let topicsSlideData = null;
+let timeSlideData = null;
+let themesSlideData = null;
+let obsessionSlideData = null;
+let cosmicRevelationsData = null;
+let gallerySlideData = null;
+let galleryCurrentPage = 0;
+let galleryScrollTimeout = null;
+let heatmapData = null;
+let verdictSlideData = null;
+let achievementsSlideData = null;
+let storedTopWords = null;
+
+// Evolution data
+let currentEvolutionData = null;
+let monthlyTrendData = null;
+
+// Floating bubbles
+const loadedEvidence = {}; // Cache loaded evidence
+let floatingBubbleTimers = []; // Track spawned bubble timers
+
+// Theme icons for themes slide
+const themeIcons = {
+  'Business & Entrepreneurship': '💼',
+  'AI Image Generation': '🎨',
+  'Career & Growth': '📈',
+  'Learning & Education': '📚',
+  'Creative Writing': '✍️',
+  'Technical Architecture': '🏗️',
+  'Personal Life': '💭',
+  'Productivity & Organization': '⚡',
+  'default': '💡'
+};
+
 // ============================================
 // INITIALIZATION
 // ============================================
@@ -256,55 +306,8 @@ function analyzeConversations(data) {
 }
 
 // ============================================
-// SLIDES POPULATION
+// UTILITY FUNCTIONS
 // ============================================
-
-/**
- * Slide 1: Conversations - with count-up animation and floating bubbles
- */
-function populateConversationsSlide(s) {
-  const totalConvos = s.totalConversations;
-  const totalConvosEl = document.getElementById('totalConvos');
-  
-  if (!totalConvosEl) return;
-  
-  // Set data target for count-up
-  totalConvosEl.dataset.target = totalConvos;
-  
-  // Calculate contextual stats
-  const firstDate = s.firstDate ? new Date(s.firstDate) : new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
-  const lastDate = s.lastDate ? new Date(s.lastDate) : new Date();
-  const daysDiff = Math.max(1, Math.ceil((lastDate - firstDate) / (1000 * 60 * 60 * 24)));
-  
-  const perDay = (totalConvos / daysDiff).toFixed(1);
-  const perWeek = Math.round(totalConvos / (daysDiff / 7));
-  
-  const perDayEl = document.getElementById('convoPerDay');
-  const perWeekEl = document.getElementById('convoPerWeek');
-  if (perDayEl) perDayEl.textContent = perDay;
-  if (perWeekEl) perWeekEl.textContent = perWeek;
-  
-  // Update bar max label
-  const barMaxEl = document.getElementById('convoBarMax');
-  const maxScale = Math.ceil(totalConvos / 100) * 100;
-  if (barMaxEl) barMaxEl.textContent = maxScale.toLocaleString();
-  
-  // Generate floating bubbles
-  generateConvoBubbles();
-  
-  // Trigger count-up animation when slide becomes visible
-  // Initial count-up happens immediately since it's the first slide
-  setTimeout(() => {
-    animateCountUp(totalConvosEl, totalConvos, 2000);
-    
-    // Animate progress bar
-    const barFill = document.getElementById('convoBarFill');
-    if (barFill) {
-      const fillPercent = Math.min(100, (totalConvos / maxScale) * 100);
-      barFill.style.width = `${fillPercent}%`;
-    }
-  }, 500);
-}
 
 /**
  * Animate a number counting up from 0 to target
@@ -333,547 +336,27 @@ function animateCountUp(element, target, duration = 2000) {
   requestAnimationFrame(update);
 }
 
-/**
- * Generate floating conversation bubbles for background
- */
-function generateConvoBubbles() {
-  const container = document.getElementById('convoBubblesBg');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  const numBubbles = 12;
-  
-  for (let i = 0; i < numBubbles; i++) {
-    const bubble = document.createElement('div');
-    bubble.className = 'convo-bubble';
-    
-    // Random position and timing
-    const left = Math.random() * 90 + 5; // 5% to 95%
-    const delay = Math.random() * 15; // 0-15s delay
-    const duration = 15 + Math.random() * 10; // 15-25s duration
-    
-    bubble.style.left = `${left}%`;
-    bubble.style.animationDelay = `${delay}s`;
-    bubble.style.animationDuration = `${duration}s`;
-    
-    container.appendChild(bubble);
-  }
+function formatHour(h) {
+  if (h === 0) return '12am';
+  if (h === 12) return '12pm';
+  return h > 12 ? `${h - 12}pm` : `${h}am`;
 }
 
-/**
- * Slide 2: Messages - with breakdown and trend
- */
-function populateMessagesSlide(s) {
-  const totalMessages = s.totalMessages;
-  const userMessages = s.userMessages || Math.round(totalMessages * 0.45);
-  const aiMessages = totalMessages - userMessages;
-  
-  const totalMsgEl = document.getElementById('totalMessages');
-  const userMsgEl = document.getElementById('userMsgCount');
-  const aiMsgEl = document.getElementById('aiMsgCount');
-  
-  if (totalMsgEl) totalMsgEl.dataset.target = totalMessages;
-  
-  // Generate streaming message background
-  generateMsgStreamBg();
-  
-  // Animate on slide view (delayed since it's slide 2)
-  // This will be triggered when the slide becomes active
-  messagesSlideData = {
-    total: totalMessages,
-    user: userMessages,
-    ai: aiMessages,
-    monthlyTrend: s.enhanced?.monthlyTrend || []
-  };
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
-let messagesSlideData = null;
-let messagesSlideAnimated = false;
-
-/**
- * Trigger messages slide animations (called when slide becomes visible)
- */
-function animateMessagesSlide() {
-  if (!messagesSlideData || messagesSlideAnimated) return;
-  messagesSlideAnimated = true;
-  
-  const { total, user, ai, monthlyTrend } = messagesSlideData;
-  
-  // Count up total
-  const totalMsgEl = document.getElementById('totalMessages');
-  if (totalMsgEl) {
-    animateCountUp(totalMsgEl, total, 2000);
-  }
-  
-  // Count up breakdown with delay
-  setTimeout(() => {
-    const userMsgEl = document.getElementById('userMsgCount');
-    const aiMsgEl = document.getElementById('aiMsgCount');
-    
-    if (userMsgEl) animateCountUp(userMsgEl, user, 1500);
-    if (aiMsgEl) animateCountUp(aiMsgEl, ai, 1500);
-    
-    // Animate bars
-    const maxCount = Math.max(user, ai);
-    const userBar = document.getElementById('userMsgBar');
-    const aiBar = document.getElementById('aiMsgBar');
-    
-    if (userBar) userBar.style.width = `${(user / maxCount) * 100}%`;
-    if (aiBar) aiBar.style.width = `${(ai / maxCount) * 100}%`;
-  }, 800);
-  
-  // Render trend chart
-  if (monthlyTrend && monthlyTrend.length > 0) {
-    setTimeout(() => renderMsgTrendChart(monthlyTrend), 1200);
-  }
-}
-
-/**
- * Generate streaming messages background
- */
-function generateMsgStreamBg() {
-  const container = document.getElementById('msgStreamBg');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  const snippets = [
-    'How do I...', 'Explain...', 'Write a...', 'Help me...',
-    'What is...', 'Can you...', 'Debug this...', 'Create a...'
-  ];
-  
-  const aiSnippets = [
-    'Here\'s how...', 'Let me help...', 'Sure! Here...', 'Great question...',
-    'I\'d suggest...', 'You can try...', 'Consider...', 'The answer...'
-  ];
-  
-  const numStreams = 8;
-  
-  for (let i = 0; i < numStreams; i++) {
-    const isUser = i % 2 === 0;
-    const msg = document.createElement('div');
-    msg.className = `msg-stream-item ${isUser ? 'user-msg' : 'ai-msg'}`;
-    msg.textContent = isUser 
-      ? snippets[Math.floor(Math.random() * snippets.length)]
-      : aiSnippets[Math.floor(Math.random() * aiSnippets.length)];
-    
-    // Random vertical position
-    const top = 10 + (i * 10) + (Math.random() * 5);
-    const delay = Math.random() * 10;
-    const duration = 10 + Math.random() * 5;
-    
-    msg.style.top = `${top}%`;
-    msg.style.animationDelay = `${delay}s`;
-    msg.style.animationDuration = `${duration}s`;
-    
-    container.appendChild(msg);
-  }
-}
-
-/**
- * Slide 3: Topics - with hero topic and diversity meter
- */
-function populateTopicsSlide(s) {
-  if (!s.topics || s.topics.length === 0) return;
-  
-  const emojis = { 
-    coding: '💻', writing: '✍️', learning: '📚', planning: '📋', 
-    general: '💬', research: '🔬', creative: '🎨', business: '💼',
-    productivity: '⚡', personal: '🏠', technical: '⚙️'
-  };
-  
-  const [heroName, heroCount] = s.topics[0];
-  const maxCount = heroCount || 1;
-  
-  // Set hero topic
-  const heroIcon = document.getElementById('topicHeroIcon');
-  const heroNameEl = document.getElementById('topicHeroName');
-  const heroCountEl = document.getElementById('topicHeroCount');
-  
-  if (heroIcon) heroIcon.textContent = emojis[heroName] || '📌';
-  if (heroNameEl) heroNameEl.textContent = heroName;
-  if (heroCountEl) heroCountEl.dataset.target = heroCount;
-  
-  // Generate remaining topics as cards
-  const topicsGrid = document.getElementById('topicsGrid');
-  if (topicsGrid && s.topics.length > 1) {
-    const restTopics = s.topics.slice(1, 5); // Show #2-5
-    
-    topicsGrid.innerHTML = restTopics.map(([name, count], i) => {
-      const delay = 0.6 + (i * 0.15);
-      const barPercent = (count / maxCount) * 100;
-      
-      return `
-        <div class="topic-card" style="animation-delay: ${delay}s" data-bar-width="${barPercent}">
-          <div class="topic-card-rank">#${i + 2}</div>
-          <div class="topic-card-icon">${emojis[name] || '📌'}</div>
-          <div class="topic-card-info">
-            <div class="topic-card-name">${name}</div>
-            <div class="topic-card-count">${count.toLocaleString()} convos</div>
-          </div>
-          <div class="topic-card-bar">
-            <div class="topic-card-bar-fill" id="topicBar${i}"></div>
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-  
-  // Store data for animation on slide reveal
-  topicsSlideData = {
-    heroCount,
-    topics: s.topics,
-    totalTopics: s.topics.length
-  };
-}
-
-let topicsSlideData = null;
-let topicsSlideAnimated = false;
-
-/**
- * Trigger topics slide animations
- */
-function animateTopicsSlide() {
-  if (!topicsSlideData || topicsSlideAnimated) return;
-  topicsSlideAnimated = true;
-  
-  const { heroCount, topics, totalTopics } = topicsSlideData;
-  
-  // Animate hero count
-  const heroCountEl = document.getElementById('topicHeroCount');
-  if (heroCountEl) {
-    animateCountUp(heroCountEl, heroCount, 1500);
-  }
-  
-  // Animate topic card bars
-  setTimeout(() => {
-    document.querySelectorAll('.topic-card').forEach((card, i) => {
-      const barWidth = card.dataset.barWidth;
-      const bar = document.getElementById(`topicBar${i}`);
-      if (bar) {
-        bar.style.width = `${barWidth}%`;
-      }
-    });
-  }, 800);
-  
-  // Animate diversity meter
-  setTimeout(() => {
-    const diversityFill = document.getElementById('diversityFill');
-    const diversityInsight = document.getElementById('diversityInsight');
-    
-    if (diversityFill && topics.length > 0) {
-      // Calculate diversity based on distribution
-      const counts = topics.map(t => t[1]);
-      const total = counts.reduce((a, b) => a + b, 0);
-      const topShare = counts[0] / total;
-      
-      // If top topic > 60% of total = focused, < 30% = explorer
-      let diversityPercent, insight;
-      if (topShare > 0.5) {
-        diversityPercent = 15;
-        insight = "You're deeply focused on what matters!";
-      } else if (topShare > 0.35) {
-        diversityPercent = 40;
-        insight = "Balanced explorer with clear interests";
-      } else if (topShare > 0.25) {
-        diversityPercent = 65;
-        insight = "Curious mind across many domains";
-      } else {
-        diversityPercent = 85;
-        insight = "True polymath — you explore everything!";
-      }
-      
-      diversityFill.style.left = `calc(${diversityPercent}% - 8px)`;
-      if (diversityInsight) diversityInsight.textContent = insight;
-    }
-  }, 1200);
-}
-
-/**
- * Slide 7: When You Think - Temporal Activity Patterns
- * NO FALLBACKS - requires real hourly data
- */
-function populateTimeSlide(s) {
-  // Support both byHour (from DB) and hourCounts (from file analysis)
-  const byHour = s.byHour || s.hourCounts;
-  
-  if (!byHour || byHour.length !== 24) {
-    console.log('Time slide: Missing hourly data');
-    return;
-  }
-  const peakHour = s.peakHour ?? byHour.indexOf(Math.max(...byHour));
-  const peakCount = byHour[peakHour];
-  
-  // Calculate day vs night totals
-  // Day: 6am-6pm (hours 6-17), Night: 6pm-6am (hours 18-23, 0-5)
-  let dayCount = 0;
-  let nightCount = 0;
-  
-  for (let h = 0; h < 24; h++) {
-    if (h >= 6 && h < 18) {
-      dayCount += byHour[h];
-    } else {
-      nightCount += byHour[h];
-    }
-  }
-  
-  // Store data for animation
-  timeSlideData = {
-    byHour,
-    peakHour,
-    peakCount,
-    dayCount,
-    nightCount
-  };
-  
-  // Generate floating time particles
-  generateTimeParticles();
-  
-  // Set peak hour display
-  const peakNumEl = document.getElementById('peakHourNum');
-  const peakPeriodEl = document.getElementById('peakHourPeriod');
-  
-  if (peakNumEl && peakPeriodEl) {
-    const displayHour = peakHour === 0 ? 12 : peakHour > 12 ? peakHour - 12 : peakHour;
-    const period = peakHour >= 12 ? 'pm' : 'am';
-    peakNumEl.textContent = displayHour;
-    peakPeriodEl.textContent = period;
-  }
-  
-  // Render the 24-hour clock wheel
-  renderTimeWheel(byHour, peakHour);
-  
-  // Update wheel center icon based on time signature
-  const nightRatio = nightCount / (dayCount + nightCount);
-  const wheelIconEl = document.getElementById('timeWheelIcon');
-  if (wheelIconEl) {
-    wheelIconEl.textContent = nightRatio > 0.6 ? '🌙' : nightRatio < 0.35 ? '☀️' : '⚡';
-  }
-  
-  // Determine time signature
-  let sigIcon, sigText, sigClass;
-  
-  if (nightRatio > 0.6) {
-    sigIcon = '🌙';
-    sigText = 'Night Owl';
-    sigClass = 'night-owl';
-  } else if (nightRatio < 0.35) {
-    sigIcon = '☀️';
-    sigText = 'Early Bird';
-    sigClass = 'early-bird';
-  } else {
-    sigIcon = '⚡';
-    sigText = 'All-Day Thinker';
-    sigClass = 'all-day';
-  }
-  
-  const sigEl = document.getElementById('timeSignature');
-  const sigIconEl = document.getElementById('timeSigIcon');
-  const sigTextEl = document.getElementById('timeSigText');
-  
-  if (sigEl) sigEl.className = `time-signature ${sigClass}`;
-  if (sigIconEl) sigIconEl.textContent = sigIcon;
-  if (sigTextEl) sigTextEl.textContent = sigText;
-}
-
-let timeSlideData = null;
-let timeSlideAnimated = false;
-
-/**
- * Generate floating time-themed particles for background
- */
-function generateTimeParticles() {
-  const container = document.getElementById('timeParticlesBg');
-  if (!container) return;
-  
-  container.innerHTML = '';
-  
-  const particles = ['⏰', '🕐', '🕑', '🕒', '🕓', '🕔', '🕕', '🕖', '🕗', '🕘', '🕙', '🕚', '🕛', '⌛', '⏳', '🌙', '☀️', '✨'];
-  const numParticles = 10;
-  
-  for (let i = 0; i < numParticles; i++) {
-    const particle = document.createElement('div');
-    particle.className = 'time-particle';
-    particle.textContent = particles[Math.floor(Math.random() * particles.length)];
-    
-    const left = Math.random() * 90 + 5;
-    const delay = Math.random() * 10;
-    const duration = 10 + Math.random() * 8;
-    
-    particle.style.left = `${left}%`;
-    particle.style.animationDelay = `${delay}s`;
-    particle.style.animationDuration = `${duration}s`;
-    
-    container.appendChild(particle);
-  }
-}
-
-/**
- * Render the 24-hour clock wheel visualization with animations and hover states
- */
-function renderTimeWheel(byHour, peakHour) {
-  const svg = document.getElementById('timeWheelSvg');
-  const tooltip = document.getElementById('timeWheelTooltip');
-  const tooltipHour = document.getElementById('tooltipHour');
-  const tooltipCount = document.getElementById('tooltipCount');
-  
-  if (!svg || !byHour || byHour.length !== 24) {
-    console.log('Time wheel: Missing elements or data');
-    return;
-  }
-  
-  const maxCount = Math.max(...byHour, 1);
-  const cx = 50, cy = 50;
-  const innerRadius = 22;
-  const outerRadius = 45;
-  
-  let segments = '';
-  
-  // Create 24 arc segments
-  for (let hour = 0; hour < 24; hour++) {
-    const count = byHour[hour] || 0;
-    const intensity = count / maxCount;
-    
-    // Calculate angles (each hour = 15 degrees)
-    const startAngle = (hour * 15) * Math.PI / 180;
-    const endAngle = ((hour + 1) * 15) * Math.PI / 180;
-    
-    // Inner arc points
-    const ix1 = cx + innerRadius * Math.cos(startAngle);
-    const iy1 = cy + innerRadius * Math.sin(startAngle);
-    const ix2 = cx + innerRadius * Math.cos(endAngle);
-    const iy2 = cy + innerRadius * Math.sin(endAngle);
-    
-    // Outer arc points
-    const ox1 = cx + outerRadius * Math.cos(startAngle);
-    const oy1 = cy + outerRadius * Math.sin(startAngle);
-    const ox2 = cx + outerRadius * Math.cos(endAngle);
-    const oy2 = cy + outerRadius * Math.sin(endAngle);
-    
-    // Color based on time of day and intensity
-    let hue, sat;
-    if (hour >= 0 && hour < 6) {
-      hue = 240; sat = 70; // Night - blue
-    } else if (hour >= 6 && hour < 12) {
-      hue = 45; sat = 80; // Morning - orange/yellow
-    } else if (hour >= 12 && hour < 18) {
-      hue = 160; sat = 70; // Afternoon - teal
-    } else {
-      hue = 270; sat = 60; // Evening - purple
-    }
-    
-    const lightness = 25 + intensity * 45;
-    const alpha = 0.4 + intensity * 0.6;
-    const color = `hsla(${hue}, ${sat}%, ${lightness}%, ${alpha})`;
-    
-    const isPeak = hour === peakHour;
-    const animDelay = hour * 0.03; // Staggered animation
-    
-    // Format display hour for tooltip
-    const displayHour = hour === 0 ? '12am' : 
-                        hour === 12 ? '12pm' : 
-                        hour > 12 ? `${hour - 12}pm` : `${hour}am`;
-    
-    // Arc path: outer arc -> line to inner -> inner arc -> close
-    const path = `
-      M ${ox1} ${oy1}
-      A ${outerRadius} ${outerRadius} 0 0 1 ${ox2} ${oy2}
-      L ${ix2} ${iy2}
-      A ${innerRadius} ${innerRadius} 0 0 0 ${ix1} ${iy1}
-      Z
-    `;
-    
-    segments += `<path 
-      d="${path}"
-      fill="${color}"
-      stroke="${isPeak ? 'var(--accent)' : 'rgba(255,255,255,0.1)'}"
-      stroke-width="${isPeak ? 2 : 0.5}"
-      class="time-wheel-segment ${isPeak ? 'peak-segment' : ''}"
-      data-hour="${hour}"
-      data-display="${displayHour}"
-      data-count="${count}"
-      style="animation-delay: ${animDelay}s"
-    />`;
-  }
-  
-  // Add hour labels at 12, 3, 6, 9 o'clock positions
-  const labelRadius = 48;
-  const labels = [
-    { hour: 6, label: '6am', angle: 0 },     // Right (after rotation)
-    { hour: 12, label: '12pm', angle: 90 },  // Bottom
-    { hour: 18, label: '6pm', angle: 180 },  // Left
-    { hour: 0, label: '12am', angle: 270 },  // Top
-  ];
-  
-  labels.forEach(({ label, angle }) => {
-    const rad = (angle) * Math.PI / 180;
-    const x = cx + labelRadius * Math.cos(rad);
-    const y = cy + labelRadius * Math.sin(rad);
-    segments += `<text x="${x}" y="${y}" 
-      text-anchor="middle" 
-      dominant-baseline="middle" 
-      fill="rgba(255,255,255,0.5)" 
-      font-size="4"
-      style="transform-origin: ${x}px ${y}px; transform: rotate(90deg);"
-    >${label}</text>`;
-  });
-  
-  svg.innerHTML = segments;
-  
-  // Add hover handlers for tooltip
-  svg.querySelectorAll('.time-wheel-segment').forEach(segment => {
-    segment.addEventListener('mouseenter', (e) => {
-      const hour = e.target.dataset.display;
-      const count = parseInt(e.target.dataset.count).toLocaleString();
-      
-      if (tooltipHour) tooltipHour.textContent = hour;
-      if (tooltipCount) tooltipCount.textContent = `${count} messages`;
-      if (tooltip) tooltip.classList.add('visible');
-    });
-    
-    segment.addEventListener('mouseleave', () => {
-      if (tooltip) tooltip.classList.remove('visible');
-    });
-  });
-}
-
-/**
- * Trigger time slide animations (called when slide becomes visible)
- */
-function animateTimeSlide() {
-  if (!timeSlideData || timeSlideAnimated) return;
-  timeSlideAnimated = true;
-  
-  const { peakCount, dayCount, nightCount } = timeSlideData;
-  
-  // Animate peak count
-  setTimeout(() => {
-    const peakCountEl = document.getElementById('peakHourCount');
-    if (peakCountEl) {
-      animateCountUp(peakCountEl, peakCount, 1500);
-    }
-  }, 800);
-  
-  // Animate day/night counts with delay
-  setTimeout(() => {
-    const dayMsgEl = document.getElementById('dayMsgCount');
-    const nightMsgEl = document.getElementById('nightMsgCount');
-    
-    if (dayMsgEl) animateCountUp(dayMsgEl, dayCount, 1500);
-    if (nightMsgEl) animateCountUp(nightMsgEl, nightCount, 1500);
-    
-    // Animate bars
-    const totalCount = dayCount + nightCount;
-    const dayBar = document.getElementById('dayMsgBar');
-    const nightBar = document.getElementById('nightMsgBar');
-    
-    if (dayBar) dayBar.style.width = `${(dayCount / totalCount) * 100}%`;
-    if (nightBar) nightBar.style.width = `${(nightCount / totalCount) * 100}%`;
-  }, 1200);
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
 }
 
 // ============================================
-// SLIDE 9: DISCOVERED THEMES - AI SEMANTIC CLUSTERS
+// SLIDES POPULATION (Main orchestrator)
+// Individual slide functions are in js/slides/*.js
 // ============================================
 
 let themesSlideData = null;
@@ -1152,7 +635,6 @@ function populateSlides(s) {
   // Slide 8 - Evolution Timeline
   // This is now handled by renderEvolutionChart() and updateEvolutionUI() 
   // which are called after the evolution data is fetched
-  // Note: 'enhanced' is already declared above (line ~320)
   const oldTopics = enhanced.topicsOld || [];
   const recentTopics = enhanced.topicsRecent || [];
   
@@ -1236,469 +718,14 @@ function populateSlides(s) {
   }
 }
 
-// ============================================
-// DNA IDENTITY (Behavioral Fingerprint Visualization)
-// No fallbacks - requires real data from API
-// ============================================
-function populateDNAIdentity(stats, aiInsights) {
-  // Animal emoji lookup for spirit animal
-  const animalEmojis = {
-    'owl': '🦉', 'fox': '🦊', 'cat': '🐱', 'dog': '🐕', 'wolf': '🐺',
-    'eagle': '🦅', 'dolphin': '🐬', 'octopus': '🐙', 'bee': '🐝', 'ant': '🐜',
-    'raccoon': '🦝', 'monkey': '🐵', 'robot': '🤖', 'unicorn': '🦄',
-    'bear': '🐻', 'lion': '🦁', 'tiger': '🐯', 'panda': '🐼', 'koala': '🐨',
-    'sloth': '🦥', 'otter': '🦦', 'beaver': '🦫', 'hedgehog': '🦔', 'bat': '🦇',
-    'crow': '🐦‍⬛', 'raven': '🐦‍⬛', 'parrot': '🦜', 'penguin': '🐧', 'flamingo': '🦩',
-    'shark': '🦈', 'whale': '🐋', 'squid': '🦑', 'crab': '🦀', 'turtle': '🐢',
-    'snake': '🐍', 'lizard': '🦎', 'dragon': '🐉', 'phoenix': '🔥',
-    'butterfly': '🦋', 'spider': '🕷️', 'scorpion': '🦂'
-  };
-  
-  // Extract behavioral data from stats (real data, no fallbacks)
-  const enhanced = stats.enhanced || {};
-  const nightOwlScore = enhanced.nightOwlScore || 0;
-  const weekendRatio = enhanced.weekendRatio || 0;
-  const marathonCount = enhanced.marathonConvos || 0;
-  const quickCount = enhanced.quickConvos || 0;
-  const topicCount = stats.topics?.length || 0;
-  const peakDay = enhanced.mostProductiveDay || stats.peakDay || 'N/A';
-  
-  // Calculate "Deep Diver" score based on marathon sessions ratio
-  const totalConvos = stats.totalConversations || 1;
-  const deepDiverScore = Math.min(100, Math.round((marathonCount / totalConvos) * 500));
-  
-  // Calculate "Explorer" score based on topic diversity
-  const explorerScore = Math.min(100, topicCount * 10);
-  
-  // Calculate "Consistency" score based on spread of activity
-  const consistencyScore = Math.min(100, 100 - Math.abs(50 - weekendRatio));
-  
-  // Radar chart values (0-100 scale, mapped to 0-80 radius)
-  const radarValues = {
-    top: nightOwlScore,           // Night Owl
-    right: deepDiverScore,        // Deep Diver
-    bottom: consistencyScore,     // Consistent
-    left: explorerScore           // Explorer
-  };
-  
-  // Draw radar polygon
-  drawRadarChart(radarValues);
-  
-  // Update personality title from AI insights (required)
-  const titleEl = document.getElementById('dnaTitle');
-  const subtitleEl = document.getElementById('dnaSubtitle');
-  
-  if (titleEl && aiInsights?.personality?.title) {
-    titleEl.textContent = aiInsights.personality.title;
-  }
-  if (subtitleEl) {
-    subtitleEl.textContent = 'Your unique AI fingerprint';
-  }
-  
-  // Hero stat - pick the most interesting behavioral stat
-  const heroValueEl = document.getElementById('dnaHeroValue');
-  const heroContextEl = document.getElementById('dnaHeroContext');
-  
-  if (heroValueEl && heroContextEl) {
-    if (nightOwlScore >= 20) {
-      heroValueEl.textContent = `${nightOwlScore}%`;
-      heroContextEl.textContent = 'of your messages sent between 10 PM and 4 AM';
-    } else if (marathonCount > 10) {
-      heroValueEl.textContent = marathonCount;
-      heroContextEl.textContent = 'marathon sessions (50+ messages each)';
-    } else if (weekendRatio > 70) {
-      heroValueEl.textContent = `${weekendRatio}%`;
-      heroContextEl.textContent = 'weekend warrior ratio vs weekdays';
-    } else {
-      heroValueEl.textContent = `${topicCount}`;
-      heroContextEl.textContent = 'different topics explored with ChatGPT';
-    }
-  }
-  
-  // Spirit animal from AI insights (required)
-  const animalImageEl = document.getElementById('animalImage');
-  const animalImageContainer = document.getElementById('animalImageContainer');
-  const animalNameEl = document.getElementById('animalName');
-  const animalReasonEl = document.getElementById('animalReason');
-  
-  if (aiInsights?.spiritAnimal) {
-    const animalLower = aiInsights.spiritAnimal.animal.toLowerCase();
-    const emoji = Object.entries(animalEmojis).find(([k]) => animalLower.includes(k))?.[1] || '🦉';
-    
-    // Use emoji as fallback for image
-    if (animalImageContainer) {
-      animalImageContainer.innerHTML = `<span class="animal-emoji">${emoji}</span>`;
-    }
-    if (animalNameEl) animalNameEl.textContent = aiInsights.spiritAnimal.animal;
-    if (animalReasonEl) animalReasonEl.textContent = aiInsights.spiritAnimal.reason;
-  }
-  
-  // Bottom metrics (real data)
-  const nightOwlValueEl = document.getElementById('nightOwlValue');
-  const marathonValueEl = document.getElementById('marathonValue');
-  const quickChatsValueEl = document.getElementById('quickChatsValue');
-  const peakDayValueEl = document.getElementById('peakDayValue');
-  
-  if (nightOwlValueEl) nightOwlValueEl.textContent = `${nightOwlScore}%`;
-  if (marathonValueEl) marathonValueEl.textContent = marathonCount;
-  if (quickChatsValueEl) quickChatsValueEl.textContent = quickCount;
-  if (peakDayValueEl) peakDayValueEl.textContent = peakDay.slice(0, 3); // "Mon", "Tue", etc.
-}
-
-/**
- * Draw the radar/spider chart visualization with micro-animations
- * @param {Object} values - Object with top, right, bottom, left values (0-100)
- */
-function drawRadarChart(values) {
-  const radarPolygon = document.getElementById('radarPolygon');
-  const radarPolygonGlow = document.getElementById('radarPolygonGlow');
-  const radarPoints = document.getElementById('radarPoints');
-  
-  if (!radarPolygon) return;
-  
-  // Center of chart and max radius
-  const cx = 100, cy = 100, maxR = 80;
-  
-  // Convert value (0-100) to radius
-  const toRadius = (val) => (val / 100) * maxR;
-  
-  // Calculate polygon points (4 axes: top, right, bottom, left)
-  const points = [
-    { x: cx, y: cy - toRadius(values.top), label: 'Night Owl' },
-    { x: cx + toRadius(values.right), y: cy, label: 'Deep Diver' },
-    { x: cx, y: cy + toRadius(values.bottom), label: 'Consistent' },
-    { x: cx - toRadius(values.left), y: cy, label: 'Explorer' }
-  ];
-  
-  // Create polygon points string
-  const pointsStr = points.map(p => `${p.x},${p.y}`).join(' ');
-  
-  // Start from center (collapsed state)
-  radarPolygon.setAttribute('points', `${cx},${cy} ${cx},${cy} ${cx},${cy} ${cx},${cy}`);
-  radarPolygonGlow.setAttribute('points', `${cx},${cy} ${cx},${cy} ${cx},${cy} ${cx},${cy}`);
-  
-  // Clear existing points
-  if (radarPoints) {
-    radarPoints.innerHTML = '';
-  }
-  
-  // Animate polygon expansion after brief delay
-  setTimeout(() => {
-    radarPolygon.setAttribute('points', pointsStr);
-    radarPolygonGlow.setAttribute('points', pointsStr);
-    
-    // Add data points with staggered entrance
-    if (radarPoints) {
-      points.forEach((p, i) => {
-        setTimeout(() => {
-          const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-          circle.setAttribute('class', 'radar-point');
-          circle.setAttribute('cx', cx);
-          circle.setAttribute('cy', cy);
-          circle.setAttribute('r', '0');
-          radarPoints.appendChild(circle);
-          
-          // Animate to final position
-          setTimeout(() => {
-            circle.setAttribute('cx', p.x);
-            circle.setAttribute('cy', p.y);
-            circle.setAttribute('r', '5');
-          }, 50);
-        }, i * 150);
-      });
-    }
-  }, 400);
-}
-
-function formatHour(h) {
-  if (h === 0) return '12am';
-  if (h === 12) return '12pm';
-  return h > 12 ? `${h - 12}pm` : `${h}am`;
+// Stub for renderImageGallery (implemented in slide-10-gallery.js)
+function renderImageGallery() {
+  populateGallerySlide();
 }
 
 // ============================================
 // FLOATING EVIDENCE BUBBLES
 // ============================================
-// ============================================
-// OBSESSION SLIDE (Clean Design)
-// No fallbacks - requires real data
-// ============================================
-
-let obsessionSlideData = null;
-let obsessionSlideAnimated = false;
-
-function populateRoastChamber(stats, aiInsights) {
-  // Topic icons mapping
-  const topicIcons = {
-    'coding': '💻', 'code': '💻', 'programming': '💻',
-    'writing': '✍️', 'creative': '✍️',
-    'research': '🔬', 'learning': '📚',
-    'planning': '📋', 'productivity': '📋',
-    'business': '💼', 'work': '💼',
-    'health': '🏥', 'fitness': '💪',
-    'music': '🎵', 'art': '🎨',
-    'travel': '✈️', 'food': '🍕',
-    'games': '🎮', 'gaming': '🎮',
-    'finance': '💰', 'money': '💰',
-    'relationships': '❤️', 'personal': '🧘',
-    'ai': '🤖', 'technology': '⚙️',
-    'default': '🎯'
-  };
-  
-  // Get DOM elements
-  const topicEl = document.getElementById('obsessionTopic');
-  const iconEl = document.getElementById('obsessionIcon');
-  const countEl = document.getElementById('obsessionCount');
-  const percentEl = document.getElementById('obsessionPercent');
-  const roastEl = document.getElementById('obsessionRoast');
-  const barFill = document.getElementById('obsessionBarFill');
-  const barLabel = document.getElementById('obsessionBarLabel');
-  const comparisonEl = document.getElementById('comparisonText');
-  const contextEl = document.getElementById('obsessionContext');
-  
-  // Check if we have the required AI insights
-  if (!aiInsights?.topObsession) {
-    if (topicEl) topicEl.textContent = 'Unknown';
-    if (iconEl) iconEl.textContent = '❓';
-    if (roastEl) roastEl.textContent = 'Couldn\'t load your obsession data. Try refreshing!';
-    return;
-  }
-  
-  const obsession = aiInsights.topObsession;
-  const topTopic = stats.topics?.[0];
-  const topicName = obsession.topic || topTopic?.[0] || 'unknown';
-  const topicCount = topTopic?.[1] || 0;
-  const totalConvos = stats.totalConversations || 1;
-  const percentage = Math.round((topicCount / totalConvos) * 100);
-  
-  // Find matching icon
-  const topicLower = topicName.toLowerCase();
-  const icon = Object.entries(topicIcons).find(([k]) => topicLower.includes(k))?.[1] || topicIcons.default;
-  
-  // Update DOM (static elements only - no animations yet)
-  if (topicEl) topicEl.textContent = topicName;
-  if (iconEl) iconEl.textContent = icon;
-  if (countEl) countEl.textContent = topicCount.toLocaleString();
-  if (percentEl) percentEl.textContent = `${percentage}%`;
-  
-  // Start with empty roast, will typewriter in when slide visible
-  if (roastEl) roastEl.innerHTML = '<span class="roast-cursor"></span>';
-  
-  // Set bar label based on focus level (static)
-  if (barLabel) {
-    if (percentage > 25) {
-      barLabel.textContent = 'Deeply focused';
-    } else if (percentage > 15) {
-      barLabel.textContent = 'Highly focused';
-    } else if (percentage > 8) {
-      barLabel.textContent = 'Focused';
-    } else {
-      barLabel.textContent = 'One of many interests';
-    }
-  }
-  
-  // Context line (will fade in after typewriter)
-  const avgPerMonth = Math.round(topicCount / 12);
-  let contextText = '';
-  if (avgPerMonth > 20) {
-    contextText = `About ${avgPerMonth} conversations per month on this topic alone.`;
-  } else if (topicCount > 50) {
-    contextText = `${topicCount} deep dives and counting.`;
-  } else {
-    contextText = `A clear pattern in your conversations.`;
-  }
-  if (comparisonEl) comparisonEl.textContent = contextText;
-  
-  // Store data for animation when slide becomes visible
-  obsessionSlideData = {
-    roastText: obsession.roast,
-    fillAmount: Math.min(100, percentage * 2)
-  };
-}
-
-/**
- * Trigger obsession slide animations (called when slide becomes visible)
- */
-function animateObsessionSlide() {
-  if (!obsessionSlideData || obsessionSlideAnimated) return;
-  obsessionSlideAnimated = true;
-  
-  const { roastText, fillAmount } = obsessionSlideData;
-  const roastEl = document.getElementById('obsessionRoast');
-  const barFill = document.getElementById('obsessionBarFill');
-  const contextEl = document.getElementById('obsessionContext');
-  
-  // Animate the bar fill
-  setTimeout(() => {
-    if (barFill) {
-      barFill.style.width = `${fillAmount}%`;
-    }
-  }, 400);
-  
-  // Typewriter effect for roast - starts after bar animation
-  setTimeout(() => {
-    typewriterEffect(roastEl, roastText, 30, () => {
-      // Fade in context after typewriter completes
-      if (contextEl) contextEl.classList.add('visible');
-    });
-  }, 800);
-}
-
-/**
- * Typewriter effect for text
- * @param {HTMLElement} element - Element to type into
- * @param {string} text - Text to type
- * @param {number} speed - Milliseconds per character
- * @param {function} onComplete - Callback when done
- */
-function typewriterEffect(element, text, speed = 30, onComplete) {
-  if (!element || !text) return;
-  
-  let i = 0;
-  element.innerHTML = '<span class="roast-cursor"></span>';
-  
-  function type() {
-    if (i < text.length) {
-      // Insert character before cursor
-      const cursor = element.querySelector('.roast-cursor');
-      if (cursor) {
-        cursor.insertAdjacentText('beforebegin', text.charAt(i));
-      } else {
-        element.textContent += text.charAt(i);
-      }
-      i++;
-      setTimeout(type, speed);
-    } else {
-      // Remove cursor after typing complete
-      setTimeout(() => {
-        const cursor = element.querySelector('.roast-cursor');
-        if (cursor) cursor.remove();
-        if (onComplete) onComplete();
-      }, 500);
-    }
-  }
-  
-  type();
-}
-
-// ============================================
-// COSMIC REVELATIONS (Slide 13 - Fun Facts)
-// ============================================
-let cosmicRevelationsData = null;
-let cosmicRevelationsAnimated = false;
-
-/**
- * Populate the Cosmic Revelations slide with fun facts
- * Horizontal scrolling carousel with staggered reveal
- */
-function populateCosmicRevelations(stats, aiInsights, nightScore, enhanced) {
-  const container = document.getElementById('revelationCards');
-  const noDataEl = document.getElementById('revelationNoData');
-  
-  if (!container) return;
-  
-  // Collect all available facts
-  const aiFunFacts = aiInsights?.funFacts || [];
-  
-  // Build computed facts from stats with associated icons
-  const computedFacts = [
-    stats.streaks?.longestStreak > 0 ? {
-      icon: '🔥',
-      text: `<span class="fact-number">${stats.streaks.longestStreak}</span> day streak — your longest run`,
-    } : null,
-    stats.peakHour !== undefined ? {
-      icon: '⏰',
-      text: `Peak productivity at <span class="fact-number">${formatHour(stats.peakHour)}</span> on ${stats.peakDay}s`,
-    } : null,
-    stats.topWords?.[0]?.word ? {
-      icon: '💬',
-      text: `"${stats.topWords[0].word}" — your signature word`,
-    } : null,
-    stats.streaks?.totalActiveDays > 0 ? {
-      icon: '📅',
-      text: `<span class="fact-number">${stats.streaks.totalActiveDays}</span> active days with ChatGPT`,
-    } : null,
-    nightScore > 10 ? {
-      icon: '🌙',
-      text: `<span class="fact-number">${nightScore}%</span> of your chats happen after 10pm`,
-    } : null,
-    enhanced?.marathonConvos > 3 ? {
-      icon: '💪',
-      text: `<span class="fact-number">${enhanced.marathonConvos}</span> marathon sessions (50+ messages)`,
-    } : null,
-    enhanced?.productivityMultiplier > 1.5 ? {
-      icon: '📈',
-      text: `<span class="fact-number">${enhanced.productivityMultiplier}x</span> more active on ${enhanced.mostProductiveDay}s`,
-    } : null,
-    stats.totalConversations > 100 ? {
-      icon: '🎯',
-      text: `<span class="fact-number">${stats.totalConversations}</span> conversations — power user status`,
-    } : null,
-  ].filter(Boolean);
-  
-  // Build facts array - prefer AI insights, fall back to computed
-  let facts = [];
-  
-  if (aiFunFacts.length > 0) {
-    // Use AI-generated facts with appropriate icons
-    const icons = ['✨', '🔮', '🌟', '💫', '🎭', '🌌'];
-    facts = aiFunFacts.slice(0, 6).map((fact, i) => ({
-      icon: icons[i % icons.length],
-      text: fact,
-    }));
-  } else if (computedFacts.length > 0) {
-    facts = computedFacts.slice(0, 6);
-  }
-  
-  // Show no data state if no facts available
-  if (facts.length === 0) {
-    container.style.display = 'none';
-    if (noDataEl) noDataEl.style.display = 'flex';
-    return;
-  }
-  
-  // Store data for animation
-  cosmicRevelationsData = facts;
-  cosmicRevelationsAnimated = false;
-  
-  // Render cards (simplified - no flip)
-  container.innerHTML = facts.map((fact, i) => `
-    <div class="revelation-card" data-index="${i}">
-      <div class="revelation-card-inner">
-        <div class="revelation-icon">${fact.icon}</div>
-        <div class="revelation-fact">${fact.text}</div>
-      </div>
-    </div>
-  `).join('');
-  
-  container.style.display = 'flex';
-  if (noDataEl) noDataEl.style.display = 'none';
-}
-
-/**
- * Animate the Cosmic Revelations slide
- * Triggers when slide becomes visible - staggered card reveal
- */
-function animateCosmicRevelations() {
-  if (!cosmicRevelationsData || cosmicRevelationsAnimated) return;
-  cosmicRevelationsAnimated = true;
-  
-  const cards = document.querySelectorAll('.revelation-card');
-  if (cards.length === 0) return;
-  
-  // Staggered entrance animation
-  cards.forEach((card, i) => {
-    setTimeout(() => {
-      card.classList.add('visible');
-    }, i * 150);
-  });
-}
-
-// ============================================
-// FLOATING EVIDENCE BUBBLES
-// ============================================
-const loadedEvidence = {}; // Cache loaded evidence
-let floatingBubbleTimers = []; // Track spawned bubble timers
 
 // Spawn floating bubbles at random positions on screen
 async function spawnFloatingBubbles(themeKeys, slideElement) {
@@ -1854,12 +881,6 @@ async function toggleThemeEvidence(idx, themeKey) {
   } else {
     container.innerHTML = '<div class="sub-text" style="padding: 1rem;">No evidence found</div>';
   }
-}
-
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
 }
 
 async function openEvidenceModal(themeKey) {
@@ -3930,6 +2951,78 @@ function downloadImage() {
 }
 
 // ============================================
+// SPARKLINE RENDERER
+// ============================================
+function renderSparkline(monthlyData, containerId = 'messagesSparkline') {
+  if (!monthlyData || monthlyData.length < 2) {
+    console.log('Sparkline: insufficient data');
+    return;
+  }
+  
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  
+  // Get the last 12 months or all data if less
+  const data = monthlyData.slice(-12);
+  const counts = data.map(d => d.count);
+  
+  const width = 120;
+  const height = 40;
+  const padding = 4;
+  
+  const maxVal = Math.max(...counts, 1);
+  const minVal = Math.min(...counts);
+  const range = maxVal - minVal || 1;
+  
+  // Generate points
+  const points = counts.map((val, i) => {
+    const x = padding + (i / (counts.length - 1)) * (width - 2 * padding);
+    const y = height - padding - ((val - minVal) / range) * (height - 2 * padding);
+    return { x, y, val };
+  });
+  
+  // Create line path
+  const linePath = points.map((p, i) => 
+    (i === 0 ? 'M' : 'L') + ` ${p.x.toFixed(1)} ${p.y.toFixed(1)}`
+  ).join(' ');
+  
+  // Create area path (close to bottom)
+  const areaPath = linePath + 
+    ` L ${points[points.length - 1].x.toFixed(1)} ${height - padding}` +
+    ` L ${padding} ${height - padding} Z`;
+  
+  // Update SVG elements
+  const lineEl = container.querySelector('#sparklineLine, .sparkline-line');
+  const areaEl = container.querySelector('#sparklineArea, .sparkline-area');
+  const dotEl = container.querySelector('#sparklineDot, .sparkline-dot');
+  const trendEl = container.querySelector('#sparklineTrend, .sparkline-trend');
+  
+  if (lineEl) lineEl.setAttribute('d', linePath);
+  if (areaEl) areaEl.setAttribute('d', areaPath);
+  
+  // Position dot at the end
+  if (dotEl && points.length > 0) {
+    const lastPoint = points[points.length - 1];
+    dotEl.setAttribute('cx', lastPoint.x);
+    dotEl.setAttribute('cy', lastPoint.y);
+    dotEl.style.display = 'block';
+  }
+  
+  // Calculate trend
+  if (trendEl && counts.length >= 2) {
+    const firstHalf = counts.slice(0, Math.floor(counts.length / 2));
+    const secondHalf = counts.slice(Math.floor(counts.length / 2));
+    const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
+    const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
+    
+    const percentChange = firstAvg > 0 ? Math.round(((secondAvg - firstAvg) / firstAvg) * 100) : 0;
+    
+    trendEl.className = 'sparkline-trend ' + (percentChange > 5 ? 'up' : percentChange < -5 ? 'down' : 'neutral');
+    trendEl.textContent = percentChange > 0 ? `↑ ${percentChange}%` : percentChange < 0 ? `↓ ${Math.abs(percentChange)}%` : '→ Steady';
+  }
+}
+
+// ============================================
 // LOAD MY DATA (from API or fallback to embedded)
 // ============================================
 async function loadMyData() {
@@ -4786,4 +3879,3 @@ window.hideHeatmapTooltip = hideHeatmapTooltip;
    - Text: white (#ffffff) for primary, #888888 for muted
    
    ============================================ */
-

@@ -218,8 +218,12 @@ class SceneTopics extends SceneBase {
     ctx.scale(state.scale, state.scale);
     ctx.translate(-this.centerX, -y);
     
+    // Layout: center the whole row around centerX
+    // Row layout: [rank 40px gap] [icon 60px gap] [name]
+    const rowStartX = this.centerX - 200; // Shift left to center the visual mass
+    
     // Draw rank number
-    const rankX = this.centerX - 280;
+    const rankX = rowStartX;
     ctx.font = 'bold 64px Outfit, sans-serif';
     ctx.fillStyle = rankColors[index] || this.colors.textMuted;
     ctx.textAlign = 'center';
@@ -227,23 +231,24 @@ class SceneTopics extends SceneBase {
     ctx.fillText(`${index + 1}`, rankX, y);
     
     // Draw icon
-    const iconX = this.centerX - 180;
+    const iconX = rowStartX + 100;
     ctx.font = '72px sans-serif';
     ctx.fillText(topic.icon, iconX, y);
     
-    // Draw topic name
-    const nameX = this.centerX - 80;
+    // Draw topic name (aligned with rank and icon baseline)
+    const nameX = rowStartX + 200;
     ctx.font = 'bold 56px Outfit, sans-serif';
     ctx.fillStyle = this.colors.text;
     ctx.textAlign = 'left';
-    ctx.fillText(this.capitalize(topic.name), nameX, y - 15);
+    ctx.textBaseline = 'middle';
+    ctx.fillText(this.capitalize(topic.name), nameX, y);
     
     // Draw count if available
     if (topic.count > 0) {
       const countDisplay = Math.round(state.countValue).toLocaleString();
       ctx.font = '32px Outfit, sans-serif';
       ctx.fillStyle = this.colors.textMuted;
-      ctx.fillText(`${countDisplay} conversations`, nameX, y + 35);
+      ctx.fillText(`${countDisplay} conversations`, nameX, y + 50);
     }
     
     ctx.restore();

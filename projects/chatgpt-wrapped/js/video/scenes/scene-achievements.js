@@ -205,18 +205,6 @@ class SceneAchievements extends SceneBase {
     const cardX = this.centerX - cardWidth / 2;
     const cardY = y - cardHeight / 2;
     
-    // Glow behind card
-    if (state.glow > 0) {
-      const glowGradient = ctx.createRadialGradient(
-        this.centerX, y, 0,
-        this.centerX, y, cardWidth * 0.6
-      );
-      glowGradient.addColorStop(0, `rgba(255, 215, 0, ${0.15 * state.glow})`);
-      glowGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
-      ctx.fillStyle = glowGradient;
-      ctx.fillRect(cardX - 50, cardY - 50, cardWidth + 100, cardHeight + 100);
-    }
-    
     // Card background
     ctx.fillStyle = 'rgba(30, 30, 35, 0.9)';
     ctx.beginPath();

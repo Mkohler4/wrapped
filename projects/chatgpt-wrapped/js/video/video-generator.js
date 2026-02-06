@@ -164,6 +164,8 @@ class VideoGenerator {
       { id: 'conversations', weight: 1.2 }, // Conversations count
       { id: 'messages', weight: 1.2 },    // Messages count
       { id: 'topics', weight: 1.3 },      // Top topics
+      { id: 'heatmap', weight: 1.3 },     // Activity heatmap
+      { id: 'gallery', weight: 1.3 },     // Image gallery
       { id: 'personality', weight: 1.3 }, // Identity/personality
       { id: 'journey', weight: 1.3 },     // Peak month/evolution
       { id: 'achievements', weight: 1.2 }, // Badges
