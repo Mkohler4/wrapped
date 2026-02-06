@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/server.ts",
     "import:chatgpt": "tsx src/scripts/import-chatgpt.ts",
     "import:chatgpt:full": "tsx src/scripts/import-chatgpt-full.ts",
     "embeddings:backfill": "tsx src/scripts/backfill-embeddings.ts",

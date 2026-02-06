@@ -43,7 +43,8 @@ function renderHeatmap(data) {
   const months = [];
   
   data.days.forEach((day, i) => {
-    const date = new Date(day.date);
+    const dateValue = day.dateStr ?? day.date;
+    const date = new Date(typeof dateValue === 'string' ? `${dateValue}T00:00:00` : dateValue);
     const month = date.toLocaleDateString('en-US', { month: 'short' });
     
     // Track month changes for labels
@@ -62,7 +63,7 @@ function renderHeatmap(data) {
   });
   
   // Calculate intensity levels
-  const maxCount = data.stats.maxCount;
+  const maxCount = data.stats?.maxCount ?? Math.max(...data.days.map(d => d.count || 0), 1);
   const getLevel = (count) => {
     if (count === 0) return 0;
     if (count <= maxCount * 0.25) return 1;
@@ -100,8 +101,9 @@ function renderHeatmap(data) {
           if (!day) return '<div class="heatmap-cell level-0" style="visibility: hidden;"></div>';
           const level = getLevel(day.count);
           const idx = cellIndex++;
+          const dateStr = day.dateStr ?? day.date;
           return `<div class="heatmap-cell level-${level}" 
-            data-date="${day.date}" 
+            data-date="${dateStr}" 
             data-count="${day.count}"
             data-cell-index="${idx}"
             onmouseenter="showHeatmapTooltip(event)"
@@ -233,7 +235,7 @@ function showHeatmapTooltip(event) {
   const date = cell.dataset.date;
   const count = parseInt(cell.dataset.count) || 0;
   
-  const dateObj = new Date(date);
+  const dateObj = new Date(date && date.includes('-') ? `${date}T00:00:00` : date);
   const formattedDate = dateObj.toLocaleDateString('en-US', { 
     weekday: 'short', 
     month: 'short', 
