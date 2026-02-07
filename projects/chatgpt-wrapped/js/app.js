@@ -289,13 +289,8 @@ function analyzeConversations(data) {
       }
     }
 
-    // Topic classification (simple)
-    const title = (convo.title || '').toLowerCase();
-    let topic = 'general';
-    if (title.match(/code|function|api|bug|error|typescript|javascript|python|react/i)) topic = 'coding';
-    else if (title.match(/write|email|blog|article|copy/i)) topic = 'writing';
-    else if (title.match(/learn|explain|how|what|why/i)) topic = 'learning';
-    else if (title.match(/plan|strategy|roadmap|todo/i)) topic = 'planning';
+    // Topic classification (expanded)
+    const topic = classifyConversation(convo);
     
     topicCounts[topic] = (topicCounts[topic] || 0) + 1;
 
@@ -324,6 +319,90 @@ function analyzeConversations(data) {
     codeBlocks,
     images,
   };
+}
+
+// ============================================
+// TOPIC CLASSIFICATION (50 CATEGORIES)
+// ============================================
+
+const topicPatterns = [
+  { topic: 'coding', pattern: /code|function|api|bug|error|debug|typescript|javascript|python|java\b|c\+\+|c#|go\b|rust|ruby|php|node|express|framework|library|sdk|algorithm|data.?structure|class|interface|module|import|async|await|promise/i },
+  { topic: 'web-dev', pattern: /html|css|dom|frontend|backend|full.?stack|browser|webpack|vite|next\.js|nuxt|react|vue|angular|svelte|tailwind|bootstrap/i },
+  { topic: 'mobile-dev', pattern: /android|ios|swift|kotlin|react.?native|flutter|xcode|apk|play store|app store/i },
+  { topic: 'data-analytics', pattern: /data|analytics|dashboard|chart|graph|visualization|excel|spreadsheet|csv|pandas|numpy|matplotlib|power.?bi|tableau|looker|report/i },
+  { topic: 'ai-ml', pattern: /\bai\b|artificial.?intelligence|machine.?learning|deep.?learning|neural|gpt|chatgpt|llm|language.?model|prompt|token|embedding|vector|rag|fine.?tune|transformer/i },
+  { topic: 'devops', pattern: /devops|ci\/?cd|pipeline|build|deploy|release|github.?actions|gitlab.?ci|jenkins|docker|kubernetes|helm|terraform|ansible/i },
+  { topic: 'cloud', pattern: /aws|azure|gcp|cloud|lambda|ec2|s3|cloudfront|vpc|iam|serverless|cloud run|cloud function/i },
+  { topic: 'security', pattern: /security|vulnerability|xss|csrf|oauth|jwt|auth|token|encrypt|decrypt|hash|penetration|threat|incident|malware/i },
+  { topic: 'database', pattern: /sql|database|postgres|mysql|sqlite|mongodb|redis|schema|query|index|migration|orm|prisma|typeorm/i },
+  { topic: 'testing-qa', pattern: /test|testing|unit test|integration test|e2e|jest|mocha|cypress|playwright|vitest|qa|bug report/i },
+  { topic: 'performance', pattern: /performance|optimi[sz]e|latency|throughput|cache|profiling|bottleneck|slow|memory leak/i },
+  { topic: 'architecture', pattern: /architecture|design pattern|system design|scalability|microservice|monolith|event.?driven|queue|kafka|pub\/sub/i },
+  { topic: 'ux-ui', pattern: /ux|ui|user experience|user interface|wireframe|prototype|figma|design system|accessibility|a11y/i },
+  { topic: 'product', pattern: /product|roadmap|feature|mvp|user story|backlog|prioritization|product discovery|persona/i },
+  { topic: 'business', pattern: /business|startup|company|entrepreneur|founder|revenue|profit|pricing|strategy|kpi|roi|market fit/i },
+  { topic: 'marketing', pattern: /marketing|seo|content marketing|campaign|brand|growth|acquisition|retention|ad copy|ads|newsletter/i },
+  { topic: 'sales', pattern: /sales|lead|pipeline|crm|prospect|close|demo|pricing call|quota|negotiation/i },
+  { topic: 'customer-support', pattern: /support|customer success|ticket|helpdesk|faq|sla|refund|complaint|onboarding/i },
+  { topic: 'finance', pattern: /finance|budget|cash flow|accounting|invoice|expense|tax|balance sheet|profit and loss|p\&l/i },
+  { topic: 'crypto', pattern: /crypto|bitcoin|ethereum|blockchain|web3|wallet|token|defi|nft|smart contract/i },
+  { topic: 'legal', pattern: /legal|contract|agreement|terms|compliance|privacy|gdpr|hipaa|copyright|trademark|policy/i },
+  { topic: 'hr-people', pattern: /hr|human resources|hiring|recruit|interview|candidate|onboarding|performance review|compensation/i },
+  { topic: 'education', pattern: /education|learning|course|tutorial|lesson|curriculum|teach|classroom|homework|exam|quiz/i },
+  { topic: 'math', pattern: /math|algebra|calculus|geometry|trigonometry|statistics|probability|equation|theorem/i },
+  { topic: 'science', pattern: /science|scientific|experiment|research|hypothesis|lab|methodology/i },
+  { topic: 'physics', pattern: /physics|quantum|relativity|mechanics|thermodynamics|optics|particle/i },
+  { topic: 'chemistry', pattern: /chemistry|chemical|molecule|reaction|organic|inorganic|stoichiometry|periodic table/i },
+  { topic: 'biology', pattern: /biology|genetics|cell|microbiology|evolution|anatomy|physiology|biotech/i },
+  { topic: 'astronomy', pattern: /astronomy|space|planet|star|galaxy|telescope|nasa|astrophysics/i },
+  { topic: 'history', pattern: /history|historical|ancient|medieval|war|civilization|timeline/i },
+  { topic: 'philosophy', pattern: /philosophy|ethics|epistemology|metaphysics|logic|stoic|existential/i },
+  { topic: 'politics', pattern: /politics|policy|government|election|campaign|democracy|legislation|geopolitics/i },
+  { topic: 'economics', pattern: /economics|macro|micro|inflation|interest rate|gdp|recession|market economy/i },
+  { topic: 'language-learning', pattern: /language learning|translate|translation|grammar|vocabulary|fluency|spanish|french|japanese|korean|german/i },
+  { topic: 'writing', pattern: /write|rewrite|edit|proofread|email|blog|article|copy|draft|outline|resume|cover letter|linkedin/i },
+  { topic: 'creative', pattern: /creative|story|fiction|poem|poetry|character|world.?build|plot|narrative|screenplay/i },
+  { topic: 'design', pattern: /design|logo|brand|color|palette|layout|typography|illustration|icon|graphic/i },
+  { topic: 'music-audio', pattern: /music|audio|sound|song|lyrics|mixing|mastering|podcast|voice|synth/i },
+  { topic: 'video-media', pattern: /video|film|editing|premiere|after effects|motion graphics|animation|storyboard/i },
+  { topic: 'photography', pattern: /photo|photography|camera|lens|exposure|iso|shutter|lightroom|composition/i },
+  { topic: 'gaming', pattern: /game|gaming|unity|unreal|gameplay|level design|quest|npc|fps|rpg/i },
+  { topic: 'hardware', pattern: /hardware|cpu|gpu|ram|motherboard|firmware|driver|device|embedded/i },
+  { topic: 'iot', pattern: /iot|internet of things|sensor|raspberry pi|arduino|edge device|mqtt/i },
+  { topic: 'robotics', pattern: /robot|robotics|autonomous|drone|control system|slam|actuator/i },
+  { topic: 'travel', pattern: /travel|trip|itinerary|flight|hotel|visa|backpacking|tourism/i },
+  { topic: 'food-cooking', pattern: /food|cook|cooking|recipe|bake|kitchen|nutrition|meal prep/i },
+  { topic: 'health-fitness', pattern: /health|fitness|workout|exercise|gym|nutrition|diet|calorie|sleep|wellness/i },
+  { topic: 'mental-health', pattern: /mental health|anxiety|stress|therapy|mindfulness|meditation|burnout|self care/i },
+  { topic: 'relationships', pattern: /relationship|dating|marriage|family|parenting|friendship|communication|breakup/i },
+  { topic: 'productivity', pattern: /productivity|time management|todo|task|habit|routine|focus|prioritization|workflow/i }
+];
+
+function classifyConversation(convo) {
+  const title = (convo.title || '').toLowerCase();
+  const messages = convo.mapping ? Object.values(convo.mapping) : [];
+  const userMessages = messages
+    .filter(m => m.message?.author?.role === 'user')
+    .slice(0, 3)
+    .map(m => (m.message.content?.parts?.join(' ') || '').toLowerCase())
+    .join(' ');
+
+  const fullText = `${title} ${userMessages}`.trim();
+  if (!fullText) return 'general';
+
+  let bestTopic = 'general';
+  let bestScore = 0;
+
+  for (const { topic, pattern } of topicPatterns) {
+    const matches = fullText.match(pattern);
+    const score = matches ? matches.length : 0;
+    if (score > bestScore) {
+      bestScore = score;
+      bestTopic = topic;
+    }
+  }
+
+  return bestScore > 0 ? bestTopic : 'general';
 }
 
 // ============================================
@@ -3291,14 +3370,8 @@ function generateEnhancedAnalysis(conversations) {
     if (userMsgCount >= 50) marathonCount++;
     if (userMsgCount < 5) quickCount++;
     
-    // Topic tracking
-    const title = (conv.title || '').toLowerCase();
-    let topic = 'general';
-    if (title.match(/code|function|api|bug|error|typescript|javascript|python|react|html|css/i)) topic = 'coding';
-    else if (title.match(/write|email|blog|article|copy|draft/i)) topic = 'writing';
-    else if (title.match(/learn|explain|how|what|why|tutorial/i)) topic = 'learning';
-    else if (title.match(/plan|strategy|roadmap|todo|list/i)) topic = 'planning';
-    else if (title.match(/design|creative|art|image|visual/i)) topic = 'creative';
+    // Topic tracking (expanded)
+    const topic = classifyConversation(conv);
     
     const isOld = date < new Date(now.getFullYear(), now.getMonth() - 6, 1);
     const bucket = isOld ? topicsOverTime.old : topicsOverTime.recent;
