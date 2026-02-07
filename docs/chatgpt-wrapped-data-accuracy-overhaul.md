@@ -19,21 +19,22 @@
 8. [Bug 5: Cosmic Revelations Are Slide Repeats](#8-bug-5-cosmic-revelations-are-slide-repeats)
 9. [Bug 6: Obsession Slide Shows "general"](#9-bug-6-obsession-slide-shows-general)
 10. [Bug 7: Server-Side LLM Prompts Need Refinement](#10-bug-7-server-side-llm-prompts-need-refinement)
-11. [Data Flow Diagrams](#11-data-flow-diagrams)
-12. [Execution Order & Dependencies](#12-execution-order--dependencies)
-13. [Testing Checklist](#13-testing-checklist)
+11. [Bug 8: No Hardcoded Insights Allowed](#11-bug-8-no-hardcoded-insights-allowed)
+12. [Data Flow Diagrams](#12-data-flow-diagrams)
+13. [Execution Order & Dependencies](#13-execution-order--dependencies)
+14. [Testing Checklist](#14-testing-checklist)
 
 ---
 
 ## 1. Executive Summary
 
-The ChatGPT Wrapped feature has **seven interconnected data accuracy bugs** that cause the majority of slides to display incorrect, generic, or missing data. The bugs fall into three categories:
+The ChatGPT Wrapped feature has **eight interconnected data accuracy bugs** that cause the majority of slides to display incorrect, generic, or missing data. The bugs fall into three categories:
 
 | Category | Bugs | Impact |
 |----------|------|--------|
 | **Broken Data Extraction** | Topic classification, image detection | 83% of conversations miscategorized; 100% of images missing |
 | **Broken Data Wiring** | Achievements data flow | Streaks, active days, OG status, artist badge all fail |
-| **No Real Analysis** | AI identity, cosmic revelations, obsession | Hardcoded lookup tables instead of actual data analysis |
+| **No Real Analysis** | AI identity, cosmic revelations, obsession, non-LLM insights | Hardcoded lookup tables instead of actual data analysis |
 
 **The single most damaging root cause** is the topic classifier. It only recognizes 4 narrow regex patterns, dumping everything else into "general." Since the AI identity, obsession slide, personality title, spirit animal, roasts, and compliments ALL derive from the top topic, when the top topic is "general", every downstream feature produces generic garbage.
 
@@ -306,25 +307,61 @@ Since `topTopic` is derived from `stats.topics[0]`, and that's "general", ALL of
 
 #### Step 1: Expand topic categories dramatically
 
-Replace the 4-category regex with 15+ categories:
+Replace the 4-category regex with **50 categories**:
 
 ```javascript
 const topicPatterns = [
-  { topic: 'coding',       pattern: /code|function|api|bug|error|debug|typescript|javascript|python|react|vue|angular|node|express|sql|database|mongodb|postgres|git|github|docker|kubernetes|deploy|devops|server|backend|frontend|css|html|webpack|npm|package|library|framework|component|hook|state|redux|graphql|rest|endpoint|cors|auth|jwt|token|oauth|regex|algorithm|data.?structure|array|object|class|interface|module|import|async|await|promise|fetch|request|response|json|yaml|config|env|variable|loop|condition|syntax|compile|runtime|exception|stack|trace|log|console|terminal|command|shell|bash|script|lambda|aws|azure|gcp|cloud|ci.?cd|pipeline|test|jest|mocha|cypress|lint|format|prettier|eslint|type|generic|enum|union|tuple/i },
-  { topic: 'ai & ml',      pattern: /\bai\b|artificial.?intelligence|machine.?learning|deep.?learning|neural|gpt|chatgpt|llm|language.?model|openai|claude|anthropic|gemini|prompt|token|embedding|vector|rag|fine.?tune|train|model|transformer|diffusion|stable.?diffusion|dall.?e|midjourney|comfy.?ui|lora|checkpoint|inference|classification|regression|nlp|computer.?vision|reinforcement|agent|langchain|hugging.?face/i },
-  { topic: 'writing',      pattern: /write|rewrite|edit|proofread|email|blog|article|copy|newsletter|headline|subject.?line|tone|grammar|spelling|paragraph|essay|report|document|summary|summarize|rephrase|paraphrase|draft|outline|resume|cover.?letter|linkedin|bio|caption|tagline|slogan|speech|presentation|pitch|proposal|script|screenplay|dialogue|storytelling|content|copywriting|seo.?content|description|review/i },
-  { topic: 'creative',     pattern: /creative|design|logo|brand|color|palette|layout|mockup|wireframe|figma|sketch|illustration|icon|graphic|visual|aesthetic|style|theme|art|drawing|painting|animation|video|music|song|lyrics|poem|poetry|fiction|novel|character|world.?build|game.?design|narrative|plot|story|fantasy|sci.?fi/i },
-  { topic: 'business',     pattern: /business|startup|company|entrepreneur|founder|ceo|cto|revenue|profit|pricing|market|customer|client|sales|marketing|growth|strategy|acquisition|retention|churn|metric|kpi|roi|budget|funding|investor|pitch.?deck|valuation|equity|partnership|negotiat|contract|legal|compliance/i },
-  { topic: 'data & analytics', pattern: /data|analytics|dashboard|chart|graph|visualization|excel|spreadsheet|csv|sql|query|report|metric|statistics|probability|distribution|correlation|regression|forecast|predict|trend|insight|bi\b|tableau|power.?bi|looker|pandas|numpy|matplotlib|jupyter|notebook/i },
-  { topic: 'learning',     pattern: /learn|study|course|tutorial|explain|teach|understand|concept|theory|principle|definition|example|practice|exercise|quiz|exam|certification|skill|knowledge|education|school|university|degree|research|paper|academic/i },
-  { topic: 'career',       pattern: /career|job|interview|resume|portfolio|linkedin|networking|salary|promotion|raise|manager|leadership|team|hire|recruit|onboard|performance|feedback|mentor|coach|skill.?gap|transition|freelance|consulting|remote.?work/i },
-  { topic: 'productivity',  pattern: /productiv|organize|schedule|calendar|todo|task|project.?manage|notion|obsidian|trello|jira|asana|workflow|automat|template|system|routine|habit|goal|priorit|deadline|efficient|time.?manage|focus|pomodoro/i },
-  { topic: 'finance',      pattern: /financ|money|invest|stock|crypto|bitcoin|ethereum|portfolio|tax|budget|saving|retirement|mortgage|loan|credit|bank|trading|dividend|compound|interest|wealth|passive.?income|real.?estate|401k|ira/i },
-  { topic: 'health',       pattern: /health|fitness|workout|exercise|gym|diet|nutrition|meal|calorie|protein|weight|sleep|meditat|mental.?health|therapy|anxiety|stress|wellness|supplement|vitamin|doctor|medical|symptom|diagnos/i },
-  { topic: 'personal',     pattern: /relationship|dating|family|parent|child|friend|emotion|feeling|advice|decision|life|personal|hobby|travel|vacation|trip|cook|recipe|home|apartment|move|pet|dog|cat|garden/i },
-  { topic: 'planning',     pattern: /plan|strategy|roadmap|milestone|timeline|estimate|scope|requirement|specification|architecture|blueprint|phase|sprint|backlog|epic|story|stakeholder/i },
-  { topic: 'communication', pattern: /communicat|present|public.?speak|meeting|agenda|standup|retro|feedback|conflict|difficult.?conversation|negotiate|persuad|influence|collaborate/i },
-  { topic: 'education',    pattern: /math|physics|chemistry|biology|history|geography|philosophy|psychology|sociology|economics|political|science|engineering|medicine|law|literature/i },
+  // 50 category definitions (see app.js for full list)
+  { topic: 'coding', pattern: /.../ },
+  { topic: 'web-dev', pattern: /.../ },
+  { topic: 'mobile-dev', pattern: /.../ },
+  { topic: 'data-analytics', pattern: /.../ },
+  { topic: 'ai-ml', pattern: /.../ },
+  { topic: 'devops', pattern: /.../ },
+  { topic: 'cloud', pattern: /.../ },
+  { topic: 'security', pattern: /.../ },
+  { topic: 'database', pattern: /.../ },
+  { topic: 'testing-qa', pattern: /.../ },
+  { topic: 'performance', pattern: /.../ },
+  { topic: 'architecture', pattern: /.../ },
+  { topic: 'ux-ui', pattern: /.../ },
+  { topic: 'product', pattern: /.../ },
+  { topic: 'business', pattern: /.../ },
+  { topic: 'marketing', pattern: /.../ },
+  { topic: 'sales', pattern: /.../ },
+  { topic: 'customer-support', pattern: /.../ },
+  { topic: 'finance', pattern: /.../ },
+  { topic: 'crypto', pattern: /.../ },
+  { topic: 'legal', pattern: /.../ },
+  { topic: 'hr-people', pattern: /.../ },
+  { topic: 'education', pattern: /.../ },
+  { topic: 'math', pattern: /.../ },
+  { topic: 'science', pattern: /.../ },
+  { topic: 'physics', pattern: /.../ },
+  { topic: 'chemistry', pattern: /.../ },
+  { topic: 'biology', pattern: /.../ },
+  { topic: 'astronomy', pattern: /.../ },
+  { topic: 'history', pattern: /.../ },
+  { topic: 'philosophy', pattern: /.../ },
+  { topic: 'politics', pattern: /.../ },
+  { topic: 'economics', pattern: /.../ },
+  { topic: 'language-learning', pattern: /.../ },
+  { topic: 'writing', pattern: /.../ },
+  { topic: 'creative', pattern: /.../ },
+  { topic: 'design', pattern: /.../ },
+  { topic: 'music-audio', pattern: /.../ },
+  { topic: 'video-media', pattern: /.../ },
+  { topic: 'photography', pattern: /.../ },
+  { topic: 'gaming', pattern: /.../ },
+  { topic: 'hardware', pattern: /.../ },
+  { topic: 'iot', pattern: /.../ },
+  { topic: 'robotics', pattern: /.../ },
+  { topic: 'travel', pattern: /.../ },
+  { topic: 'food-cooking', pattern: /.../ },
+  { topic: 'health-fitness', pattern: /.../ },
+  { topic: 'mental-health', pattern: /.../ },
+  { topic: 'relationships', pattern: /.../ },
+  { topic: 'productivity', pattern: /.../ },
 ];
 ```
 
@@ -360,12 +397,11 @@ function classifyConversation(convo) {
 }
 ```
 
-#### Step 3: Remove "general" entirely
+#### Step 3: Keep "general" as fallback (required)
 
-- Replace every instance of `let topic = 'general'` with `let topic = 'other'`
-- In the display layer, rename "other" to something like "Miscellaneous" or "General Chat"
-- Add logic: if "other" is the #1 obsession, use the #2 topic instead
-- Better yet: with 15+ categories and content analysis, "other" should never be #1
+- Do **not** replace `general` with `other`.
+- Fallback remains `general` when no category matches.
+- Goal: With 50 categories + content analysis, `general` should trend downward and no longer dominate.
 
 #### Step 4: Update both classification locations
 
@@ -373,7 +409,7 @@ The same regex appears in TWO places:
 1. `analyzeConversations()` — line 271
 2. `generateEnhancedAnalysis()` — line 3361
 
-Both need to be replaced with the new `classifyConversation()` function.
+Both are now replaced with the new `classifyConversation()` function that evaluates **title + first 3 user messages** and returns `other` when no pattern matches.
 
 ### How to Test
 
@@ -1227,7 +1263,37 @@ Currently set at `> 0.40` (line ~1213 in server.ts). Consider lowering to `> 0.3
 
 ---
 
-## 11. Data Flow Diagrams
+## 11. Bug 8: No Hardcoded Insights Allowed
+
+### Symptom
+
+Client-side insights still show generic or template-style copy (e.g., “Curious, detail-oriented, and always iterating.”), even with real data loaded.
+
+### Root Cause
+
+- **File:** `projects/chatgpt-wrapped/js/app.js` → `generateDataInsights()` uses static lookup tables and canned strings.
+- **File:** `projects/chatgpt-wrapped/js/app.js` → `loadSampleData()` returns template-style sample insights.
+- The client path (file upload) does not route insights through the LLM pipeline.
+
+### Fix Specification
+
+**Non‑Negotiable Requirement:** No hardcoded insights. All insights must be unique and ideally LLM‑driven.
+
+1. **Primary (Preferred):** Route insights generation to the server LLM (e.g., `/api/wrapped/insights`) for file‑upload flows, with explicit user consent if privacy is a concern.
+2. **Fallback (Allowed):** Replace static lookup tables with **data‑driven heuristics** that use real metrics (night‑owl score, topic diversity, average message length, streaks, etc.).
+3. **Disallowed:** Any static or template phrases that do not reference actual user data.
+4. **UI Behavior:** If insights are unavailable, show a clear “Insights unavailable” state instead of placeholders.
+
+### How to Test
+
+1. Load a dataset with distinct usage patterns.
+2. Verify each insight references real numbers or specific topics.
+3. Load a different dataset and confirm insights change meaningfully.
+4. Confirm no template-only or generic text appears.
+
+---
+
+## 12. Data Flow Diagrams
 
 ### Current Data Flow (Broken)
 
@@ -1322,7 +1388,7 @@ processFile()
 
 ---
 
-## 12. Execution Order & Dependencies
+## 13. Execution Order & Dependencies
 
 ```
 Task 0: Debug Dashboard          ← DO THIS FIRST (enables testing all others)
@@ -1360,7 +1426,7 @@ Task 0: Debug Dashboard          ← DO THIS FIRST (enables testing all others)
 
 ---
 
-## 13. Testing Checklist
+## 14. Testing Checklist
 
 ### Per-Upload Validation (use Debug Dashboard)
 
