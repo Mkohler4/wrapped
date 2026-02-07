@@ -45,7 +45,16 @@ function initFileHandling() {
 }
 
 function initKeyboardNavigation() {
+  // NOTE: js/core/init.js is not loaded in index.html (the app uses js/app.js instead).
+  // The debug shortcut implementation is in the main app entrypoint (app.js).
+  // Core navigation shortcuts only:
   document.onkeydown = (e) => {
+    const isDebugToggle = (e.ctrlKey || e.metaKey) && e.altKey && (e.key === 'D' || e.key === 'd');
+    if (isDebugToggle && typeof window.toggleDebugPanel === 'function') {
+      e.preventDefault();
+      window.toggleDebugPanel();
+      return;
+    }
     if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
     if (e.key === 'ArrowLeft') prevSlide();
     if (e.key === 'Escape') closeEvidenceModal();

@@ -140,7 +140,9 @@ You cannot fix what you cannot see. Every other fix requires the ability to:
 
 ### Specification
 
-**Activation:** Keyboard shortcut `Ctrl+Shift+D` (or a hidden button in the UI)
+**Activation:** Keyboard shortcut `Ctrl+Alt+D` (or a hidden button in the UI)
+
+**Implementation Update:** The actual shortcut is now **Ctrl+Alt+D** (Ctrl+Shift+D conflicts with the browser “Bookmark all tabs”). The panel also auto-scrolls and highlights the relevant section as slides change.
 
 **Location:** An overlay panel that slides in from the right side of the screen, does not interfere with the wrapped slides underneath.
 
@@ -222,6 +224,30 @@ For each achievement, show:
 #### Section 7: Export Button
 A "Copy Debug Data" button that copies all the above as JSON to the clipboard for sharing/filing bugs.
 
+### Current Snapshot (Feb 6, 2026)
+
+Captured from debug panel after loading real data:
+
+- **Topics:**
+  - `coding`: 399
+  - `writing`: 168
+  - `general`: 164
+  - `learning`: 61
+  - `planning`: 55
+  - **Observation:** `general` still ranks #3 → Topic classifier still too narrow.
+- **Images:**
+  - `stats.images`: 0
+  - `imagePrompts.length`: 0
+  - `imageStats`: `{ generated: 0, uploaded: 0, total: 0 }`
+  - **Observation:** Image detection + prompt extraction still not happening.
+- **Heatmap:**
+  - `heatmapStats.activeDays`: 329
+  - `heatmapStats.longestStreak`: 43
+  - **Observation:** These values exist but are not surfaced in `stats.enhanced`/`stats.streaks` on the client path.
+- **AI Insights:**
+  - Still using generic sample-style strings (e.g., “Curious, detail-oriented, and always iterating.”)
+  - **Observation:** Client-side insights are still static/hardcoded.
+
 ### Implementation Notes
 
 - Create new file: `js/debug-panel.js`
@@ -238,6 +264,8 @@ A "Copy Debug Data" button that copies all the above as JSON to the clipboard fo
 ### Symptom
 
 Your #1 Obsession shows as "general" with 1,184 conversations (83% of all chats). This cascades into generic AI identity, generic roasts, generic personality.
+
+**Current Snapshot:** `general` remains a top-3 category (164 conversations), confirming the classifier is still too narrow.
 
 ### Root Cause
 
@@ -362,6 +390,8 @@ Both need to be replaced with the new `classifyConversation()` function.
 ### Symptom
 
 The gallery slide shows "No images to display" even when the user has uploaded many images and generated DALL-E images in their ChatGPT history.
+
+**Current Snapshot:** `stats.images = 0`, `imagePrompts.length = 0`, `imageStats.total = 0`.
 
 ### Root Cause — Two Separate Bugs
 
@@ -583,6 +613,8 @@ Multiple achievements that should be unlocked show as locked:
 - Artist (you've created images) → locked
 - Dedication (7+ active days) → locked
 
+**Current Snapshot:** Heatmap reports `activeDays = 329` and `longestStreak = 43`, but those values are not wired into `stats.enhanced` / `stats.streaks` on the client path. Achievements will still show 0 for streak/dedication until wired.
+
 ### Root Cause — Three Disconnected Data Pipes
 
 The achievement system in `slide-16-achievements.js` reads from specific data paths. During client-side processing, these paths are NEVER populated.
@@ -741,6 +773,8 @@ The AI Identity slide shows:
 - **Title:** "The Seeker"
 - **Spirit Animal:** Owl — "Wise and observant"
 - These are generic, meaningless labels with no actual analysis behind them
+
+**Current Snapshot:** AI insights still show generic sample copy (e.g., “Curious, detail-oriented, and always iterating.”) → confirms client-side insights are not data-driven.
 
 ### Root Cause
 
