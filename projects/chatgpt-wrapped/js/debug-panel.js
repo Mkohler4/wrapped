@@ -271,20 +271,33 @@
     `;
   }
 
+  function copyDebugDataViaTextarea(payload) {
+    const textarea = document.createElement('textarea');
+    textarea.value = payload;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    textarea.remove();
+  }
+
   function copyDebugData() {
     const debugData = buildDebugData();
     const payload = JSON.stringify(debugData, null, 2);
     if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(payload);
+      try {
+        const result = navigator.clipboard.writeText(payload);
+        if (result && typeof result.then === 'function') {
+          result.catch(function () {
+            copyDebugDataViaTextarea(payload);
+          });
+        }
+      } catch (e) {
+        copyDebugDataViaTextarea(payload);
+      }
     } else {
-      const textarea = document.createElement('textarea');
-      textarea.value = payload;
-      textarea.style.position = 'fixed';
-      textarea.style.opacity = '0';
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand('copy');
-      textarea.remove();
+      copyDebugDataViaTextarea(payload);
     }
   }
 
@@ -302,7 +315,17 @@
     } else {
       panel.classList.remove('is-open');
       panel.style.pointerEvents = 'none';
-      panel.style.display = 'none';
+      const onTransitionEnd = (event) => {
+        if (event.target !== panel) return;
+        panel.removeEventListener('transitionend', onTransitionEnd);
+        panel.style.display = 'none';
+      };
+      panel.addEventListener('transitionend', onTransitionEnd);
+      // Fallback in case transitionend doesn't fire
+      setTimeout(() => {
+        panel.removeEventListener('transitionend', onTransitionEnd);
+        panel.style.display = 'none';
+      }, 300);
     }
   }
 

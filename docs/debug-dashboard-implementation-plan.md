@@ -46,10 +46,10 @@ We will add a **non-intrusive debug overlay panel** that can be toggled with **C
 
 ### Existing Files
 - `projects/chatgpt-wrapped/index.html`
-	- Add `<link>` for `debug-panel.css`
+	- Ensure `css/styles.css` is loaded (it now `@import`s `core/debug-panel.css`; no separate `<link>` for `debug-panel.css` is needed).
 	- Add `<script>` for `debug-panel.js`
 - `projects/chatgpt-wrapped/js/core/init.js`
-	- Register keyboard shortcut `Ctrl+Shift+D`.
+	- Register keyboard shortcut `Ctrl+Alt+D`.
 	- Call `window.toggleDebugPanel()` if available.
 - `projects/chatgpt-wrapped/js/app.js`
 	- After `populateSlides(stats);` call `window.refreshDebugPanel()` if available.

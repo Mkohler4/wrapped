@@ -140,7 +140,7 @@ You cannot fix what you cannot see. Every other fix requires the ability to:
 
 ### Specification
 
-**Activation:** Keyboard shortcut `Ctrl+Shift+D` (or a hidden button in the UI)
+**Activation:** Keyboard shortcut `Ctrl+Alt+D` (or a hidden button in the UI)
 
 **Implementation Update:** The actual shortcut is now **Ctrl+Alt+D** (Ctrl+Shift+D conflicts with the browser “Bookmark all tabs”). The panel also auto-scrolls and highlights the relevant section as slides change.
 
