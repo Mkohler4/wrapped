@@ -321,6 +321,11 @@
         panel.style.display = 'none';
       };
       panel.addEventListener('transitionend', onTransitionEnd);
+      // Fallback in case transitionend doesn't fire
+      setTimeout(() => {
+        panel.removeEventListener('transitionend', onTransitionEnd);
+        panel.style.display = 'none';
+      }, 300);
     }
   }
 
