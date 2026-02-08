@@ -14,52 +14,12 @@
         <div class="gallery-hero-number" id="galleryHeroNumber" data-target="0">0</div>
         <div class="gallery-hero-glow"></div>
       </div>
-      <div class="gallery-hero-label">images created</div>
+      <div class="gallery-hero-label">images generated</div>
       <div class="gallery-hero-sublabel">with ChatGPT</div>
-    </div>
-    
-    <!-- Stats breakdown -->
-    <div class="gallery-stats-row">
-      <div class="gallery-stat-card" id="galleryStatGenerated">
-        <div class="gallery-stat-icon">🎨</div>
-        <div class="gallery-stat-value" id="galleryGeneratedCount" data-target="0">0</div>
-        <div class="gallery-stat-label">AI Generated</div>
-        <div class="gallery-stat-bar">
-          <div class="gallery-stat-bar-fill generated-fill" id="galleryGeneratedBar"></div>
-        </div>
-      </div>
-      
-      <div class="gallery-stat-divider">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-      </div>
-      
-      <div class="gallery-stat-card" id="galleryStatUploaded">
-        <div class="gallery-stat-icon">📤</div>
-        <div class="gallery-stat-value" id="galleryUploadedCount" data-target="0">0</div>
-        <div class="gallery-stat-label">Uploaded</div>
-        <div class="gallery-stat-bar">
-          <div class="gallery-stat-bar-fill uploaded-fill" id="galleryUploadedBar"></div>
-        </div>
-      </div>
     </div>
     
     <!-- Featured images showcase -->
     <div class="gallery-showcase" id="galleryShowcase">
-      <!-- Filter tabs -->
-      <div class="gallery-filter-tabs">
-        <button class="gallery-filter-tab active" data-filter="all" onclick="setGalleryFilter('all')">
-          All
-        </button>
-        <button class="gallery-filter-tab" data-filter="generated" onclick="setGalleryFilter('generated')">
-          🎨 Generated
-        </button>
-        <button class="gallery-filter-tab" data-filter="uploaded" onclick="setGalleryFilter('uploaded')">
-          📤 Uploaded
-        </button>
-      </div>
-      
       <!-- Image grid with side arrows -->
       <div class="gallery-grid-wrapper">
         <button class="gallery-arrow gallery-arrow-left" onclick="scrollGalleryGrid(-1)" id="galleryScrollLeft">

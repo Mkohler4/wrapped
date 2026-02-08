@@ -4,14 +4,8 @@
 
 /**
  * Animate a number counting up from 0 to target
- * @param {HTMLElement} el - Element to animate
- * @param {number} target - Target number
- * @param {number} duration - Animation duration in ms
- * @param {string} suffix - Optional suffix (e.g., '%', 'k')
  */
-function animateCountUp(el, target, duration = 1500, suffix = '') {
-  if (!el) return;
-  
+function animateCountUp(element, target, duration = 2000) {
   const start = 0;
   const startTime = performance.now();
   
@@ -19,26 +13,42 @@ function animateCountUp(el, target, duration = 1500, suffix = '') {
     const elapsed = currentTime - startTime;
     const progress = Math.min(elapsed / duration, 1);
     
-    // Ease out cubic
-    const easeOut = 1 - Math.pow(1 - progress, 3);
-    const current = Math.floor(start + (target - start) * easeOut);
+    // Easing function (ease-out cubic)
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const current = Math.floor(start + (target - start) * eased);
     
-    el.textContent = formatNumber(current) + suffix;
+    element.textContent = current.toLocaleString();
     
     if (progress < 1) {
       requestAnimationFrame(update);
     } else {
-      el.textContent = formatNumber(target) + suffix;
+      element.textContent = target.toLocaleString();
     }
   }
   
   requestAnimationFrame(update);
 }
 
+function formatHour(h) {
+  if (h === 0) return '12am';
+  if (h === 12) return '12pm';
+  return h > 12 ? `${h - 12}pm` : `${h}am`;
+}
+
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+function truncateText(text, maxLength) {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength - 3) + '...';
+}
+
 /**
  * Format a number with commas
- * @param {number} num - Number to format
- * @returns {string} Formatted number
  */
 function formatNumber(num) {
   return num.toLocaleString();
@@ -46,8 +56,6 @@ function formatNumber(num) {
 
 /**
  * Format a number compactly (e.g., 1.2k, 3.5M)
- * @param {number} num - Number to format
- * @returns {string} Compact formatted number
  */
 function formatCompact(num) {
   if (num >= 1000000) {
@@ -59,21 +67,7 @@ function formatCompact(num) {
 }
 
 /**
- * Format hour to 12-hour format with AM/PM
- * @param {number} hour - Hour (0-23)
- * @returns {string} Formatted time (e.g., "2pm", "11am")
- */
-function formatHour(hour) {
-  if (hour === 0) return '12am';
-  if (hour === 12) return '12pm';
-  if (hour < 12) return hour + 'am';
-  return (hour - 12) + 'pm';
-}
-
-/**
  * Get time of day label
- * @param {number} hour - Hour (0-23)
- * @returns {string} Time of day label
  */
 function getTimeOfDay(hour) {
   if (hour >= 5 && hour < 12) return 'morning';
@@ -84,8 +78,6 @@ function getTimeOfDay(hour) {
 
 /**
  * Delay execution
- * @param {number} ms - Milliseconds to delay
- * @returns {Promise} Promise that resolves after delay
  */
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -93,10 +85,6 @@ function delay(ms) {
 
 /**
  * Clamp a number between min and max
- * @param {number} num - Number to clamp
- * @param {number} min - Minimum value
- * @param {number} max - Maximum value
- * @returns {number} Clamped number
  */
 function clamp(num, min, max) {
   return Math.min(Math.max(num, min), max);
@@ -104,10 +92,6 @@ function clamp(num, min, max) {
 
 /**
  * Linear interpolation
- * @param {number} start - Start value
- * @param {number} end - End value
- * @param {number} t - Progress (0-1)
- * @returns {number} Interpolated value
  */
 function lerp(start, end, t) {
   return start + (end - start) * t;
@@ -115,12 +99,6 @@ function lerp(start, end, t) {
 
 /**
  * Map a value from one range to another
- * @param {number} value - Value to map
- * @param {number} inMin - Input range min
- * @param {number} inMax - Input range max
- * @param {number} outMin - Output range min
- * @param {number} outMax - Output range max
- * @returns {number} Mapped value
  */
 function mapRange(value, inMin, inMax, outMin, outMax) {
   return (value - inMin) * (outMax - outMin) / (inMax - inMin) + outMin;
@@ -128,9 +106,6 @@ function mapRange(value, inMin, inMax, outMin, outMax) {
 
 /**
  * Debounce a function
- * @param {Function} func - Function to debounce
- * @param {number} wait - Wait time in ms
- * @returns {Function} Debounced function
  */
 function debounce(func, wait) {
   let timeout;
@@ -146,9 +121,6 @@ function debounce(func, wait) {
 
 /**
  * Throttle a function
- * @param {Function} func - Function to throttle
- * @param {number} limit - Time limit in ms
- * @returns {Function} Throttled function
  */
 function throttle(func, limit) {
   let inThrottle;
@@ -166,6 +138,8 @@ window.animateCountUp = animateCountUp;
 window.formatNumber = formatNumber;
 window.formatCompact = formatCompact;
 window.formatHour = formatHour;
+window.escapeHtml = escapeHtml;
+window.truncateText = truncateText;
 window.getTimeOfDay = getTimeOfDay;
 window.delay = delay;
 window.clamp = clamp;
@@ -173,4 +147,3 @@ window.lerp = lerp;
 window.mapRange = mapRange;
 window.debounce = debounce;
 window.throttle = throttle;
-

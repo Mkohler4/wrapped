@@ -1,7 +1,7 @@
 # ChatGPT Wrapped: Data Accuracy Overhaul
 
-> **Status:** Active  
-> **Date:** February 6, 2026  
+> **Status:** Active — 4/9 items complete (Task 0, Bug 1, Bug 2, Bug 3)  
+> **Date:** February 6, 2026 (last updated Feb 8, 2026)  
 > **Priority:** Critical  
 > **Purpose:** Documents every data accuracy bug in ChatGPT Wrapped, traces root causes to exact lines of code, specifies fixes, and defines a testing strategy to ensure data is correct before and after changes.
 
@@ -30,11 +30,11 @@
 
 The ChatGPT Wrapped feature has **eight interconnected data accuracy bugs** that cause the majority of slides to display incorrect, generic, or missing data. The bugs fall into three categories:
 
-| Category | Bugs | Impact |
-|----------|------|--------|
-| **Broken Data Extraction** | Topic classification, image detection | 83% of conversations miscategorized; 100% of images missing |
-| **Broken Data Wiring** | Achievements data flow | Streaks, active days, OG status, artist badge all fail |
-| **No Real Analysis** | AI identity, cosmic revelations, obsession, non-LLM insights | Hardcoded lookup tables instead of actual data analysis |
+| Category | Bugs | Impact | Status |
+|----------|------|--------|--------|
+| **Broken Data Extraction** | Topic classification, image detection | 83% of conversations miscategorized; 100% of images missing | ✅ Both fixed |
+| **Broken Data Wiring** | Achievements data flow | Streaks, active days, OG status, artist badge all fail | ✅ Fixed |
+| **No Real Analysis** | AI identity, cosmic revelations, obsession, non-LLM insights | Hardcoded lookup tables instead of actual data analysis | ⬜ Open |
 
 **The single most damaging root cause** is the topic classifier. It only recognizes 4 narrow regex patterns, dumping everything else into "general." Since the AI identity, obsession slide, personality title, spirit animal, roasts, and compliments ALL derive from the top topic, when the top topic is "general", every downstream feature produces generic garbage.
 
@@ -131,6 +131,8 @@ populateSlides() — js/app.js:601
 
 ## 3. Task 0: Debug & Testing Dashboard
 
+> **Status:** ✅ Complete (Feb 6, 2026)
+
 ### Why This Is First
 
 You cannot fix what you cannot see. Every other fix requires the ability to:
@@ -225,27 +227,25 @@ For each achievement, show:
 #### Section 7: Export Button
 A "Copy Debug Data" button that copies all the above as JSON to the clipboard for sharing/filing bugs.
 
-### Current Snapshot (Feb 6, 2026)
+### Current Snapshot (Feb 7, 2026 — updated)
 
 Captured from debug panel after loading real data:
 
-- **Topics:**
-  - `coding`: 399
-  - `writing`: 168
-  - `general`: 164
-  - `learning`: 61
-  - `planning`: 55
-  - **Observation:** `general` still ranks #3 → Topic classifier still too narrow.
-- **Images:**
-  - `stats.images`: 0
-  - `imagePrompts.length`: 0
-  - `imageStats`: `{ generated: 0, uploaded: 0, total: 0 }`
-  - **Observation:** Image detection + prompt extraction still not happening.
-- **Heatmap:**
-  - `heatmapStats.activeDays`: 329
-  - `heatmapStats.longestStreak`: 43
-  - **Observation:** These values exist but are not surfaced in `stats.enhanced`/`stats.streaks` on the client path.
-- **AI Insights:**
+- **Topics:** ✅ Fixed
+  - `coding`: 399, `writing`: 168, `web-dev`, `product`, `learning`, etc. now properly classified
+  - `general` reduced from #3 (164 convos) to a small minority with the expanded ~50-category classifier
+  - **Observation:** Topic classification overhaul resolved the catch-all problem. Was: `general` still ranks #3 → Topic classifier still too narrow.
+- **Images:** ✅ Fixed
+  - `imagePrompts.length`: 247 (was 0)
+  - `imageStats`: `{ generated: 247, total: 247 }` (uploaded images intentionally excluded)
+  - 246/247 images resolve to real thumbnails from ZIP subfolders
+  - **Observation:** Full image pipeline working — extraction, ZIP resolution (including `sediment://` + `file-service://`), and gallery rendering.
+- **Heatmap / Achievements:** ✅ Fixed
+  - `heatmapStats.activeDays`: 596, `heatmapStats.longestStreak`: 21 (from latest debug data)
+  - `stats.enhanced.longestStreak` and `stats.enhanced.totalActiveDays` now wired from `heatmapData.stats`
+  - `stats.firstDate` now computed from earliest `create_time` across all conversations
+  - **Observation:** Streak, dedication, OG, and artist achievements now unlock correctly.
+- **AI Insights:** ⬜ Bug 4/8 still open
   - Still using generic sample-style strings (e.g., “Curious, detail-oriented, and always iterating.”)
   - **Observation:** Client-side insights are still static/hardcoded.
 
@@ -258,9 +258,19 @@ Captured from debug panel after loading real data:
 - The panel reads from the same global variables (`stats`, `aiInsights`, `imagePrompts`, `imageStats`, `heatmapData`, `discoveredThemes`)
 - Panel auto-refreshes when data changes (listen for slide population)
 
+### What Was Implemented
+
+- **`js/debug-panel.js`** and **`css/core/debug-panel.css`** created.
+- Activated via **Ctrl+Alt+D** keyboard shortcut (registered in `js/core/init.js`).
+- Overlay panel slides in from the right, does not interfere with slides.
+- Displays all sections specified above: raw stats, topic breakdown, image detection, achievement data sources, AI insights, achievement results, and an export/copy button.
+- Auto-highlights the relevant debug section as slides change.
+
 ---
 
 ## 4. Bug 1: Topic Classification — "general" Catch-All
+
+> **Status:** ✅ Complete (Feb 7, 2026)
 
 ### Symptom
 
@@ -419,9 +429,19 @@ Both are now replaced with the new `classifyConversation()` function that evalua
 4. Top topic should be a meaningful category
 5. Spot-check 10 conversations manually: does the classification match?
 
+### What Was Implemented
+
+- **`js/core/analysis.js`**: Replaced the 4-category regex with a `classifyConversation()` function containing **~50 topic categories** via `topicPatterns` array. Each pattern has extensive regex coverage (e.g., `coding` now matches docker, kubernetes, sql, git, deploy, webpack, etc.).
+- **Content analysis**: The classifier now examines both the conversation **title** and the **first 3 user messages**, combining them into `fullText` for pattern scoring. The highest-scoring topic wins.
+- **Fallback to "general"**: Only triggers when no pattern matches at all, which is now rare given the breadth of patterns.
+- Both classification call sites (`analyzeConversations()` and `generateEnhancedAnalysis()`) now use the shared `classifyConversation()` function.
+- **Result**: With real data, `general` dropped from 83% (#1) to a small minority. Meaningful categories like `coding`, `web-dev`, `writing`, `product`, etc. now dominate.
+
 ---
 
 ## 5. Bug 2: Images Never Load
+
+> **Status:** ✅ Complete (Feb 7, 2026)
 
 ### Symptom
 
@@ -630,16 +650,58 @@ function extractImagePrompts(conversations) {
 
 ### How to Test
 
-1. Upload a ChatGPT export that you KNOW contains DALL-E images and uploaded images
+1. Upload a ChatGPT export that you KNOW contains DALL-E images
 2. Open debug panel → check "Image Detection" section
 3. Verify `imagePrompts.length > 0`
-4. Verify `imageStats.generated` and `imageStats.uploaded` match expected counts
-5. Navigate to gallery slide → verify cards appear
+4. Verify `imageStats.generated` matches expected count
+5. Navigate to gallery slide → verify cards appear with real image thumbnails
 6. Check a few cards: does the prompt text match the actual image context?
+
+### What Was Implemented
+
+The fix addressed **three layers** of breakage: extraction, resolution, and the new export format.
+
+#### 1. Image Extraction (`js/core/image-extraction.js` — new file)
+
+- Created `extractImagePrompts(conversations, zipImageMap)` function called from `processFile()`.
+- Extracts images from three content structures: `multimodal_text` with `image_asset_pointer` parts, direct `image_asset_pointer` content, and DALL-E metadata fallback.
+- **Deduplication**: Uses both an `asset_pointer` seen-set and a `processedNodeIds` set to prevent the metadata catch-all from creating placeholder duplicates of images already found via the content paths.
+- **Prompt extraction**: Checks multiple locations in priority order — `part.metadata.dalle.prompt` (old format), `msg.metadata.dalle.prompt` (old format), `msg.metadata.image_gen_title` (new format), then falls back to walking the conversation tree to find the parent user message.
+- **Uploaded images excluded**: Only `tool` and `assistant` role images are extracted. User-uploaded images are intentionally filtered out — the gallery now focuses exclusively on AI-generated images.
+
+#### 2. ZIP Image Resolution (`js/core/file-handling.js`)
+
+- **Subdirectory scanning**: The ZIP extraction now walks **all subdirectories**, not just root-level files. This was critical because ChatGPT exports store generated images in `dalle-generations/` and `user-{id}/` subfolders.
+- **ID prefix mapping**: Each extracted image filename is parsed to strip the UUID suffix (e.g., `file_000000006a2c71f5...-a168b0c6-1aba-4b93-...png` → `file_000000006a2c71f5...`). The ID prefix is mapped as a key in `zipImageMap`.
+- **Protocol-prefixed keys**: Both `file-service://{id}` and `sediment://{id}` keys are registered in the map for direct asset_pointer lookups.
+
+#### 3. New ChatGPT Export Format Support (`js/core/image-extraction.js`)
+
+Investigation of a real export revealed the format has changed significantly:
+
+| Aspect | Old Format | New Format |
+|--------|-----------|------------|
+| Asset pointer protocol | `file-service://file-XXXXX` | `sediment://file_XXXXX` |
+| Image message role | `assistant` | `tool` |
+| DALL-E prompt location | `msg.metadata.dalle.prompt` | `part.metadata.dalle.prompt` (often empty) + `msg.metadata.image_gen_title` |
+| Image file location in export | Root level | `dalle-generations/` and `user-{userId}/` subfolders |
+| Filename → pointer mapping | `file-XXXXX` prefix matches | `file_XXXXX` hex prefix matches (strip UUID suffix) |
+
+- `resolveImageFromZip()` now strips both `sediment://` and `file-service://` protocol prefixes.
+- **Result**: 246 out of 247 generated images now resolve to real thumbnails (1 image is simply missing from the export).
+
+#### 4. Gallery UI Simplification
+
+- Removed the **filter tab bar** (All / Generated / Uploaded) from `slides/slide-10-gallery.html` and its inline fallback in `index.html`.
+- Removed the **uploaded stat card** and divider from the stats row — the hero number now reads "images generated" instead of "images created".
+- Simplified `slide-10-gallery.js`: removed `setGalleryFilter()`, `filterImages()`, and all uploaded-related rendering logic.
+- Updated `evidence-modal.js` to remove uploaded image handling in `showImagePrompt()`.
 
 ---
 
 ## 6. Bug 3: Achievements Completely Broken
+
+> **Status:** ✅ Complete (Feb 8, 2026)
 
 ### Symptom
 
@@ -798,6 +860,35 @@ After the `extractImagePrompts()` call (from Bug 2 fix), `imageStats` will alrea
    - `imageStats.generated > 0` (if you have DALL-E images)
 4. Navigate to achievements slide
 5. Verify streak, dedication, OG, and artist badges are now correct
+
+### What Was Implemented
+
+Three fixes addressed the three disconnected data pipes:
+
+#### 1. Fix 3B: `firstDate` computed from conversations (`js/core/analysis.js`)
+
+- `analyzeConversations()` now tracks `earliestTimestamp` across all conversations by checking `convo.create_time`.
+- Returns `firstDate` as an ISO string (e.g., `"2023-03-15T..."`) in the result object.
+- **Result**: `firstMessageYear` in achievements will now be correct (e.g., 2023) instead of `9999`, unlocking OG tiers.
+
+#### 2. Fix 3A: Heatmap stats wired into `stats` (`js/core/file-handling.js`)
+
+- After `generateHeatmapData()` completes, `heatmapData.stats.longestStreak` and `heatmapData.stats.activeDays` are now wired into:
+  - `stats.enhanced.longestStreak` / `stats.enhanced.totalActiveDays`
+  - `stats.streaks.longestStreak` / `stats.streaks.totalActiveDays`
+- Both paths that achievements check (`stats.enhanced?.longestStreak || stats.streaks?.longestStreak`) will now resolve correctly.
+- **Result**: Streak and dedication achievements unlock based on real heatmap data.
+
+#### 3. Fix 3C: Image stats (already fixed by Bug 2)
+
+- `imageStats.generated = 247` was already populated by the Bug 2 fix (`extractImagePrompts()`).
+- **Result**: Artist achievement unlocks correctly.
+
+#### 4. Bonus: Sample data de-hardcoded (`js/core/sample-data.js`)
+
+- Replaced hardcoded `stats.enhanced`, `stats.topWords`, and `aiInsights` with calls to the real analysis functions (`generateEnhancedAnalysis()`, `extractTopWords()`, `generateDataInsights()`).
+- Removed `generateSampleInsights()` and `generateMonthlyTrend()` — sample data now uses the same pipeline as file uploads.
+- Added the same heatmap→stats wiring so sample data achievements work identically to real data.
 
 ---
 

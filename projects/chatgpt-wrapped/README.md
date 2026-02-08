@@ -1,357 +1,214 @@
 # ChatGPT Wrapped
 
-> Your year (or all-time) in ChatGPT — Spotify Wrapped style.
-
-![ChatGPT Wrapped Hero](screenshots/hero.png)
-<!-- TODO: Add screenshot of the main wrapped experience -->
+> Your year (or all-time) in ChatGPT -- Spotify Wrapped style.
 
 ---
 
-## 🎯 What is This?
+## What is This?
 
-ChatGPT Wrapped analyzes your ChatGPT conversation export and creates a beautiful, animated summary of your AI interactions — just like Spotify Wrapped, but for your ChatGPT usage.
+ChatGPT Wrapped analyzes your ChatGPT conversation export and creates a beautiful, animated summary of your AI interactions -- just like Spotify Wrapped, but for your ChatGPT usage.
 
 **Features include:**
-- 📊 Total conversations & messages with trend sparklines
-- 🏷️ Top topics you talked about
-- 🎭 Your AI-generated personality profile
-- ⏰ Peak usage times with 24-hour time wheel
-- 🔥 GitHub-style activity heatmap
-- 💬 Word frequency bubble visualization
-- 🖼️ Image transformation gallery (uploaded → generated pairs)
-- 🏆 Achievement badges based on your usage
-- 🎯 AI-powered roasts and compliments
-- 📈 Evolution comparison (you vs 6 months ago)
+- Total conversations & messages with trend sparklines
+- Top topics you talked about
+- Your AI-generated personality profile (radar chart + spirit animal)
+- Peak usage times with 24-hour time wheel
+- GitHub-style activity heatmap
+- Word frequency bubble visualization
+- Image gallery (uploaded + DALL-E generated with prompts)
+- Achievement badges based on your usage
+- AI-powered roasts and compliments
+- Evolution comparison (you vs 6 months ago)
+- Discovered semantic themes (embedding-based)
 
 ---
 
-## 📸 Screenshots
+## Quick Start
 
-### Upload Screen
-![Upload Screen](screenshots/upload.png)
-<!-- TODO: Screenshot of the drag-and-drop upload interface -->
+### One Command (Recommended)
 
-### Stats Overview
-![Stats](screenshots/stats.png)
-<!-- TODO: Screenshot showing conversation/message counts -->
+From the project root:
 
-### Activity Heatmap
-![Heatmap](screenshots/heatmap.png)
-<!-- TODO: Screenshot of the GitHub-style activity grid -->
+```bash
+./start.sh
+```
 
-### Time Wheel
-![Time Wheel](screenshots/time-wheel.png)
-<!-- TODO: Screenshot of the 24-hour circular clock visualization -->
+This starts the database, server, and opens the Wrapped page in your browser at http://localhost:3001/wrapped/
 
-### Word Bubbles
-![Word Bubbles](screenshots/word-bubbles.png)
-<!-- TODO: Screenshot of the floating word frequency bubbles -->
+### Standalone Mode (No Backend)
 
-### AI Personality Analysis
-![Personality](screenshots/personality.png)
-<!-- TODO: Screenshot of the AI-generated personality profile -->
+If you just want to upload a file and see results without the backend:
 
-### Achievement Badges
-![Achievements](screenshots/achievements.png)
-<!-- TODO: Screenshot of unlocked achievement badges -->
+```bash
+./start.sh --wrapped-only
+```
+
+Or simply open `index.html` directly in your browser and drop your ChatGPT export file.
+
+### What's the Difference?
+
+| Feature | Standalone (file upload) | Backend (Load My Data) |
+|---------|------------------------|----------------------|
+| Basic stats (messages, topics, hours) | Yes | Yes |
+| Activity heatmap | Yes | Yes |
+| Word frequency | Yes | Yes |
+| AI-powered personality insights | No (hardcoded fallbacks) | Yes (GPT-4o-mini) |
+| Semantic theme discovery | No (regex only) | Yes (embeddings) |
+| Image gallery with real images | No (placeholders) | Yes |
+| Streaks & active days from DB | No | Yes |
 
 ---
 
-## 🚀 Quick Start
-
-### Option A: Standalone Mode (No Backend Required)
-
-The easiest way to use ChatGPT Wrapped — just open the HTML file in your browser!
-
-#### 1. Get Your ChatGPT Export
+## How to Get Your ChatGPT Export
 
 1. Go to [chat.openai.com](https://chat.openai.com)
-2. Click your profile → **Settings**
-3. Go to **Data Controls** → **Export data**
+2. Click your profile icon -> **Settings**
+3. Go to **Data Controls** -> **Export data**
 4. Click **Export** and wait for the email
-5. Download the ZIP file (it may take a few minutes to arrive)
-
-#### 2. Open the App
-
-<details>
-<summary><b>🍎 macOS</b></summary>
-
-```bash
-cd projects/chatgpt-wrapped
-open index.html
-```
-
-Or double-click `index.html` in Finder.
-
-</details>
-
-<details>
-<summary><b>🪟 Windows</b></summary>
-
-```cmd
-cd projects\chatgpt-wrapped
-start index.html
-```
-
-Or double-click `index.html` in File Explorer.
-
-</details>
-
-<details>
-<summary><b>🐧 Linux</b></summary>
-
-```bash
-cd projects/chatgpt-wrapped
-xdg-open index.html
-```
-
-Or open `index.html` from your file manager.
-
-</details>
-
-#### 3. Upload Your Data
-
-- Drag and drop your ChatGPT export ZIP file onto the upload area
-- Or drop just the `conversations.json` file from the export
-
-That's it! Your Wrapped experience will generate instantly in-browser.
+5. Download the ZIP file
 
 ---
 
-### Option B: Full Backend Mode (Advanced Features)
-
-For AI-powered insights and persistent storage, use the full backend.
-
-#### Prerequisites
-
-- **Node.js** 18+ (recommend using [nvm](https://github.com/nvm-sh/nvm) on Mac/Linux or [nvm-windows](https://github.com/coreybutler/nvm-windows) on Windows)
-- **Docker** (for PostgreSQL)
-- **OpenAI API Key** (for AI-powered insights)
-
-#### 1. Clone and Install
-
-```bash
-git clone https://github.com/yourusername/personal-operator-assistant.git
-cd personal-operator-assistant
-npm install
-```
-
-#### 2. Set Up PostgreSQL with Docker
-
-```bash
-npm run db:start
-```
-
-#### 3. Configure Environment Variables
-
-<details>
-<summary><b>🍎 macOS / Linux</b></summary>
-
-```bash
-cat > .env << EOF
-DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
-OPENAI_API_KEY=sk-your-key-here
-EOF
-```
-
-Or use export:
-```bash
-export DATABASE_URL="postgresql://operator:operator_dev_password@localhost:5433/personal_operator"
-export OPENAI_API_KEY="sk-your-key-here"
-```
-
-</details>
-
-<details>
-<summary><b>🪟 Windows (PowerShell)</b></summary>
-
-```powershell
-@"
-DATABASE_URL=postgresql://operator:operator_dev_password@localhost:5433/personal_operator
-OPENAI_API_KEY=sk-your-key-here
-"@ | Out-File -FilePath .env -Encoding utf8
-```
-
-Or set environment variables:
-```powershell
-$env:DATABASE_URL = "postgresql://operator:operator_dev_password@localhost:5433/personal_operator"
-$env:OPENAI_API_KEY = "sk-your-key-here"
-```
-
-</details>
-
-#### 4. Initialize Database & Import Data
-
-```bash
-# Run migrations
-npm run db:migrate
-
-# Import your ChatGPT export
-npm run import:chatgpt /path/to/your/chatgpt-export.zip
-```
-
-> **Windows note:** Use backslashes for paths: `npm run import:chatgpt C:\Users\you\Downloads\chatgpt-export.zip`
-
-#### 5. Start the Server
-
-```bash
-npm run dev
-```
-
-Open http://localhost:3001/wrapped in your browser and click **"Load My ChatGPT Data"**!
-
----
-
-## 📁 Project Structure
+## Architecture
 
 ```
-personal-operator-assistant/
-├── projects/chatgpt-wrapped/
-│   ├── index.html          # Main frontend (single-file app)
-│   ├── README.md           # This file
-│   └── TASKS.md            # Development task tracking
-├── src/
-│   ├── server.ts           # Express API server
-│   ├── db/
-│   │   └── schema.sql      # PostgreSQL schema
-│   └── ingest/chatgpt/
-│       ├── parser.ts       # ChatGPT export parser
-│       ├── importer.ts     # Data import logic
-│       └── types.ts        # TypeScript interfaces
-└── data/
-    └── chatgpt-gallery/    # Extracted images stored here
+projects/chatgpt-wrapped/
+├── index.html              # Entry point (single-page app)
+├── css/
+│   ├── styles.css          # Main stylesheet
+│   ├── core/               # Base, modals, navigation, upload styles
+│   ├── slides/             # Per-slide CSS (slide-01 through slide-18)
+│   └── video/              # Video export UI styles
+├── js/
+│   ├── app.js              # Main app logic, data parsing, slide population
+│   ├── core/               # Modules: analysis, file-handling, init, navigation, state, utils
+│   ├── slides/             # Per-slide JS (slide-01 through slide-18)
+│   └── video/              # Video generation system (renderer, scenes, animations)
+├── slides/                 # HTML templates for each slide
+└── images/                 # Gallery images + manifests (generated by import)
+```
+
+### Data Paths
+
+**Path A: File Upload (Standalone)**
+```
+User uploads ZIP/JSON -> processFile() -> analyzeConversations()
+  -> generateEnhancedAnalysis() -> generateHeatmapData()
+  -> generateDataInsights() -> populateSlides()
+```
+
+**Path B: Server API (Backend)**
+```
+User clicks "Load My Data" -> loadMyData()
+  -> fetch /api/wrapped/stats (from PostgreSQL)
+  -> fetch /api/wrapped/insights (LLM-generated)
+  -> fetch /api/wrapped/images (from gallery-manifest.json)
+  -> fetch /api/wrapped/heatmap (from DB)
+  -> populateSlides()
 ```
 
 ---
 
-## 🔌 API Endpoints
+## API Endpoints (Backend Mode)
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/wrapped/stats` | Main statistics (messages, topics, streaks, etc.) |
-| `GET /api/wrapped/insights` | AI-generated personality insights |
+| `GET /api/wrapped/insights` | AI-generated personality insights (cached) |
+| `GET /api/wrapped/insights?regenerate=true` | Force regenerate insights |
 | `GET /api/wrapped/images` | Image gallery with context |
-| `GET /api/wrapped/images/pairs` | Input→Output image transformations |
+| `GET /api/wrapped/images/pairs` | Input->Output image transformations |
 | `GET /api/wrapped/heatmap` | Daily activity data for heatmap |
 | `GET /api/wrapped/evolution?periods=N` | Time-split evolution data |
+| `GET /api/wrapped/evidence/:theme` | Messages matching a semantic theme |
 
 ---
 
-## 🎨 Slides Overview
+## Slides
 
-The Wrapped experience consists of 18 animated slides:
+The Wrapped experience has 15+ animated slides:
 
-1. **Total Conversations** - Your conversation count
-2. **Messages** - Total messages with monthly sparkline
-3. **Top Topics** - What you talked about most
-4. **Longest Conversation** - Your marathon chat session
-5. **The Roast** - AI roasts your ChatGPT habits
-6. **Streaks** - Your usage streaks and consistency
-7. **Peak Hours** - 24-hour time wheel visualization
-8. **Evolution** - You vs 6 months ago comparison
-9. **Discovered Themes** - AI-detected patterns in your chats
-10. **AI Gallery** - Your generated images
-11. **Transformations** - Before/after image pairs
-12. **Upload Gallery** - Images you uploaded
-13. **Fun Facts** - AI-powered insights
-14. **Activity Heatmap** - GitHub-style contribution grid
-15. **Verdict Cards** - Final roast + compliment
-16. **Achievements** - Unlocked badges
-17. **Word Bubbles** - Vocabulary visualization
-18. **Share** - Download and share your Wrapped
+| # | Slide | What It Shows |
+|---|-------|---------------|
+| 1 | Conversations | Total count with per-day/per-week breakdown |
+| 2 | Messages | Total messages, user messages, code blocks |
+| 3 | Topics | Top 5 topics as animated bars |
+| 4 | AI Identity | Personality title, radar chart, spirit animal |
+| 5 | Obsession | Your #1 topic with roast |
+| 7 | Time Personality | 24-hour time wheel, night owl score |
+| 8 | Evolution | Monthly trend chart, old vs recent topics |
+| 9 | Themes | Semantically discovered themes (embeddings) |
+| 10 | Gallery | AI-generated and uploaded images |
+| 13 | Fun Facts | Cosmic revelations about your usage |
+| 14 | Heatmap | GitHub-style activity grid |
+| 15 | Verdict | Final roast + compliment |
+| 16 | Achievements | Badge trophy room |
+| 17 | Word Bubbles | Vocabulary frequency visualization |
+| 18 | Share | Download/share your Wrapped |
 
 ---
 
-## 🛠️ Development
+## Known Issues
 
-### Running in Development Mode
+See [docs/chatgpt-wrapped-data-accuracy-overhaul.md](../../docs/chatgpt-wrapped-data-accuracy-overhaul.md) for a detailed analysis of data accuracy bugs and planned fixes.
 
-```bash
-# Start the server with auto-reload
-npm run dev
+---
 
-# The frontend is served at /wrapped
+## Debug Tools
+
+### Data Debug Panel
+
+While viewing the Wrapped slides, press the following to open the debug panel overlay:
+- **Mac:** `Cmd + Option + D` (⌘ + ⌥ + D)
+- **Windows/Linux:** `Ctrl + Alt + D`
+
+This panel shows:
+- **Raw Stats** - Total conversations, messages, code blocks, images
+- **Topic Classification** - Breakdown of how messages are categorized (highlights if "general" is dominant)
+- **Image Detection** - Whether images were properly extracted from the export
+- **Achievement Data Sources** - Which data paths are working/broken
+- **AI Insights** - The LLM-generated personality, spirit animal, roasts
+- **Achievement Results** - Each badge with its threshold and current value
+- **Export Button** - Copy all debug data as JSON
+
+### Video Scene Debug
+
+Preview individual video scenes or play the entire video sequence:
+
+```
+http://localhost:3001/wrapped/video-debug.html
 ```
 
-### Building for Production
+Features:
+- Select any scene (Intro, Conversations, Messages, Topics, Heatmap, Gallery, Journey, Personality, Achievements, Outro)
+- Toggle between Portrait (9:16), Square (1:1), and Landscape (16:9) formats
+- Playback controls: Play, Pause, Restart, Prev/Next scene
+- **Play All** button - plays through all scenes sequentially like the final video
+- Time scrubber to jump to any point in a scene
+
+---
+
+## Development
 
 ```bash
-npm run build
-npm start
+# Start with hot reload
+./start.sh
+
+# Or manually:
+npm run db:start              # Start PostgreSQL
+npm run dev                   # Start server with auto-reload
+
+# Force regenerate AI insights
+curl "http://localhost:3001/api/wrapped/insights?regenerate=true" | jq .
+
+# Re-import ChatGPT data
+npm run import:chatgpt:full ./path/to/export.zip
 ```
 
-### Database Commands
-
-```bash
-# Reset database (careful!)
-npm run db:reset
-
-# Re-run migrations
-npm run db:migrate
-```
-
 ---
 
-## 💻 Platform Notes
+## Privacy
 
-| Feature | macOS | Windows | Linux |
-|---------|-------|---------|-------|
-| Standalone HTML | ✅ | ✅ | ✅ |
-| Backend Server | ✅ | ✅ | ✅ |
-| Docker | ✅ | ✅ (Docker Desktop) | ✅ |
-| AI Insights | ✅ | ✅ | ✅ |
-
-### Windows-Specific Tips
-
-- Use **PowerShell** or **Git Bash** for the best experience
-- File paths use backslashes: `C:\Users\you\Downloads\file.zip`
-- If using Command Prompt, some npm scripts may need `npx` prefix
-- Docker Desktop for Windows requires WSL2 or Hyper-V enabled
-
-### macOS-Specific Tips
-
-- If using Apple Silicon (M1/M2/M3), Docker runs natively
-- Homebrew is recommended for installing dependencies: `brew install node`
-
-### Linux-Specific Tips
-
-- Most distributions have Node.js in package managers, but [nvm](https://github.com/nvm-sh/nvm) is recommended for version management
-- Docker can be installed via your distribution's package manager or [Docker's official instructions](https://docs.docker.com/engine/install/)
-
----
-
-## 🔒 Privacy
-
-- **Your data stays local** — All processing happens on your machine
-- **Database is local** — PostgreSQL runs locally or in Docker
-- **OpenAI API** — Only used for generating insights (optional)
-- **No external tracking** — No analytics or telemetry
-- **Open source** — Audit the code yourself
-
----
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
----
-
-## 📝 License
-
-MIT License — See [LICENSE](../../LICENSE) for details.
-
----
-
-## 🙏 Acknowledgments
-
-- Inspired by [Spotify Wrapped](https://www.spotify.com/wrapped/)
-- Built with [Express](https://expressjs.com/), [PostgreSQL](https://www.postgresql.org/), and [OpenAI](https://openai.com/)
-- Animations powered by CSS keyframes
-
----
-
-**Made with ❤️ and way too many late-night ChatGPT conversations**
+- **Standalone mode:** 100% local. Data never leaves your browser.
+- **Backend mode:** Data stored in local PostgreSQL. OpenAI API used only for generating insights (optional).
+- No external tracking or telemetry.

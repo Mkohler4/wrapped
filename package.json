@@ -4,6 +4,8 @@
   "description": "Your personal AI operator that knows you",
   "type": "module",
   "scripts": {
+    "start": "bash start.sh",
+    "start:wrapped": "bash start.sh --wrapped-only",
     "build": "tsc",
     "dev": "tsx watch src/server.ts",
     "import:chatgpt": "tsx src/scripts/import-chatgpt.ts",

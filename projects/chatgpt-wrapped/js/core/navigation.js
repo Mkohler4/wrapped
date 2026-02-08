@@ -20,47 +20,33 @@ function showSlide(n) {
   
   // Trigger slide-specific animations
   if (n === 1) {
-    // Messages slide - trigger animations
     setTimeout(() => animateMessagesSlide(), 300);
   } else if (n === 2) {
-    // Topics slide - trigger animations
     setTimeout(() => animateTopicsSlide(), 300);
   } else if (n === 4) {
-    // Obsession slide (slide-05 file, index 4) - trigger typewriter
     setTimeout(() => animateObsessionSlide(), 300);
   } else if (n === 5) {
-    // Time slide (slide-07 file, index 5) - trigger animations
     setTimeout(() => animateTimeSlide(), 300);
   } else if (n === 9) {
-    // Cosmic Revelations slide (slide-13 file, index 9) - trigger card flip animations
     setTimeout(() => animateCosmicRevelations(), 300);
   } else if (n === 7) {
-    // Themes slide (slide-09 file, index 7) - trigger animations
     setTimeout(() => animateThemesSlide(), 300);
   } else if (n === 8) {
-    // Gallery slide (slide-10 file, index 8) - trigger animations
     setTimeout(() => animateGallerySlide(), 300);
   } else if (n === 10) {
-    // Heatmap slide (slide-14 file, index 10) - trigger animations
     setTimeout(() => animateHeatmapSlide(), 300);
   } else if (n === 11) {
-    // Verdict slide (slide-15 file, index 11) - trigger animations
     setTimeout(() => animateVerdictSlide(), 300);
   } else if (n === 12) {
-    // Achievements slide (slide-16 file, index 12) - trigger animations
     setTimeout(() => animateAchievementsSlide(), 300);
   } else if (n === 13) {
-    // Word Bubbles slide (slide-17 file, index 13) - trigger animations
     setTimeout(() => animateWordBubblesSlide(), 300);
   } else if (n === 14) {
-    // Share slide (slide-18 file, index 14) - trigger animations
     setTimeout(() => animateShareSlide(), 300);
   }
   
   // Trigger floating bubbles on theme slides (Discovered Themes)
-  // Clear bubbles when leaving theme slides
-  if (n === 7 && discoveredThemes.length > 0) { // Slide index 7 (0-indexed) = Discovered Themes
-    // Get all theme keys from the data
+  if (n === 7 && discoveredThemes.length > 0) {
     const themeKeyMap = {
       'Business & Entrepreneurship': 'business',
       'AI Image Generation': 'images', 
@@ -81,6 +67,29 @@ function showSlide(n) {
   } else {
     clearFloatingBubbles();
   }
+
+  if (typeof window.focusDebugSection === 'function') {
+    const sectionMap = {
+      0: 'raw',
+      1: 'raw',
+      2: 'topics',
+      3: 'insights',
+      4: 'insights',
+      5: 'raw',
+      7: 'insights',
+      8: 'images',
+      9: 'insights',
+      10: 'achievements-sources',
+      11: 'insights',
+      12: 'achievements-results',
+      13: 'raw',
+      14: 'raw'
+    };
+    const sectionKey = sectionMap[n];
+    if (sectionKey) {
+      window.focusDebugSection(sectionKey);
+    }
+  }
 }
 
 function nextSlide() {
@@ -98,7 +107,6 @@ function prevSlide() {
 // ============================================
 // SCREENS
 // ============================================
-
 function showScreen(name) {
   const uploadScreen = document.getElementById('uploadScreen');
   const processingScreen = document.getElementById('processingScreen');
@@ -140,7 +148,6 @@ function restart() {
 // ============================================
 // SHARE FUNCTIONS
 // ============================================
-
 function shareTwitter() {
   const text = `I had ${stats?.totalConversations || 0} conversations with ChatGPT! #ChatGPTWrapped`;
   window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`, '_blank');
@@ -156,4 +163,3 @@ window.prevSlide = prevSlide;
 window.restart = restart;
 window.shareTwitter = shareTwitter;
 window.downloadImage = downloadImage;
-
