@@ -74,14 +74,17 @@ function populateEvolutionSlide(s, aiInsights) {
   // Update topic boxes with new format
   const oldTopicsEl = document.getElementById('oldTopics');
   const recentTopicsEl = document.getElementById('recentTopics');
+  // Use shared topic name formatter if available
+  const fmtTopic = (name) => (typeof window.formatTopicName === 'function') ? window.formatTopicName(name) : name;
+
   if (oldTopicsEl) {
     oldTopicsEl.innerHTML = oldTopics.length > 0 
-      ? oldTopics.slice(0, 4).map(t => `<span class="era-topic">${t.topic}</span>`).join('') 
+      ? oldTopics.slice(0, 4).map(t => `<span class="era-topic">${fmtTopic(t.topic)}</span>`).join('') 
       : '<span class="era-topic" style="opacity: 0.5">No data</span>';
   }
   if (recentTopicsEl) {
     recentTopicsEl.innerHTML = recentTopics.length > 0
-      ? recentTopics.slice(0, 4).map(t => `<span class="era-topic">${t.topic}</span>`).join('')
+      ? recentTopics.slice(0, 4).map(t => `<span class="era-topic">${fmtTopic(t.topic)}</span>`).join('')
       : '<span class="era-topic" style="opacity: 0.5">No data</span>';
   }
   
@@ -99,10 +102,15 @@ function populateEvolutionSlide(s, aiInsights) {
   if (iconEl) iconEl.textContent = trendEmoji;
   if (titleEl) titleEl.textContent = trendWord;
   if (subtitleEl) {
-    subtitleEl.textContent = aiInsights?.trendInsight || 
-      (trendPct > 20 ? 'Your ChatGPT usage is accelerating. AI power user incoming!' :
-       trendPct > 0 ? 'Steady as she goes. Consistent AI companion vibes.' :
-       trendPct > -20 ? 'Taking some healthy breaks from AI.' : 'Trying to break free? Good luck with that.');
+    if (aiInsights?.trendInsight) {
+      subtitleEl.textContent = aiInsights.trendInsight;
+    } else {
+      // Data-driven fallback — always reference the actual trend percentage
+      subtitleEl.textContent = trendPct > 20 ? `Usage up ${trendPct}% in the last 6 months — accelerating.` :
+        trendPct > 0 ? `Usage up ${trendPct}% — steady growth.` :
+        trendPct > -20 ? `Usage ${trendPct}% — a slight cooldown.` :
+        `Usage ${trendPct}% — a significant pullback.`;
+    }
   }
 }
 
@@ -278,17 +286,17 @@ function updateEvolutionUI(data) {
   if (iconEl) iconEl.textContent = trendEmoji;
   if (titleEl) titleEl.textContent = trendWord;
   
-  // Generate insight subtitle
+  // Data-driven insight subtitle — always reference actual numbers
   const avgChange = data.changes.avgMessagesPerConvo;
   if (subtitleEl) {
     if (avgChange > 30) {
-      subtitleEl.textContent = `Your conversations are ${avgChange}% deeper now. Quality over quantity!`;
+      subtitleEl.textContent = `Conversations are ${avgChange}% deeper now — more messages per session.`;
     } else if (changePercent > 20) {
-      subtitleEl.textContent = 'Your ChatGPT usage is accelerating. AI power user incoming!';
+      subtitleEl.textContent = `Message volume up ${changePercent}% period-over-period.`;
     } else if (changePercent < -20) {
-      subtitleEl.textContent = 'Taking some healthy breaks from AI. Or maybe just too busy?';
+      subtitleEl.textContent = `Message volume down ${Math.abs(changePercent)}% period-over-period.`;
     } else {
-      subtitleEl.textContent = 'Steady as she goes. Consistent AI companion vibes.';
+      subtitleEl.textContent = `Usage shifted ${changePercent >= 0 ? '+' : ''}${changePercent}% — relatively steady.`;
     }
   }
   
@@ -309,14 +317,16 @@ function updateEvolutionUI(data) {
   const oldTopicsEl = document.getElementById('oldTopics');
   const recentTopicsEl = document.getElementById('recentTopics');
   
+  const fmtTopicUI = (name) => (typeof window.formatTopicName === 'function') ? window.formatTopicName(name) : name;
+
   if (oldTopicsEl && firstPeriod.stats.topTopics.length > 0) {
     oldTopicsEl.innerHTML = firstPeriod.stats.topTopics.slice(0, 4).map(t => 
-      `<span class="era-topic">${t.topic}</span>`
+      `<span class="era-topic">${fmtTopicUI(t.topic)}</span>`
     ).join('');
   }
   if (recentTopicsEl && lastPeriod.stats.topTopics.length > 0) {
     recentTopicsEl.innerHTML = lastPeriod.stats.topTopics.slice(0, 4).map(t => 
-      `<span class="era-topic">${t.topic}</span>`
+      `<span class="era-topic">${fmtTopicUI(t.topic)}</span>`
     ).join('');
   }
   
@@ -505,13 +515,13 @@ function updateEvolutionHeadline(monthlyData) {
     const endLabel = endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     
     if (trendPct > 20) {
-      subtitleEl.textContent = `Your usage grew ${trendPct}% from ${startLabel} to ${endLabel}. AI power user incoming!`;
+      subtitleEl.textContent = `Usage grew ${trendPct}% from ${startLabel} to ${endLabel} — ${totalMsgs.toLocaleString()} messages in this window.`;
     } else if (trendPct > 0) {
-      subtitleEl.textContent = `Steady ${trendPct}% growth from ${startLabel} to ${endLabel}. Consistent AI companion vibes.`;
+      subtitleEl.textContent = `Up ${trendPct}% from ${startLabel} to ${endLabel} — ${totalMsgs.toLocaleString()} messages in this window.`;
     } else if (trendPct > -20) {
-      subtitleEl.textContent = `Usage trend: ${trendPct}% from ${startLabel} to ${endLabel}. Taking healthy breaks.`;
+      subtitleEl.textContent = `${trendPct}% from ${startLabel} to ${endLabel} — ${totalMsgs.toLocaleString()} messages in this window.`;
     } else {
-      subtitleEl.textContent = `Your usage trend suggests you're evolving to become more selective with your inquiries—like a fine wine connoisseur, you're now savoring rather than gulping.`;
+      subtitleEl.textContent = `Down ${Math.abs(trendPct)}% from ${startLabel} to ${endLabel} — ${totalMsgs.toLocaleString()} messages in this window.`;
     }
   }
 }
