@@ -1280,6 +1280,84 @@ const topicRoasts = {
 
 ## 10. Bug 7: Server-Side LLM Prompts Need Refinement
 
+### Scope Split (Not One Task)
+
+Bug 7 is **not a single task**. It splits cleanly into two parallel workstreams that do not conflict with ongoing bug fixes:
+
+1. **Workflow A — AI Re‑Design (Prompt + Output Design)**
+2. **Workflow B — AI Analysis Update (Data/Signals + Pipeline)**
+
+Each workflow has its own tasks, acceptance criteria, and safety rails so we can iterate **without destroying what we have**.
+
+---
+
+### Workflow A — AI Re‑Design (Prompt + Output Design)
+
+**Goal:** Redesign the LLM prompt and output schema to produce **specific, data‑anchored insights** with guardrails against vague copy.
+
+**Non‑destructive rule:** All prompt changes must be **versioned** and gated behind a **feature flag** (e.g., `WRAPPED_LLM_PROMPT_VERSION=2`).
+
+#### Tasks (A)
+1. **Define output schema v2**
+  - Require each field to include at least one concrete data anchor (number, topic label, or top word).
+  - Add `citations[]` per insight (e.g., `[{ type: "stat", value: 47, source: "nightOwlScore" }]`).
+2. **Write prompt v2 with explicit constraints**
+  - Ban generic adjectives and archetype titles.
+  - Force numeric or topic‑based grounding for each insight.
+3. **Add prompt versioning + toggle**
+  - Keep prompt v1 intact; add v2 alongside it.
+  - Select via env var or query param (`?prompt=v2`).
+4. **Create golden sample tests**
+  - 3 curated JSON fixtures with expected qualitative outputs (not exact strings).
+  - Validate that outputs contain anchors and are non‑generic.
+
+**Acceptance Criteria (A)**
+- 100% of fields include at least one anchor from the stats.
+- No banned generic phrases appear.
+- Output stays within existing UI limits (no layout break).
+
+---
+
+### Workflow B — AI Analysis Update (Data/Signals + Pipeline)
+
+**Goal:** Improve the **inputs** to the LLM so it can generate deeper insights without increasing cost or latency too much.
+
+**Non‑destructive rule:** Only add **new optional signals**; do not remove existing fields.
+
+#### Tasks (B)
+1. **Expand semantic theme probes**
+  - Add 7–12 new probes (DevOps, Data Science, UX, Finance, Content, Language Learning, Gaming, etc.).
+2. **Add top‑N topic keywords**
+  - Provide top 10–20 distinct keywords per major topic for richer grounding.
+3. **Add behavior deltas**
+  - Examples: weekday vs weekend ratio, late‑night vs daytime ratio, longest streak length, top 3 hours.
+4. **Add small “highlight set”**
+  - 5–10 hand‑picked “notable” events (largest message day, most code blocks day, etc.).
+5. **Tune thresholds for probe matching**
+  - Lower similarity threshold *or* make it adaptive to total message count.
+
+**Acceptance Criteria (B)**
+- LLM outputs reference at least one new signal in 3+ fields.
+- No measurable latency regression > 20%.
+- Token usage increase < 25% (budget guard).
+
+---
+
+### Safe Iteration Workflow (Both A + B)
+
+1. **Version everything** (prompt + schema + analysis bundle).
+2. **Feature flag the new path** to keep current output intact.
+3. **Side‑by‑side compare**: persist v1 vs v2 outputs for the same dataset.
+4. **Promote only when quality improves** (using checklist below).
+
+**Quality Checklist**
+- Each insight references at least one concrete stat or topic.
+- No generic personality adjectives.
+- Fun facts are non‑obvious (not message count, peak hour, or total conversations).
+- Roast/compliment are specific and use numbers.
+
+---
+
 ### Symptom
 
 When using the server path (Path B), the LLM-generated insights are better than client-side but still sometimes produce generic/vague output.
