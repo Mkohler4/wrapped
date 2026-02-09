@@ -52,6 +52,10 @@ function populateThemesSlide() {
     'Technical Architecture': 'architecture',
     'Personal Life': 'personal',
     'Productivity & Organization': 'productivity',
+    'Coding & Development': 'coding',
+    'Data & Analytics': 'data',
+    'Marketing & Content': 'marketing',
+    'Finance & Investing': 'finance',
   };
   
   // Get hero theme (first/dominant)
@@ -89,7 +93,7 @@ function populateThemesSlide() {
           <div class="theme-cluster-icon">${icon}</div>
           <div class="theme-cluster-info">
             <div class="theme-cluster-name">${theme.name}</div>
-            <div class="theme-cluster-count"><span data-count="${theme.messageCount}">0</span> messages</div>
+            <div class="theme-cluster-count"><span data-count="${theme.messageCount}">0</span> user messages</div>
             <div class="theme-cluster-bar">
               <div class="theme-cluster-bar-fill" data-width="${barWidth}"></div>
             </div>
@@ -99,6 +103,13 @@ function populateThemesSlide() {
     }).join('');
   } else if (themesCluster) {
     themesCluster.innerHTML = '';
+  }
+  
+  // Update insight footer with data-driven text
+  const insightTextEl = document.getElementById('themesInsightText');
+  if (insightTextEl) {
+    const totalThemeMessages = discoveredThemes.reduce((sum, t) => sum + (t.messageCount || 0), 0);
+    insightTextEl.textContent = `${discoveredThemes.length} themes discovered across ${totalThemeMessages.toLocaleString()} user messages`;
   }
   
   // Store data for animation

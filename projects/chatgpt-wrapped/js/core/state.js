@@ -63,6 +63,10 @@ const themeIcons = {
   'Technical Architecture': '🏗️',
   'Personal Life': '💭',
   'Productivity & Organization': '⚡',
+  'Coding & Development': '💻',
+  'Data & Analytics': '📊',
+  'Marketing & Content': '📣',
+  'Finance & Investing': '💰',
   'default': '💡'
 };
 

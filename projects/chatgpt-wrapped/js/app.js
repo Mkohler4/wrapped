@@ -66,14 +66,15 @@ function populateSlides(s) {
   // Update topic boxes with new format
   const oldTopicsEl = document.getElementById('oldTopics');
   const recentTopicsEl = document.getElementById('recentTopics');
+  const fmtTopicPopulate = (name) => (typeof window.formatTopicName === 'function') ? window.formatTopicName(name) : name;
   if (oldTopicsEl) {
     oldTopicsEl.innerHTML = oldTopics.length > 0 
-      ? oldTopics.slice(0, 4).map(t => `<span class="era-topic">${t.topic}</span>`).join('') 
+      ? oldTopics.slice(0, 4).map(t => `<span class="era-topic">${fmtTopicPopulate(t.topic)}</span>`).join('') 
       : '<span class="era-topic" style="opacity: 0.5">No data</span>';
   }
   if (recentTopicsEl) {
     recentTopicsEl.innerHTML = recentTopics.length > 0
-      ? recentTopics.slice(0, 4).map(t => `<span class="era-topic">${t.topic}</span>`).join('')
+      ? recentTopics.slice(0, 4).map(t => `<span class="era-topic">${fmtTopicPopulate(t.topic)}</span>`).join('')
       : '<span class="era-topic" style="opacity: 0.5">No data</span>';
   }
   
@@ -103,18 +104,46 @@ function populateSlides(s) {
   // Slide 10 - AI Image Gallery
   renderImageGallery();
 
-  // Slide 12 - AI Hidden Insights
+  // Slide 12 - AI Hidden Insights (no hardcoded fallbacks — data-driven or empty)
   const hiddenThemeEl = document.getElementById('hiddenTheme');
   const questionStyleEl = document.getElementById('questionStyle');
   if (aiInsights?.hiddenTheme) {
     if (hiddenThemeEl) hiddenThemeEl.textContent = `"${aiInsights.hiddenTheme}"`;
   } else {
-    if (hiddenThemeEl) hiddenThemeEl.textContent = 'Your conversations reveal unique patterns...';
+    // Data-driven fallback from available stats
+    if (hiddenThemeEl) {
+      const mc = enhanced.marathonConvos || 0;
+      const qc = enhanced.quickConvos || 0;
+      const topicLen = s.topics?.length || 0;
+      if (mc > 3 && mc > qc * 0.3) {
+        hiddenThemeEl.textContent = `"${mc} marathon sessions reveal a preference for depth over quick answers"`;
+      } else if (topicLen >= 4) {
+        hiddenThemeEl.textContent = `"${topicLen} topic areas — your curiosity doesn't stay in one lane"`;
+      } else if (nightScore > 25) {
+        hiddenThemeEl.textContent = `"${nightScore}% of your messages sent after 10 PM — the night is your focus zone"`;
+      } else {
+        hiddenThemeEl.textContent = '';
+      }
+    }
   }
   if (aiInsights?.questionStyle) {
     if (questionStyleEl) questionStyleEl.textContent = aiInsights.questionStyle;
   } else {
-    if (questionStyleEl) questionStyleEl.textContent = 'You ask thoughtful, detailed questions.';
+    // Data-driven fallback from message depth
+    if (questionStyleEl) {
+      const avgMpc = s.totalMessages && s.totalConversations ? Math.round(s.totalMessages / s.totalConversations) : 0;
+      if (avgMpc > 20) {
+        questionStyleEl.textContent = `Iterative deep-diver — ${avgMpc} messages per conversation on average.`;
+      } else if (avgMpc > 8) {
+        questionStyleEl.textContent = `Thorough but focused — ${avgMpc} messages per conversation.`;
+      } else if (avgMpc > 3) {
+        questionStyleEl.textContent = `Efficient — you get what you need in ~${avgMpc} exchanges.`;
+      } else if (avgMpc > 0) {
+        questionStyleEl.textContent = `Rapid-fire — ${avgMpc} messages per conversation, quick and targeted.`;
+      } else {
+        questionStyleEl.textContent = '';
+      }
+    }
   }
 
   // Slide 13 - Cosmic Revelations (Fun Facts)

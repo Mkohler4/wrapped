@@ -23,7 +23,8 @@ function populateDNAIdentity(stats, aiInsights) {
     'crow': '🐦‍⬛', 'raven': '🐦‍⬛', 'parrot': '🦜', 'penguin': '🐧', 'flamingo': '🦩',
     'shark': '🦈', 'whale': '🐋', 'squid': '🦑', 'crab': '🦀', 'turtle': '🐢',
     'snake': '🐍', 'lizard': '🦎', 'dragon': '🐉', 'phoenix': '🔥',
-    'butterfly': '🦋', 'spider': '🕷️', 'scorpion': '🦂'
+    'butterfly': '🦋', 'spider': '🕷️', 'scorpion': '🦂',
+    'elephant': '🐘', 'horse': '🐴', 'panther': '🐆', 'falcon': '🦅'
   };
   
   // Extract behavioral data from stats (real data, no fallbacks)
