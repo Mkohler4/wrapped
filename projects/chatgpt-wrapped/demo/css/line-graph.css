@@ -1,0 +1,109 @@
+/* ============================================
+   Insight Bubble — Container for the graph
+   ============================================ */
+
+/* The outer bubble — looks like a ChatGPT response card */
+.insight-bubble {
+  align-self: flex-start;
+  max-width: 92%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Graph bubble — centered horizontally for a presentation feel */
+.insight-bubble--centered {
+  align-self: center;
+  border-bottom-left-radius: 18px;
+}
+
+/* ============================================
+   Graph Area — iOS-style container
+   ============================================ */
+
+.insight-graph {
+  width: 100%;
+  height: 240px;
+  position: relative;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.03);
+  border: 1px solid rgba(16, 185, 129, 0.08);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ============================================
+   SVG Line Graph
+   ============================================ */
+
+.line-graph__path {
+  will-change: stroke-dashoffset;
+}
+
+.line-graph__area {
+  will-change: opacity;
+}
+
+/* ============================================
+   Graph Title
+   ============================================ */
+
+.line-graph__title {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Month Labels (X-axis)
+   ============================================ */
+
+.line-graph__month-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Y-axis Reference Labels
+   ============================================ */
+
+.line-graph__y-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Value Callouts (key data points)
+   ============================================ */
+
+.line-graph__callout {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+}

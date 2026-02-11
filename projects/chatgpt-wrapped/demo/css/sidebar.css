@@ -1,0 +1,146 @@
+/* ============================================
+   Sidebar — Conversation List Panel
+   ============================================ */
+
+.editor__sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 260px;
+  background: #171717;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-100%);
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.15, 1);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+
+.editor__sidebar--open {
+  transform: translateX(0);
+}
+
+/* Push the rest of the editor content right when sidebar opens */
+.editor--sidebar-open .editor__header,
+.editor--sidebar-open .editor__main,
+.editor--sidebar-open .editor__footer {
+  margin-left: 260px;
+  transition: margin-left 0.5s cubic-bezier(0.4, 0, 0.15, 1);
+}
+
+/* Sidebar header — new chat button */
+.sidebar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 12px 8px;
+  flex-shrink: 0;
+}
+
+.sidebar__new-chat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sidebar__new-chat:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar__new-chat svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Conversation list */
+.sidebar__list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 8px;
+}
+
+/* Group label — Today, Yesterday, etc. */
+.sidebar__group {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.35);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 16px 8px 6px;
+  user-select: none;
+}
+
+.sidebar__group:first-child {
+  padding-top: 8px;
+}
+
+/* Individual conversation item */
+.sidebar__item {
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.7);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  transition: background 0.15s ease;
+  opacity: 0;
+  transform: translateX(-8px);
+}
+
+.sidebar__item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Active/current conversation */
+.sidebar__item--active {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+/* Staggered entrance animation */
+.sidebar__item--entering {
+  animation: sidebarItemEnter 0.3s ease forwards;
+}
+
+@keyframes sidebarItemEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* ============================================
+   Responsive — Mobile
+   ============================================ */
+@media (max-width: 480px) {
+  .editor__sidebar {
+    width: 240px;
+  }
+
+  .editor--sidebar-open .editor__header,
+  .editor--sidebar-open .editor__main,
+  .editor--sidebar-open .editor__footer {
+    margin-left: 240px;
+  }
+}

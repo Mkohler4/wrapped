@@ -1,0 +1,146 @@
+/* ============================================
+   Stats — Hero Number, Split, Glow
+   ============================================ */
+
+.stat-display {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+  max-width: 680px;
+  padding: 0 20px;
+  opacity: 0;
+}
+
+.stat-display--visible {
+  animation: statReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Fade out the stat when transitioning to next scene */
+.stat-display--fading {
+  opacity: 0 !important;
+  transform: translate(-50%, -50%) translateY(-12px) scale(0.97) !important;
+  transition: opacity 0.6s ease, transform 0.6s ease !important;
+}
+
+@keyframes statReveal {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) translateY(16px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+/* Ambient glow behind the hero number */
+.stat-hero__glow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 340px;
+  height: 200px;
+  transform: translate(-50%, -60%);
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(192, 132, 252, 0.22) 0%,
+    rgba(96, 165, 250, 0.14) 40%,
+    transparent 70%
+  );
+  filter: blur(40px);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  z-index: -1;
+}
+
+.stat-hero__glow--visible {
+  opacity: 1;
+}
+
+.stat-hero__number {
+  font-size: clamp(48px, 12vw, 96px);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  position: relative;
+}
+
+.stat-hero__label {
+  font-size: clamp(14px, 3vw, 20px);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 8px;
+  opacity: 0;
+}
+
+.stat-hero__label--visible {
+  animation: statChildReveal 0.5s ease 0.1s forwards;
+}
+
+/* The you / AI split */
+.stat-split {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 32px;
+  opacity: 0;
+}
+
+.stat-split--visible {
+  animation: statChildReveal 0.5s ease forwards;
+}
+
+@keyframes statChildReveal {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.stat-split__item {
+  text-align: center;
+}
+
+.stat-split__number {
+  font-size: clamp(28px, 7vw, 48px);
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.stat-split__number--user {
+  color: #c084fc;
+}
+
+.stat-split__number--ai {
+  color: #60a5fa;
+}
+
+.stat-split__label {
+  font-size: clamp(11px, 2.5vw, 14px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Dot separator between the two stats */
+.stat-split__dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  flex-shrink: 0;
+}

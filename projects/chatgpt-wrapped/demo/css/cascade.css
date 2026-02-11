@@ -1,0 +1,104 @@
+/* ============================================
+   Cascade — Ghost Bubbles & Backdrop
+   ============================================ */
+
+/* Ghost bubble base */
+.ghost-bubble {
+  height: 14px;
+  border-radius: 10px;
+  opacity: 0;
+  flex-shrink: 0;
+  animation: ghostAppear 0.15s ease forwards;
+}
+
+/* User ghosts — purple tint */
+.ghost-bubble--user {
+  align-self: flex-end;
+  background: rgba(192, 132, 252, 0.30);
+}
+
+/* AI ghosts — blue tint */
+.ghost-bubble--ai {
+  align-self: flex-start;
+  background: rgba(96, 165, 250, 0.25);
+}
+
+/* Featured ghost — taller, has text snippet */
+.ghost-bubble--featured {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ghost-bubble--featured.ghost-bubble--user {
+  color: rgba(192, 132, 252, 0.75);
+  background: rgba(192, 132, 252, 0.22);
+}
+
+.ghost-bubble--featured.ghost-bubble--ai {
+  color: rgba(96, 165, 250, 0.70);
+  background: rgba(96, 165, 250, 0.18);
+}
+
+@keyframes ghostAppear {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Backdrop mode — fill the entire main area absolutely */
+.chat-messages--backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  overflow: hidden;
+  justify-content: center;
+  z-index: 0;
+}
+
+/* Blur — softened to keep backdrop visible */
+.chat-messages--blurred {
+  filter: blur(4px);
+  opacity: 0.5;
+  transition: filter 0.8s ease,
+              opacity 0.8s ease;
+}
+
+/* Gentle drift when used as backdrop */
+.chat-messages--drifting {
+  animation: backdropDrift 10s ease-in-out infinite alternate;
+}
+
+@keyframes backdropDrift {
+  0%   { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-14px); }
+}
+
+/* ============================================
+   Gradient overlay between bubbles and stat
+   ============================================ */
+.stat-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(33, 33, 33, 0.82) 0%,
+    rgba(33, 33, 33, 0.55) 50%,
+    rgba(33, 33, 33, 0.25) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.stat-backdrop--visible {
+  opacity: 1;
+}

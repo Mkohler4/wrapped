@@ -40,11 +40,11 @@ roast:          "ChatGPT is your rubber duck"
 
 | Insight Type | Example |
 |-------------|---------|
-| **Trajectory** | "You went from asking 'what is a React hook' in January to building custom hooks by March. That's a 2-month learning curve — faster than 85% of users who learn React through ChatGPT." |
-| **Behavioral correlation** | "Your conversations get 3x longer after 11 PM. Late-night you has more patience than daytime you." |
-| **Life event detection** | "23 'interview prep' threads in September, then zero in October. Something happened." |
-| **Growth recognition** | "Early you asked 8-word questions. By December you were writing 200-word context paragraphs. You learned how to talk to AI." |
-| **Comparative positioning** | "You're in the top 2% for conversation depth. Most users average 4 messages per thread — you average 19." |
+| **Trajectory** | "You stopped asking 'what is a React hook' on March 14th. You never needed to ask again." |
+| **Behavioral correlation** | "You code during the day and write fiction at night. 73% of your creative writing happens after 10 PM. You're two different people." |
+| **Life event detection** | "23 interview-prep threads in September, then silence in October. We don't know what happened — but something did." |
+| **Growth recognition** | "January you: 8-word questions. December you: 200-word context paragraphs with code samples. You didn't just learn to use AI — you learned how to think with it." |
+| **Comparative positioning** | "Most people ask a question and leave. You stay for 19 messages. You don't just ask — you think out loud." |
 
 The difference isn't better copywriting. It's a fundamentally different class of analysis happening underneath the text.
 
@@ -56,7 +56,85 @@ The difference isn't better copywriting. It's a fundamentally different class of
 4. **Narrative arc** — Seeing their own growth story reflected back
 5. **Emotional awareness** — Acknowledging what they were going through, not just what they typed
 
-The current system achieves zero of these. Even with perfect templates and grounded citations, plugging numbers into pre-authored jokes achieves at best #1 (weak self-recognition). The system needs to be rebuilt around all five.
+The current system achieves zero of these. Even with perfect templates and grounded citations, plugging numbers into pre-authored text achieves at best #1 (weak self-recognition). The system needs to be rebuilt around all five.
+
+### The Hook — Opening Like an Essay
+
+Every great essay opens with a hook. The Wrapped experience should do the same. The very first slide the user sees should be **one single, specific, compelling statement** — not a summary screen, not a dashboard of numbers, not "Welcome to your Wrapped."
+
+The hook must be a **behavioral pattern or trajectory** — something the user never noticed about themselves. Not a vanity metric, not a stat, not a flex. A mirror.
+
+Think of it as the difference between:
+
+**Bad (stat opening):**
+> "You had 1,427 conversations this year. Here's your breakdown."
+
+**Bad (vanity metric opening):**
+> "You're in the top 1% of ChatGPT power users. Let's show you why."
+
+**Good (behavioral pattern):**
+> "You ask about Python every morning and write fiction every night. You're two different people."
+
+**Good (trajectory):**
+> "You stopped asking 'what is a React hook' on March 14th. You never needed to ask again."
+
+**Good (life event hint):**
+> "You had 23 interview-prep conversations in September. Then zero. Something happened."
+
+The hook does three things:
+1. **Creates immediate self-recognition** — "That IS me, how did it know?"
+2. **Signals depth** — this isn't going to be generic; the system actually analyzed their data
+3. **Sets the emotional tone** — this is personal, surprising, and specific
+
+After the hook, the second slide transitions to a **"Year at a Glance"** overview — one slide with key numbers (days, conversations, timespan) framed as a human truth, not a report. Then the remaining slides move quickly into the deep pattern slides before presenting benchmarks and the emotional payoff.
+
+**How to pick the hook:** The fact engine produces a ranked list of insights sorted by wow score. The hook is the #1 fact — but **behavioral patterns and trajectories are always preferred over raw benchmarks.** A pattern the user never noticed about themselves ("you code by day, write by night") will always beat a percentile ("top 1%"). Only fall back to benchmark hooks if no strong behavioral pattern exists. The hook should always feel like the system *sees* the user.
+
+### Human Tasks & AI Tasks — The Dual Portrait
+
+The best Wrapped insights don't just describe how someone used ChatGPT — they describe **who that person was this year**. The system should produce two complementary types of insights:
+
+**Human task insights** reflect real-world activities visible through AI usage:
+- "23 interview-prep threads in September, then silence in October. Something happened."
+- "You went from learning Python to building production apps."
+- "A creative writing burst in March — 34 conversations in 3 weeks."
+
+These feel powerful because they acknowledge what the user was *going through*, not just what they typed.
+
+**AI task insights** capture how the user interacts with ChatGPT relative to others:
+- "You're in the top 1% of users for conversation depth."
+- "You average 19 messages per thread — most people stop at 4."
+- "Your night-owl score puts you in the top 5%."
+
+These feel powerful because they give the user a sense of identity and achievement within the ChatGPT user base.
+
+A great insight set includes both. The human task insights create emotional resonance ("that IS me"), while the AI task insights create shareable bragging rights ("I'm in the top 1%"). Together they paint a complete portrait.
+
+### Design Principle: Poster, Not Dashboard
+
+The current slides have too much going on. The redesign follows a strict principle: **every slide communicates exactly one thing, and it should feel like a poster you'd hang on a wall.**
+
+- **No secondary metrics.** If a slide shows your usage over time, that's all it shows. No sidebar stats, no additional callouts, no "also here's your top topic."
+- **3-second test.** The user should absorb the insight in under 3 seconds. If it needs explanation, it's too complex.
+- **Two layers of text, max.** Every slide has at most a headline (the insight) and a subline (the evidence). No third line. No footnotes.
+
+### Visual Design Language
+
+The slides should feel like Spotify Wrapped — bold, saturated, shareable.
+
+- **Full-bleed color, one palette per slide.** Each slide owns the entire screen with a bold, saturated background — deep purples, electric blues, warm ambers, soft greens. No white cards on gray. Adjacent slides use different palettes so swiping feels like a gallery.
+- **One thing, massive.** If it's a number, 120pt font. If it's a sentence, it's the only sentence on screen. If it's a chart, it fills 80% of the space. Readable from across the room.
+- **Typography does the heavy lifting.** No icons, no illustrations. Bold sans-serif type, dramatic size contrast between headline and subline. The type *is* the design.
+- **Data visualizations are shapes, not charts.** The usage curve has no gridlines or axis labels — just the silhouette of the year. The heatmap is a clean grid of color blocks. Benchmarks are one line, one dot, one label.
+- **Motion makes it alive.** Numbers count up. Curves draw themselves. The heatmap fills in block by block. Under 1 second, purposeful — a reveal, not a loading screen.
+- **Mobile-first, portrait.** The canonical experience is a phone held vertically — like Wrapped, like Instagram Stories. The share card is pre-formatted for story posts.
+- **Dark mode default, high contrast.** Saturated backgrounds with white or light text. Better in screenshots, better on OLED, signals premium.
+
+**The test:** If you squint at a slide and can still tell what it's saying, the design is right. If you have to lean in and read, it's too busy.
+
+**The identity/personality slide is removed.** It consistently produced generic content ("The Curious Mind") and doesn't survive the simplicity test. The hook slide replaces its role.
+
+**The roast slide is removed.** Too easy to feel mean or generic. The fun facts slide handles humor better through specificity — a weird 3 AM conversation about fonts is funnier and more personal than any pre-written burn.
 
 ---
 
@@ -663,14 +741,17 @@ const narrativePrompt = `You are a writer for a "Spotify Wrapped" style experien
 
 Below are VERIFIED FACTS about a user, ranked by how surprising/interesting they are.
 Your job:
-1. Pick the best facts for each output field (personality, roast, fun facts, etc.)
-2. Rewrite each fact as fun, punchy, shareable copy
+1. Pick the best facts for each output field (hook, fun facts, compliment, etc.)
+2. Rewrite each fact as fun, punchy, shareable copy — the tone is "a friend who really sees you"
 3. DO NOT invent new facts or numbers — every number must come from the facts below
 4. DO NOT change any numbers — they are verified
 5. Prioritize facts with higher wow scores
-6. For "top X%" facts, always include the comparison ("most users average X — you average Y")
-7. For trajectory facts, tell the story as a narrative arc with a beginning and end
-8. For correlation facts, frame them as "X, but Y" surprises
+6. For the hook, ALWAYS prefer behavioral patterns or trajectories over raw benchmarks
+7. For "top X%" facts, always include the comparison ("most people stop at X — you stay for Y")
+8. For trajectory facts, tell the story as a narrative arc with a beginning and end
+9. For correlation facts, frame them as "X, but Y" surprises — patterns the user never noticed
+10. The compliment must feel earned — reference specific growth or dedication from the data
+11. The "year in one line" should read like the closing sentence of an essay about this person
 
 VERIFIED FACTS (sorted by wow score):
 ${facts.map(f => `[${f.id}] (wow: ${f.wowScore}) ${f.rawNarrative}`).join('\n')}
@@ -696,44 +777,61 @@ For the client-side path (Path A), the fact engine runs entirely in the browser 
 
 ```typescript
 interface WrappedInsightsV3 {
-  personality: {
-    title: string;          // 3+ words, based on dominant pattern
-    description: string;    // References specific trajectory or correlation
-    basedOn: string;        // Which fact category it drew from
+  hook: {
+    statement: string;      // Single compelling opening line — a behavioral pattern, not a stat
+    factId: string;         // Which InsightFact this was drawn from
+    category: string;       // Which insight category it belongs to (prefer trajectory/correlation)
   };
+  yearAtAGlance: {
+    totalConversations: number;
+    totalMessages: number;
+    timespan: string;       // "January – December 2025"
+    activeDays: number;
+    totalDays: number;      // Days since first conversation
+    firstConversation: string; // Date of first conversation
+    narrative: string;      // "312 days. 1,427 conversations. You made it part of how you think."
+  };
+  // personality field REMOVED — the hook slide replaces its role as the identity moment
+  // roast field REMOVED — fun facts handles humor better through specificity
+  trajectory: {
+    arc: string;            // "React basics → advanced → deployment"
+    narrative: string;      // "You speedran a full-stack career in 8 months"
+    timespan: string;       // "January – September 2024"
+  } | null;                 // null if insufficient temporal data (show placeholder)
+  correlations: Array<{
+    description: string;    // "3x longer conversations after 10pm"
+    narrative: string;      // "You code during the day and think out loud at night"
+  }>;
+  lifeEvent: {
+    topic: string;          // "interview-prep"
+    narrative: string;      // "23 threads in September, then silence"
+  } | null;                 // null if no signals detected (show placeholder)
+  growth: {
+    signal: string;         // "message_sophistication"
+    narrative: string;      // "You learned how to talk to AI"
+  } | null;                 // null if insufficient data (show placeholder)
   benchmarks: Array<{
     metric: string;         // "conversation_depth"
     percentile: number;     // 97
     userValue: number;      // 19
     avgValue: number;       // 5
     label: string;          // "Top 3% for conversation depth"
-    narrative: string;      // "Most users average 5 messages. You average 19."
+    narrative: string;      // "Most people ask and leave. You stay for 19 messages."
   }>;
-  trajectory: {
-    arc: string;            // "React basics → advanced → deployment"
-    narrative: string;      // "You speedran a full-stack career in 8 months"
-    timespan: string;       // "January – September 2024"
-  } | null;                 // null if no significant trajectory detected
-  correlations: Array<{
-    description: string;    // "3x longer conversations after 10pm"
-    narrative: string;      // "Late-night you has more patience than daytime you"
-  }>;
-  growth: {
-    signal: string;         // "message_sophistication"
-    narrative: string;      // "You learned how to talk to AI"
-  } | null;
-  lifeEvent: {
-    topic: string;          // "interview-prep"
-    narrative: string;      // "23 threads in September, then silence"
-  } | null;
-  funFacts: string[];       // 5-6 data-grounded fun facts
-  roast: string;            // Single punchy roast with specific numbers
-  compliment: string;       // Single genuine compliment with specific numbers
+  peakMoment: {
+    date: string;           // "October 15"
+    count: number;          // 23
+    narrative: string;      // "23 conversations in one day. Every one about the same thing."
+  };
+  topTopics: string[];      // Top 3-5 topics, ordered
+  funFacts: string[];       // 2-3 quirky, specific, data-grounded fun facts
+  compliment: string;       // Single genuine compliment — earned, specific, with real numbers
+  yearOneLine: string;      // One sentence capturing who they were this year
 
   // Metadata
   _factCount: number;       // How many facts the engine produced
   _topWowScore: number;     // Highest wow score in the fact set
-  _removedSlides?: string[];// Any slides removed due to insufficient data
+  _placeholderSlides?: string[]; // Slides showing placeholder state due to insufficient data
   _benchmarkSource: 'aggregate' | 'published' | 'self_comparison';
 }
 ```
@@ -771,8 +869,8 @@ async function recoverMalformedJSON(rawResponse: string, expectedSchema: string)
 
 function removeFieldsWithInvalidFormat(insights: any): any {
   const expectedFields: Record<string, 'object' | 'string' | 'array'> = {
-    personality: 'object', benchmarks: 'array', trajectory: 'object',
-    correlations: 'array', funFacts: 'array', roast: 'string', compliment: 'string',
+    hook: 'object', yearAtAGlance: 'object', trajectory: 'object', benchmarks: 'array',
+    correlations: 'array', funFacts: 'array', compliment: 'string', yearOneLine: 'string',
   };
   const cleaned: any = {};
   const removed: string[] = [];
@@ -784,7 +882,7 @@ function removeFieldsWithInvalidFormat(insights: any): any {
     if (valid) cleaned[field] = v;
     else removed.push(field);
   }
-  if (removed.length > 0) cleaned._removedSlides = removed;
+  if (removed.length > 0) cleaned._placeholderSlides = removed;
   return cleaned;
 }
 ```
@@ -803,12 +901,12 @@ function removeFieldsWithInvalidFormat(insights: any): any {
 | 6 | **Fact engine** — Orchestrates all detectors, computes wow scores, produces ranked `InsightFact[]` array. New `src/lib/insight-facts.ts`. | Tasks 1–5 | 1 day | Core engine that powers everything |
 | 7 | **LLM narrative prompt** — New system prompt that takes verified facts and writes Wrapped-style copy. Schema v3 with benchmarks, trajectory, correlations. Banned phrase list. | Task 6 | 0.5 day | Server-path quality |
 | 8 | **Template fallback engine** — Client-side templates with `${placeholder}` substitution for Path A. Uses fact engine output. Universal fallbacks for thin data. | Task 6 | 1 day | Client-path fix + server fallback |
-| 9 | **Multi-tier JSON recovery** — `recoverMalformedJSON()`, `removeFieldsWithInvalidFormat()`, wire `_removedSlides` into UI, delete hardcoded fallback block. | None | 0.5 day | Parse failure resilience |
+| 9 | **Multi-tier JSON recovery** — `recoverMalformedJSON()`, `removeFieldsWithInvalidFormat()`, wire `_placeholderSlides` into UI, delete hardcoded fallback block. | None | 0.5 day | Parse failure resilience |
 | 10 | **Expand semantic probes** — From 8 to 18+ themes. | None | 0.5 day | Better theme coverage |
 | 11 | **Wire into existing endpoints** — Replace `generateDataInsights()` with fact engine (client), update `/api/wrapped/insights` with new prompt + schema (server). Feature flags. | Tasks 6–9 | 1 day | Integration |
-| 12 | **New slide types** — Benchmark slide (percentile bar), trajectory slide (timeline visual), correlation slide (split comparison). | Task 11 | 1–2 days | Presentation layer |
+| 12 | **New slide types + visual design** — 16-slide poster-style layout. Full-bleed color palettes, bold typography, mobile-first portrait, dark mode, animated reveals. Slide types: year-at-a-glance, usage curve, heatmap, trajectory timeline, behavioral split, life event, growth, top topics, peak moment, benchmark bar, fun facts, compliment, year-in-one-line, share card. | Task 11 | 2–3 days | Presentation layer |
 
-**Total estimated effort: 9–11 days**
+**Total estimated effort: 10–13 days**
 
 ### Parallel execution plan
 
@@ -830,7 +928,7 @@ Week 2 (assembly):
 | Risk | Impact | Likelihood | Mitigation |
 |------|--------|-----------|------------|
 | Not enough users for meaningful benchmarks | High — "top X%" loses credibility | High initially | Bootstrap with published research + self-comparison ("your October was 3x your March"). Phase in real benchmarks as user base grows. Be transparent: "Based on estimated ChatGPT averages." |
-| Temporal analysis thin for new users (<3 months of data) | Medium — trajectory and growth insights unavailable | Medium | Gracefully omit those slides (use `_removedSlides`). Focus on benchmarks and correlations which work with any amount of data. |
+| Temporal analysis thin for new users (<3 months of data) | Medium — trajectory and growth insights show placeholder state | Medium | Display placeholder screens explaining data is insufficient (use `_placeholderSlides`). Focus on benchmarks and correlations which work with any amount of data. Hook slide still renders using the best available fact. |
 | Life event detection feels invasive ("Did you get the job?") | High — creepy not cool | Low | Never assume specifics. Use playful framing: "Something happened" not "You got the job." Only surface 5x+ spikes. Let users opt out of this category. |
 | Behavioral correlations are weak/noisy for users with few conversations | Medium | Medium | Require minimum sample sizes (e.g., >20 night conversations to report night patterns). Only surface correlations with strength > 0.7. |
 | LLM ignores verified facts, invents numbers | High | Low | Post-generation validation: every number in output must appear in input facts. Reject and retry once. Fall back to raw fact narratives. |

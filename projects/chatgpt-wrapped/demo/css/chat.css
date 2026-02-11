@@ -1,0 +1,137 @@
+/* ============================================
+   Chat — Messages, Bubbles, Thinking, AI Response
+   ============================================ */
+
+/* Shared message container for layout flow */
+.chat-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+}
+
+/* User message — right aligned */
+.chat-bubble {
+  align-self: flex-end;
+  max-width: 80%;
+  padding: 10px 16px;
+  background: #303030;
+  border-radius: 18px;
+  border-bottom-right-radius: 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #ececec;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.chat-bubble--visible {
+  animation: bubbleAppear 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bubbleAppear {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================
+   AI THINKING DOTS
+   ============================================ */
+.chat-thinking {
+  align-self: flex-start;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 0;
+  opacity: 0;
+  animation: bubbleAppear 0.3s ease forwards;
+}
+
+.chat-thinking__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.4);
+  animation: dotPulse 1.4s ease-in-out infinite;
+}
+
+.chat-thinking__dot:nth-child(2) { animation-delay: 0.16s; }
+.chat-thinking__dot:nth-child(3) { animation-delay: 0.32s; }
+
+@keyframes dotPulse {
+  0%, 80%, 100% { transform: scale(0.55); opacity: 0.3; }
+  40% { transform: scale(1.05); opacity: 1; }
+}
+
+.chat-thinking--intense .chat-thinking__dot {
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+/* ============================================
+   AI RESPONSE — streams in, wraps, grows
+   ============================================ */
+.chat-ai-response {
+  align-self: flex-start;
+  box-sizing: content-box;
+  max-width: 92%;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #d1d1d1;
+  opacity: 0;
+  padding: 0;
+  border-radius: 16px;
+  background: transparent;
+  transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.6s ease;
+}
+
+.chat-ai-response--visible {
+  animation: bubbleAppear 0.35s ease forwards;
+}
+
+.chat-ai-response--wrapped {
+  background: rgba(255, 255, 255, 0.05);
+  padding: 20px 24px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.chat-ai-response--grown {
+  transform: scale(1.04);
+}
+
+/* Streaming cursor */
+.chat-ai-response__cursor {
+  display: inline-block;
+  width: 7px;
+  height: 1.1em;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 1px;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: streamCursorBlink 0.6s step-end infinite;
+}
+
+.chat-ai-response__cursor--hidden {
+  display: none;
+}
+
+@keyframes streamCursorBlink {
+  0%, 50% { opacity: 1; }
+  50.01%, 100% { opacity: 0; }
+}
+
+/* Accent highlights */
+.ai-accent {
+  color: #c084fc;
+  font-weight: 600;
+}
+
+.ai-accent--warm {
+  color: #fb923c;
+  font-weight: 600;
+}
