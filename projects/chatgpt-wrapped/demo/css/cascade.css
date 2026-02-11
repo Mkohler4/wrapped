@@ -2,12 +2,16 @@
    Cascade — Ghost Bubbles & Backdrop
    ============================================ */
 
-/* Ghost bubble base */
+/* Ghost bubble base — starts invisible; animation triggered by --active */
 .ghost-bubble {
   height: 14px;
   border-radius: 10px;
   opacity: 0;
   flex-shrink: 0;
+}
+
+/* Activated during cascade — triggers the pop-in animation */
+.ghost-bubble--active {
   animation: ghostAppear 0.15s ease forwards;
 }
 
@@ -63,12 +67,17 @@
   z-index: 0;
 }
 
+/* Transition must be set BEFORE value changes, or browsers snap instead
+   of animating. Applied via .chat-messages--blur-ready in JS at cascade start. */
+.chat-messages--blur-ready {
+  transition: filter 0.8s ease,
+              opacity 0.8s ease;
+}
+
 /* Blur — softened to keep backdrop visible */
 .chat-messages--blurred {
   filter: blur(4px);
   opacity: 0.5;
-  transition: filter 0.8s ease,
-              opacity 0.8s ease;
 }
 
 /* Gentle drift when used as backdrop */

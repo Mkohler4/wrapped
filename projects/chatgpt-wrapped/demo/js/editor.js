@@ -287,20 +287,21 @@
 
   // Asymmetric easing: slow ramp-up, fast cruise, quick ease-out.
   // Returns a value in [0, 1] for input t in [0, 1].
+  // Tuned: shorter ramp (28%) so the conversation text scrolls away faster,
+  // longer cruise (60%) for the high-speed feel, quick decel (12%).
   function cascadeEasing(t) {
-    // Phase boundaries (in time)
-    const rampEnd = 0.38;   // 38% of duration: slow ease-in
+    const rampEnd = 0.28;    // 28% of duration: ease-in
     const decelStart = 0.88; // last 12% of duration: quick ease-out
 
     if (t <= rampEnd) {
-      // Slow ease-in (cubic)
+      // Ease-in (cubic)
       const p = t / rampEnd;
       const eased = p * p * p;
-      return eased * 0.2; // covers 0–20% of scroll distance
+      return eased * 0.18; // covers 0–18% of scroll distance
     } else if (t <= decelStart) {
       // Linear cruise (fast, constant speed)
       const p = (t - rampEnd) / (decelStart - rampEnd);
-      return 0.2 + p * 0.7; // covers 20–90% of scroll distance
+      return 0.18 + p * 0.72; // covers 18–90% of scroll distance
     } else {
       // Quick ease-out (cubic)
       const p = (t - decelStart) / (1 - decelStart);
@@ -317,21 +318,32 @@
     // Reduce gap so ghosts pack tighter
     chatMessages.style.gap = '6px';
 
-    // Promote to GPU layer early so blur compositing doesn't stutter later
+    // --- GPU pre-warm ---
+    // Micro-blur forces the browser to promote chatMessages to its own
+    // compositing layer NOW, so the real blur later doesn't stutter.
+    // blur-ready sets the CSS transition property BEFORE values change —
+    // if both are added in the same frame, browsers snap instead of animating.
     chatMessages.style.willChange = 'filter, opacity';
+    chatMessages.style.filter = 'blur(0.01px)';
+    chatMessages.classList.add('chat-messages--blur-ready');
 
-    // --- Bubble creation + scroll in a single rAF loop ---
-    // Easing maps time → progress (0-1). Progress maps to a target bubble
-    // count. Each frame we create any missing bubbles (with their pop-in
-    // animation) and scroll to the bottom once. During cruise the loop
-    // creates several bubbles per frame; during ramp/decel fewer or none.
-    const totalBubbles = 150;
-    const duration = 5200;
+    // --- On-the-fly bubble creation + estimated scroll ---
+    // Creating 1-2 simple divs per frame is cheap. The expensive part in
+    // the original was reading scrollHeight after each mutation (forced
+    // synchronous layout). We eliminate that by ESTIMATING scroll height
+    // from the bubble count instead of measuring it.
+    const totalBubbles = 200;
+    const duration = 4800;
+    const avgBubbleH = 21;  // ~15px avg height + 6px gap
     let bubbleCount = 0;
     let userMsgIdx = 0;
     let aiMsgIdx = 0;
-    let footerHidden = false;
-    let blurStarted = false;
+    let footerFaded = false;
+
+    // Read the initial content height and viewport ONCE before the loop.
+    // These are the only layout reads we ever do.
+    const initialContentH = editorMain.scrollHeight;
+    const viewportH = editorMain.clientHeight;
 
     function createBubble() {
       const ghost = document.createElement('div');
@@ -340,7 +352,7 @@
       const isFeatured = Math.random() < 0.15;
 
       if (isFeatured) {
-        ghost.className = `ghost-bubble ${sideClass} ghost-bubble--featured`;
+        ghost.className = `ghost-bubble ghost-bubble--active ${sideClass} ghost-bubble--featured`;
         if (isUser) {
           ghost.textContent = SAMPLE_MESSAGES_USER[userMsgIdx % SAMPLE_MESSAGES_USER.length];
           userMsgIdx++;
@@ -350,12 +362,10 @@
         }
         ghost.style.height = `${20 + Math.random() * 6}px`;
         ghost.style.width = `${45 + Math.random() * 40}%`;
-        ghost.style.opacity = `${0.45 + Math.random() * 0.25}`;
       } else {
-        ghost.className = `ghost-bubble ${sideClass}`;
+        ghost.className = `ghost-bubble ghost-bubble--active ${sideClass}`;
         ghost.style.width = `${30 + Math.random() * 55}%`;
         ghost.style.height = `${12 + Math.random() * 6}px`;
-        ghost.style.opacity = `${0.25 + Math.random() * 0.35}`;
       }
 
       chatMessages.appendChild(ghost);
@@ -370,33 +380,32 @@
         const t = Math.min(elapsed / duration, 1);
         const eased = cascadeEasing(t);
 
-        // How many bubbles should exist at this point in time
+        // Create any missing bubbles (they pop in via CSS ghostAppear)
         const targetCount = Math.min(totalBubbles, Math.ceil(eased * totalBubbles));
-
-        // Create any missing bubbles (they animate in via CSS ghostAppear)
         while (bubbleCount < targetCount) {
           createBubble();
         }
 
-        // Scroll to bottom (one read-write per frame — clean)
-        editorMain.scrollTop = editorMain.scrollHeight;
+        // Estimate total content height from bubble count — NO scrollHeight read.
+        // This avoids the forced synchronous layout that caused the original jank.
+        const estimatedH = initialContentH + bubbleCount * avgBubbleH;
+        const scrollTarget = Math.max(0, estimatedH - viewportH);
+        editorMain.scrollTop = scrollTarget;
 
-        // Hide footer at ~35% progress
-        if (!footerHidden && eased > 0.35) {
-          footerHidden = true;
+        // Fade the footer visually at ~30% (opacity only — no layout change)
+        if (!footerFaded && eased > 0.30) {
+          footerFaded = true;
           const footer = document.querySelector('.editor__footer');
-          footer.classList.add('editor__footer--hidden');
-        }
-
-        // Start blur at ~90% progress (during the quick decel)
-        if (!blurStarted && eased > 0.9) {
-          blurStarted = true;
-          chatMessages.classList.add('chat-messages--blurred');
+          footer.style.opacity = '0';
+          footer.style.pointerEvents = 'none';
         }
 
         if (t < 1) {
           requestAnimationFrame(tick);
         } else {
+          // Fully collapse the footer now that nobody can see the shift
+          const footer = document.querySelector('.editor__footer');
+          footer.classList.add('editor__footer--hidden');
           resolve();
         }
       }
@@ -406,23 +415,26 @@
   }
 
   // ============================================
-  // Phase 9: Soften into backdrop, fade chrome
+  // Phase 9: Blur messages, then show gradient
   // ============================================
   async function compressAndBlur() {
-    // Blur was already applied during the cascade's decel phase.
-    // chatMessages stays in normal flow — no layout changes here.
+    // Step 1: Blur the messages (transition was pre-set via blur-ready class)
+    chatMessages.style.filter = '';  // remove micro-blur so transition starts clean
+    chatMessages.classList.add('chat-messages--blurred');
 
-    await wait(400);
+    // Wait for the 0.8s blur+opacity CSS transition to fully complete
+    await wait(900);
 
-    // Add the gradient overlay so stat text will be readable
+    // Step 2: Fade in the gradient overlay
     const backdrop = document.createElement('div');
     backdrop.className = 'stat-backdrop';
     editorMain.appendChild(backdrop);
 
-    // Fade in the overlay
-    await wait(50);
+    await wait(50); // let browser paint the element at opacity 0
     backdrop.classList.add('stat-backdrop--visible');
-    await wait(350);
+
+    // Wait for the 0.6s opacity transition to complete
+    await wait(700);
   }
 
   // ============================================
@@ -523,9 +535,14 @@
     statDisplay.classList.add('stat-display--visible');
     glow.classList.add('stat-hero__glow--visible');
 
-    // Now that the gradient overlay + stat fully cover the bubbles,
-    // silently switch chatMessages to absolute backdrop mode for
-    // the later transition animations. No visual change — it's hidden.
+    // Wait for the 0.7s stat reveal animation to fully complete so the
+    // stat is fully opaque before we switch chatMessages to absolute.
+    await wait(800);
+
+    // NOW switch chatMessages to absolute backdrop mode.
+    // The stat + gradient + blur fully cover the bubbles, so the
+    // position change is invisible. Doing this earlier causes a visible
+    // jump because the gradient edges are semi-transparent.
     chatMessages.classList.add('chat-messages--backdrop');
     chatMessages.classList.add('chat-messages--drifting');
 
@@ -1613,14 +1630,21 @@
     // Hold briefly to take it in
     await wait(1000);
 
-    // --- Step 7: Zoom — user's bubble disappears, graph fills screen ---
-    // Find the user's "Show me my growth" bubble (last .chat-bubble)
+    // --- Step 7: Zoom — camera pushes into the graph ---
+    // We combine scale + translateY in ONE transform so the graph
+    // simultaneously zooms in AND slides to vertical centre.  With
+    // transform-origin: center center and the transform order
+    //   scale(S) translateY(N)          (CSS applies right-to-left)
+    // a point at offset d from centre ends up at (d + N) * S.
+    // Setting N = -d puts the combo at the origin before scaling,
+    // so it stays dead-centre as the zoom lands.
+
     const userBubbles = chatMessages.querySelectorAll('.chat-bubble');
     const userBubble = userBubbles.length ? userBubbles[userBubbles.length - 1] : null;
 
-    // Scroll so the AI message + graph combo is centered in the viewport.
-    // The AI message sits above the graph and should remain visible as context.
     const editorMainEl = document.querySelector('.editor__main');
+
+    // Scroll so the graph combo is roughly in view before we measure
     if (editorMainEl) {
       const msgTop = aiResponse.offsetTop;
       const graphBottom = graphWrap.offsetTop + graphWrap.offsetHeight;
@@ -1629,9 +1653,25 @@
       const scrollTarget = msgTop - (viewH - comboH) / 2;
       editorMainEl.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
       await wait(400);
+
+      // Lock scroll so transform math stays stable
+      editorMainEl.style.overflow = 'hidden';
     }
 
-    // Fade out header, footer, and user's bubble simultaneously
+    // Measure where the combo (AI msg + graph) sits relative to editor centre
+    const editorRect = editor.getBoundingClientRect();
+    const aiRect     = aiResponse.getBoundingClientRect();
+    const graphRect  = graphWrap.getBoundingClientRect();
+
+    const comboCenterY = ((aiRect.top + graphRect.bottom) / 2) - editorRect.top;
+    const editorCenterY = editorRect.height / 2;
+    // Positive = combo is below centre, need to shift up (negative translate)
+    const translateY = editorCenterY - comboCenterY;
+
+    // Use center center so scale works symmetrically
+    editor.style.transformOrigin = 'center center';
+
+    // Fade out header, footer, and user's bubble — fires simultaneously with zoom
     const header = document.querySelector('.editor__header');
     const footer = document.querySelector('.editor__footer');
     if (header) {
@@ -1653,27 +1693,13 @@
       }, 300);
     }
 
-    // Apply zoom and vertically center the content
-    editor.classList.add('editor--zoomed-insight');
+    // Apply combined zoom + recentre as one transform — the existing 0.9s
+    // cubic-bezier transition on .editor animates both simultaneously,
+    // giving a smooth "camera dolly-in" effect.
+    editor.style.transform = `scale(1.3) translateY(${translateY}px)`;
 
-    // After the user bubble collapses, the remaining content (AI msg + graph)
-    // needs to be pushed down to the vertical center of the main area.
-    // We do this by calculating the right margin-top on chat-messages.
-    if (editorMainEl) {
-      editorMainEl.style.overflow = 'hidden';
-      editorMainEl.scrollTop = 0;
-    }
-    await wait(500);
-
-    // Measure and center: push chat-messages down so its content is centered
-    if (editorMainEl && chatMessages) {
-      const mainH = editorMainEl.clientHeight;
-      const contentH = chatMessages.scrollHeight;
-      const offset = Math.max(0, (mainH - contentH) / 2);
-      chatMessages.style.transition = 'margin-top 0.5s cubic-bezier(0.4, 0, 0.15, 1)';
-      chatMessages.style.marginTop = `${offset}px`;
-    }
-    await wait(600);
+    // Wait for the transition to finish (0.9s + small buffer)
+    await wait(1000);
 
     // Hold — let user take in the full zoomed picture
     await wait(4000);

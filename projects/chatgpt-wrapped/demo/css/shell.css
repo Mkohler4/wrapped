@@ -24,10 +24,11 @@
   transform: scale(1.25) translateY(8%);
 }
 
-/* Zoomed on insight graph — gentle zoom, content vertically centered via JS */
+/* Zoomed on insight graph — transform is applied directly via JS
+   (scale + translateY combined) so the zoom and recentre happen as
+   one smooth motion.  This class is kept as a semantic marker. */
 .editor.editor--zoomed-insight {
-  transform-origin: center center;
-  transform: scale(1.3);
+  /* transform set by JS */
 }
 
 /* Zoomed toward the sidebar button — top-left focus */
