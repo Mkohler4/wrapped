@@ -100,6 +100,25 @@
   transform: translateX(0);
 }
 
+/* Message count below each bar */
+.topic-bar__messages {
+  z-index: 201;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(12px, 2vw, 15px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.4s ease 0.15s, transform 0.4s ease 0.15s;
+}
+
+.topic-bar__messages--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Subline text below the chart */
 .topic-bar__subline {
   z-index: 201;

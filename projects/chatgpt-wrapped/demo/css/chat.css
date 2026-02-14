@@ -84,10 +84,10 @@
   padding: 0;
   border-radius: 16px;
   background: transparent;
-  transition: background 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-              padding 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+  transition: background 0.85s cubic-bezier(0.4, 0, 0.2, 1),
+              padding 0.85s cubic-bezier(0.4, 0, 0.2, 1),
               transform 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-              box-shadow 0.6s ease;
+              box-shadow 0.85s ease;
 }
 
 .chat-ai-response--visible {
@@ -104,14 +104,14 @@
   transform: scale(1.04);
 }
 
-/* Streaming cursor */
+/* Streaming cursor — thin typing caret */
 .chat-ai-response__cursor {
   display: inline-block;
-  width: 7px;
+  width: 1.5px;
   height: 1.1em;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 1px;
-  margin-left: 2px;
+  background: rgba(255, 255, 255, 0.75);
+  border-radius: 0;
+  margin-left: 1px;
   vertical-align: text-bottom;
   animation: streamCursorBlink 0.6s step-end infinite;
 }
@@ -134,4 +134,425 @@
 .ai-accent--warm {
   color: #fb923c;
   font-weight: 600;
+}
+
+/* ============================================
+   AI IMAGE GENERATION — chart card with expand
+   ============================================ */
+
+/* Wrapper for label + image card */
+.chat-ai-image-wrap {
+  align-self: flex-start;
+  max-width: 92%;
+  margin-top: 2px;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.chat-ai-image-wrap--visible {
+  animation: bubbleAppear 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* "Creating image..." label */
+.chat-ai-image-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.45);
+  margin-bottom: 10px;
+  max-height: 40px;
+  transition: opacity 0.35s ease,
+              max-height 0.4s cubic-bezier(0.4, 0, 0.15, 1) 0.15s,
+              margin-bottom 0.4s cubic-bezier(0.4, 0, 0.15, 1) 0.15s;
+}
+
+/* Loading dot that pulses while "getting started" */
+.chat-ai-image-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  animation: dotPulse 1.4s ease-in-out infinite;
+  margin-top: 4px;
+  transition: opacity 0.3s ease;
+}
+
+.chat-ai-image-dot--hidden {
+  opacity: 0;
+}
+
+/* Image card — compact thumbnail with mini chart preview */
+.chat-ai-image {
+  position: relative;
+  width: 220px;
+  height: 140px;
+  border-radius: 16px;
+  background: #1a1a1e;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-sizing: border-box;
+  overflow: hidden;
+  opacity: 0;
+  filter: blur(6px);
+  transform: scale(0.97);
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.15, 1),
+              height 0.7s cubic-bezier(0.4, 0, 0.15, 1),
+              border-radius 0.5s ease,
+              background 0.5s ease,
+              border-color 0.5s ease,
+              box-shadow 0.5s ease,
+              opacity 0.6s ease,
+              filter 0.8s cubic-bezier(0.4, 0, 0.15, 1),
+              transform 0.6s cubic-bezier(0.4, 0, 0.15, 1);
+}
+
+/* Shimmer overlay while "generating" */
+.chat-ai-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.04) 42%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.04) 58%,
+    transparent 70%
+  );
+  background-size: 250% 100%;
+  animation: shimmerSweep 1.8s ease-in-out infinite;
+  pointer-events: none;
+  transition: opacity 0.5s ease;
+}
+
+/* Kill shimmer once revealed */
+.chat-ai-image--revealed::after {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes shimmerSweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Image revealed — blur clears, fades in, scales up */
+.chat-ai-image--revealed {
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1);
+}
+
+/* Subtle glow pulse when generation completes */
+.chat-ai-image--glow {
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.06), 0 0 3px rgba(255, 255, 255, 0.03);
+}
+
+/* Expand button attention pulse */
+@keyframes btnPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.chat-ai-image__max-btn--pulse {
+  animation: btnPulse 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Expand button — bottom-right corner of image card */
+.chat-ai-image__max-btn {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease, opacity 0.4s ease;
+}
+
+.chat-ai-image__max-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+}
+
+.chat-ai-image__max-btn--pressed {
+  transform: scale(0.85);
+  background: rgba(0, 0, 0, 0.8);
+}
+
+/* ============================================
+   Usage-time visualization — chart inside card
+   ============================================ */
+.chat-ai-image__viz {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  padding: 16px 16px 10px;
+}
+
+/* Compact mode — mini preview inside the thumbnail card */
+.chat-ai-image__viz--compact {
+  padding: 12px 12px 8px;
+}
+.chat-ai-image__viz--compact .viz__header {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.chat-ai-image__viz--compact .viz__axis {
+  font-size: 8px;
+  padding-top: 4px;
+}
+
+.viz__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  margin-bottom: 16px;
+  transition: opacity 0.5s ease 0.3s, max-height 0.5s ease 0.3s;
+  z-index: 1;
+}
+
+.viz__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.chat-ai-image--expanded .viz__title {
+  font-size: 15px;
+}
+
+.viz__chart {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  min-height: 0;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+}
+
+.viz__bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  min-height: 0;
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.5s ease,
+              background 0.3s ease,
+              box-shadow 0.3s ease;
+  will-change: transform;
+  /* Muted cool slate gradient */
+  background: linear-gradient(
+    to top,
+    rgba(148, 163, 184, 0.2) 0%,
+    rgba(148, 163, 184, 0.35) 60%,
+    rgba(168, 183, 200, 0.45) 100%
+  );
+  position: relative;
+}
+
+/* Top-3 bars get highlighted during hover animation */
+.viz__bar--top3 {
+  background: linear-gradient(
+    to top,
+    rgba(96, 165, 250, 0.35) 0%,
+    rgba(96, 165, 250, 0.6) 60%,
+    rgba(147, 197, 253, 0.75) 100%
+  );
+}
+
+.viz__bar--peak {
+  /* Warm amber/gold gradient — matches ai-accent--warm (#fb923c) */
+  background: linear-gradient(
+    to top,
+    rgba(251, 146, 60, 0.45) 0%,
+    rgba(251, 146, 60, 0.8) 50%,
+    rgba(253, 186, 116, 0.95) 100%
+  );
+  box-shadow: 0 0 10px rgba(251, 146, 60, 0.15);
+  border-radius: 2px 2px 0 0;
+}
+
+/* Bar hover highlight — applied by cursor animation */
+.viz__bar--hovered {
+  background: linear-gradient(
+    to top,
+    rgba(251, 146, 60, 0.5) 0%,
+    rgba(251, 146, 60, 0.85) 50%,
+    rgba(253, 186, 116, 1) 100%
+  ) !important;
+  box-shadow: 0 0 14px rgba(251, 146, 60, 0.25) !important;
+}
+
+.viz__axis {
+  position: relative;
+  height: 18px;
+  padding: 6px 0 0;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.25);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: opacity 0.5s ease 0.3s, max-height 0.5s ease 0.3s;
+  z-index: 1;
+}
+
+.viz__axis span {
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.viz__axis span:first-child {
+  transform: translateX(0);  /* Don't shift 12AM off the left edge */
+}
+
+/* Tooltip — appears above bar on cursor hover */
+.viz__tooltip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  white-space: nowrap;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #2a2a2e;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.viz__tooltip--visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.viz__tooltip-hour {
+  font-size: 15px;
+  font-weight: 700;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  letter-spacing: -0.01em;
+}
+
+.viz__tooltip-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+}
+
+/* Hide the label when image is ready */
+.chat-ai-image-label--hidden {
+  opacity: 0;
+  max-height: 0;
+  margin-bottom: 0;
+  overflow: hidden;
+}
+
+/* ============================================
+   Expanded state — image card grows in-place
+   to show the full chart. Stays in the DOM.
+   ============================================ */
+
+.chat-ai-image--expanded {
+  width: 740px;
+  height: 520px;
+  border-radius: 20px;
+  background: #1a1a1e;
+  border-color: rgba(255, 255, 255, 0.1);
+  overflow: visible;
+  opacity: 1;
+  filter: blur(0px);
+  transform: scale(1);
+}
+
+.chat-ai-image--expanded .chat-ai-image__viz {
+  overflow: visible;
+  padding: 24px 28px 16px;
+}
+
+.chat-ai-image--expanded .viz__axis {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  height: 22px;
+  padding-top: 8px;
+}
+
+.chat-ai-image--expanded .viz__chart {
+  gap: 4px;
+}
+
+/* Fade expand button when expanded */
+.chat-ai-image--expanded .chat-ai-image__max-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* "Most Active Hour" badge — appears top-left after cursor hover sequence */
+.viz__most-active {
+  position: absolute;
+  top: 16px;
+  left: 20px;
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  z-index: 5;
+}
+
+.viz__most-active--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.viz__most-active-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.viz__most-active-hour {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fb923c;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+  letter-spacing: -0.01em;
 }
