@@ -10,7 +10,7 @@ window.__editorPhases.showGrowthInsight = (() => {
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait, jitter } = H;
+  const { wait, jitter, isMobileViewport } = H;
 
   async function showGrowthInsight(data) {
     const { editor } = STATE.dom;
@@ -302,11 +302,12 @@ window.__editorPhases.showGrowthInsight = (() => {
     // Hold briefly to take it in
     await wait(1000);
 
-    // --- Step 7: Zoom — camera pushes into the graph ---
+    // --- Step 7: Camera focuses on the graph ---
     const userBubbles = STATE.chatMessages.querySelectorAll('.chat-bubble');
     const userBubble = userBubbles.length ? userBubbles[userBubbles.length - 1] : null;
 
     const editorMainEl = document.querySelector('.editor__main');
+    const mobile = isMobileViewport();
 
     // Scroll so the graph combo is roughly in view before we measure
     if (editorMainEl) {
@@ -322,19 +323,7 @@ window.__editorPhases.showGrowthInsight = (() => {
       editorMainEl.style.overflow = 'hidden';
     }
 
-    // Measure where the combo (AI msg + graph) sits relative to editor centre
-    const editorRect = editor.getBoundingClientRect();
-    const aiRect     = aiResponse.getBoundingClientRect();
-    const graphRect  = graphWrap.getBoundingClientRect();
-
-    const comboCenterY = ((aiRect.top + graphRect.bottom) / 2) - editorRect.top;
-    const editorCenterY = editorRect.height / 2;
-    const translateY = editorCenterY - comboCenterY;
-
-    // Use center center so scale works symmetrically
-    editor.style.transformOrigin = 'center center';
-
-    // Fade out header, footer, and user's bubble — fires simultaneously with zoom
+    // Fade out header, footer, and user's bubble
     const header = document.querySelector('.editor__header');
     const footer = document.querySelector('.editor__footer');
     if (header) {
@@ -356,13 +345,27 @@ window.__editorPhases.showGrowthInsight = (() => {
       }, 300);
     }
 
-    // Apply combined zoom + recentre as one transform
-    editor.style.transform = `scale(1.3) translateY(${translateY}px)`;
+    if (!mobile) {
+      // Desktop: zoom + recentre the graph combo
+      const editorRect = editor.getBoundingClientRect();
+      const aiRect     = aiResponse.getBoundingClientRect();
+      const graphRect  = graphWrap.getBoundingClientRect();
 
-    // Wait for the transition to finish (0.9s + small buffer)
-    await wait(1000);
+      const comboCenterY = ((aiRect.top + graphRect.bottom) / 2) - editorRect.top;
+      const editorCenterY = editorRect.height / 2;
+      const translateY = editorCenterY - comboCenterY;
 
-    // Hold — let user take in the full zoomed picture
+      editor.style.transformOrigin = 'center center';
+      editor.style.transform = `scale(1.3) translateY(${translateY}px)`;
+
+      // Wait for the transition to finish (0.9s + small buffer)
+      await wait(1000);
+    } else {
+      // Mobile: no zoom — scroll centering + fades are enough
+      await wait(600);
+    }
+
+    // Hold — let user take in the full picture
     await wait(4000);
 
     return {

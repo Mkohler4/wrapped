@@ -9,10 +9,12 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.transitionToSidebar = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait } = H;
+  const T = CFG.TIMINGS.PHASE_11;
 
   async function transitionToSidebar() {
     const { fakeCursor } = STATE.dom;
@@ -38,14 +40,14 @@ window.__editorPhases.transitionToSidebar = (() => {
       statDisplay.offsetHeight; // reflow — lock the starting position
 
       statDisplay.style.transition =
-        'transform 2.2s cubic-bezier(0.4, 0, 0.2, 1), opacity 2.5s ease';
+        `transform ${T.STAT_SLIDE_TRANSFORM / 1000}s cubic-bezier(0.4, 0, 0.2, 1), opacity ${T.STAT_SLIDE_OPACITY / 1000}s ease`;
       statDisplay.style.transform = 'translate(-50%, 80%) scale(0.92)';
       statDisplay.style.opacity = '0';
     }
 
     // Backdrop gradient overlay fades slowly
     if (backdrop) {
-      backdrop.style.transition = 'opacity 2s ease';
+      backdrop.style.transition = `opacity ${T.BACKDROP_FADE / 1000}s ease`;
       backdrop.style.opacity = '0';
     }
 
@@ -57,21 +59,21 @@ window.__editorPhases.transitionToSidebar = (() => {
 
       // Slide down immediately (parallax "left behind" effect)
       STATE.chatMessages.style.transition =
-        'transform 2.5s cubic-bezier(0.4, 0, 0.2, 1)';
+        `transform ${T.MESSAGES_SLIDE / 1000}s cubic-bezier(0.4, 0, 0.2, 1)`;
       STATE.chatMessages.style.transform = 'translateX(-50%) translateY(70%)';
 
-      // Delay the fade — start it 1.6s later, over 2s
+      // Delay the fade
       setTimeout(() => {
         if (STATE.chatMessages) {
           STATE.chatMessages.style.transition =
-            'transform 2.5s cubic-bezier(0.4, 0, 0.2, 1), opacity 2s ease';
+            `transform ${T.MESSAGES_SLIDE / 1000}s cubic-bezier(0.4, 0, 0.2, 1), opacity ${T.MESSAGES_FADE_DURATION / 1000}s ease`;
           STATE.chatMessages.style.opacity = '0';
         }
-      }, 1600);
+      }, T.MESSAGES_FADE_DELAY);
     }
 
     // --- Step 2: After scroll-up is clearly visible, bring in the cursor ---
-    await wait(900);
+    await wait(T.CURSOR_APPEAR_DELAY);
 
     // Cursor appears from center area
     fakeCursor.style.transition = 'none';
@@ -80,31 +82,32 @@ window.__editorPhases.transitionToSidebar = (() => {
     fakeCursor.classList.add('fake-cursor--visible');
     fakeCursor.offsetHeight; // reflow
 
-    await wait(120); // brief moment so cursor registers visually
+    await wait(T.CURSOR_SETTLE); // brief moment so cursor registers visually
 
     // Animate cursor toward the sidebar button (top-left)
     const btnRect = sidebarBtn.getBoundingClientRect();
+    const cursorDur = T.CURSOR_MOVE_DURATION / 1000;
     fakeCursor.style.transition =
-      'left 1.1s cubic-bezier(0.4, 0, 0.15, 1), top 1.1s cubic-bezier(0.4, 0, 0.15, 1)';
+      `left ${cursorDur}s cubic-bezier(0.4, 0, 0.15, 1), top ${cursorDur}s cubic-bezier(0.4, 0, 0.15, 1)`;
     fakeCursor.style.left = `${btnRect.left + btnRect.width / 2 - 3}px`;
     fakeCursor.style.top  = `${btnRect.top  + btnRect.height / 2 - 3}px`;
 
-    await wait(1200); // wait for cursor to arrive
+    await wait(T.CURSOR_MOVE_WAIT); // wait for cursor to arrive
 
     // --- Step 3: Click the sidebar button ---
     sidebarBtn.style.transition = 'transform 0.1s ease, background 0.1s ease';
     sidebarBtn.style.transform = 'scale(0.85)';
     sidebarBtn.style.background = 'rgba(255, 255, 255, 0.1)';
-    await wait(120);
+    await wait(T.CLICK_HOLD);
 
     // Release
     sidebarBtn.style.transform = 'scale(1)';
     sidebarBtn.style.background = 'transparent';
-    await wait(150);
+    await wait(T.CLICK_RELEASE);
 
     // Hide cursor
     fakeCursor.classList.remove('fake-cursor--visible');
-    await wait(200);
+    await wait(T.CURSOR_FADE);
 
     // --- Step 4: Deferred cleanup ---
     if (statDisplay) statDisplay.remove();

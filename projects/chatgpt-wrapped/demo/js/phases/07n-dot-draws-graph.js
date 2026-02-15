@@ -13,8 +13,9 @@ window.__editorPhases.dotDrawsGraph = (() => {
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait, fmtHour, msgCountForHour } = H;
+  const { wait, fmtHour, msgCountForHour, isMobileViewport } = H;
   const { USAGE_HOURS } = CFG;
+  const T = CFG.TIMINGS.PHASE_7N;
 
   async function dotDrawsGraph(response) {
     const { editor } = STATE.dom;
@@ -25,7 +26,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
     // ---------------------------------------------------------
 
     // 1a. Hold — let "You code by day..." breathe
-    await wait(800);
+    await wait(T.TEXT_BREATHE);
 
     // 1b. Single camera zoom — one continuous push into the conversation.
     //     Frames: user bubble + AI response + anticipated graph below.
@@ -35,36 +36,41 @@ window.__editorPhases.dotDrawsGraph = (() => {
     const userBubbles = STATE.chatMessages.querySelectorAll('.chat-bubble');
     const userBubble = userBubbles.length ? userBubbles[userBubbles.length - 1] : null;
 
-    if (header) { header.style.transition = 'opacity 0.5s ease'; header.style.opacity = '0'; }
-    if (footer) { footer.style.transition = 'opacity 0.5s ease'; footer.style.opacity = '0'; }
+    const mobile = isMobileViewport();
 
-    // Measure the full combo we want to frame (no prior zoom active,
-    // so getBoundingClientRect gives true pixel positions).
-    const editorRect = editor.getBoundingClientRect();
-    const respRect = response.getBoundingClientRect();
-    const bubbleRect = userBubble ? userBubble.getBoundingClientRect() : respRect;
-    const anticipatedGraphH = 210; // graph height + gap below response
-    const comboTop = bubbleRect.top - editorRect.top;
-    const comboBottom = respRect.bottom - editorRect.top + anticipatedGraphH;
-    const comboH = comboBottom - comboTop;
-    // Bias the framing upward — place the combo's visual weight
-    // in the upper 40% of the screen so the graph has room below.
-    const comboCenterY = (comboTop + comboBottom) / 2;
-    const targetY = editorRect.height * 0.40; // aim for upper portion
-    const zoomTranslateY = targetY - comboCenterY;
+    if (!mobile) {
+      const fadeSec = T.HEADER_FOOTER_FADE / 1000;
+      if (header) { header.style.transition = `opacity ${fadeSec}s ease`; header.style.opacity = '0'; }
+      if (footer) { footer.style.transition = `opacity ${fadeSec}s ease`; footer.style.opacity = '0'; }
 
-    // Pick a scale that keeps the full combo in view with some breathing
-    // room (20% padding).  Cap at 1.5 so it still feels cinematic.
-    const maxScale = Math.min(1.5, (editorRect.height * 0.80) / comboH);
-    const zoomScale = Math.max(1.15, maxScale); // floor so it still zooms
+      // Measure the full combo we want to frame (no prior zoom active,
+      // so getBoundingClientRect gives true pixel positions).
+      const editorRect = editor.getBoundingClientRect();
+      const respRect = response.getBoundingClientRect();
+      const bubbleRect = userBubble ? userBubble.getBoundingClientRect() : respRect;
+      const anticipatedGraphH = 210; // graph height + gap below response
+      const comboTop = bubbleRect.top - editorRect.top;
+      const comboBottom = respRect.bottom - editorRect.top + anticipatedGraphH;
+      const comboH = comboBottom - comboTop;
+      // Bias the framing upward — place the combo's visual weight
+      // in the upper 40% of the screen so the graph has room below.
+      const comboCenterY = (comboTop + comboBottom) / 2;
+      const targetY = editorRect.height * 0.40; // aim for upper portion
+      const zoomTranslateY = targetY - comboCenterY;
 
-    editor.style.transformOrigin = 'center center';
-    editor.style.transform = `scale(${zoomScale}) translateY(${zoomTranslateY}px)`;
-    editor.classList.add('editor--zoomed-dot-draw');
+      // Pick a scale that keeps the full combo in view with some breathing
+      // room (20% padding).  Cap at 1.5 so it still feels cinematic.
+      const maxScale = Math.min(1.5, (editorRect.height * 0.80) / comboH);
+      const zoomScale = Math.max(1.15, maxScale); // floor so it still zooms
 
-    if (editorMainEl) { editorMainEl.style.overflow = 'hidden'; }
+      editor.style.transformOrigin = 'center center';
+      editor.style.transform = `scale(${zoomScale}) translateY(${zoomTranslateY}px)`;
+      editor.classList.add('editor--zoomed-dot-draw');
 
-    await wait(1000); // let the zoom land
+      if (editorMainEl) { editorMainEl.style.overflow = 'hidden'; }
+
+      await wait(T.ZOOM_LAND); // let the zoom land
+    }
 
     // 1c. Dot appears — small breathing pulse below the text
     const dotWrap = document.createElement('div');
@@ -78,7 +84,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
 
     dotWrap.offsetHeight;
     dotWrap.classList.add('dot-draw-wrap--visible');
-    await wait(800);
+    await wait(T.DOT_APPEAR);
 
     // ---------------------------------------------------------
     // ACT 2 — The Dot Awakens: intensify, drop, scale up
@@ -86,7 +92,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
 
     // 2a. Glow intensifies — the dot "wakes up"
     dot.classList.add('dot-draw--awake');
-    await wait(800);
+    await wait(T.DOT_AWAKE);
 
     // 2b. Insert "Creating image" label (space reserved, text empty)
     //     and graph container together — layout is stable from the start.
@@ -99,7 +105,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
     dotWrap.appendChild(graphWrap);
     graphWrap.offsetHeight;
     graphWrap.classList.add('dot-draw-graph--visible');
-    await wait(200);
+    await wait(T.GRAPH_CONTAINER_SETTLE);
 
     // 2c. Drop — dot springs down into the graph container
     //     Measure the dot's screen position BEFORE re-parenting so we can
@@ -136,20 +142,20 @@ window.__editorPhases.dotDrawsGraph = (() => {
     dot.offsetHeight; // reflow — browser commits the transition before we set the target
 
     dot.style.transform = `translate(${firstPtX}px, ${firstPtY}px) translate(-50%, -50%)`;
-    await wait(650);
+    await wait(T.DOT_DROP);
 
     // 2d. Scale up — dot grows with overshoot
     dot.classList.add('dot-draw--grow');
-    await wait(350);
+    await wait(T.DOT_GROW);
 
     // 2e. Typewriter — write out "Creating image" character by character
     genLabel.classList.add('dot-draw__gen-label--visible');
     const genText = 'Creating image';
     for (let ci = 0; ci < genText.length; ci++) {
       genLabel.textContent += genText[ci];
-      await wait(45);
+      await wait(T.TYPEWRITER_CHAR_MS);
     }
-    await wait(200);
+    await wait(T.TYPEWRITER_HOLD);
 
     // ---------------------------------------------------------
     // ACT 3 — Drawing the Graph: SVG + rAF dot trace
@@ -269,10 +275,10 @@ window.__editorPhases.dotDrawsGraph = (() => {
 
     // Activate drawing state on the dot
     dot.classList.add('dot-draw--drawing');
-    await wait(200);
+    await wait(T.DRAW_PREP);
 
     // 3b. rAF loop — dot traces the path
-    const DRAW_DURATION = 6000; // ms
+    const DRAW_DURATION = T.DRAW_DURATION;
     await new Promise((resolve) => {
       const startTime = performance.now();
 
@@ -319,11 +325,11 @@ window.__editorPhases.dotDrawsGraph = (() => {
     // 4a. Landing bounce
     dot.classList.remove('dot-draw--drawing');
     dot.classList.add('dot-draw--settle');
-    await wait(600);
+    await wait(T.LANDING_BOUNCE);
 
     // 4b. Dot fades to a static marker
     dot.classList.add('dot-draw--fade');
-    await wait(500);
+    await wait(T.DOT_FADE);
 
     // 4c. Labels fade in with stagger
     // Title
@@ -355,17 +361,17 @@ window.__editorPhases.dotDrawsGraph = (() => {
     }
 
     // Animate title in
-    await wait(200);
+    await wait(T.LABELS_PRE_DELAY);
     titleEl.style.transition = 'opacity 0.5s ease';
     titleEl.style.opacity = '1';
-    await wait(300);
+    await wait(T.TITLE_FADE_WAIT);
 
     // Stagger hour labels
     for (let i = 0; i < hourLabelEls.length; i++) {
       setTimeout(() => {
         hourLabelEls[i].style.transition = 'opacity 0.35s ease';
         hourLabelEls[i].style.opacity = '1';
-      }, i * 80);
+      }, i * T.HOUR_LABEL_STAGGER);
     }
 
     // 4d. Peak hour callout — shows message count at the highest point
@@ -396,28 +402,31 @@ window.__editorPhases.dotDrawsGraph = (() => {
     graphWrap.appendChild(peakCallout);
 
     // Animate callout in after labels have settled
-    await wait(600);
+    await wait(T.CALLOUT_DELAY);
     peakCallout.classList.add('dot-draw__peak-callout--visible');
 
     // Hold — let user take in the full picture
-    await wait(2500);
+    await wait(T.FINAL_HOLD);
 
-    // --- Cleanup: smoothly zoom back out ---
-    // Keep transformOrigin stable during the transition so the reference
-    // point doesn't jump.  The .editor base CSS transitions transform over 0.9s.
-    editor.classList.remove('editor--zoomed-dot-draw');
-    editor.style.transform = 'scale(1) translateY(0px)';
-    if (editorMainEl) { editorMainEl.style.overflow = ''; }
+    // --- Cleanup: smoothly zoom back out (only if zoom was applied) ---
+    if (!mobile) {
+      // Keep transformOrigin stable during the transition so the reference
+      // point doesn't jump.  The .editor base CSS transitions transform over 0.9s.
+      editor.classList.remove('editor--zoomed-dot-draw');
+      editor.style.transform = 'scale(1) translateY(0px)';
+      if (editorMainEl) { editorMainEl.style.overflow = ''; }
 
-    // Restore header/footer visibility for downstream phases
-    if (header) { header.style.transition = 'opacity 0.5s ease'; header.style.opacity = '1'; }
-    if (footer) { footer.style.transition = 'opacity 0.5s ease'; footer.style.opacity = '1'; }
+      // Restore header/footer visibility for downstream phases
+      const fadeSec2 = T.HEADER_FOOTER_FADE / 1000;
+      if (header) { header.style.transition = `opacity ${fadeSec2}s ease`; header.style.opacity = '1'; }
+      if (footer) { footer.style.transition = `opacity ${fadeSec2}s ease`; footer.style.opacity = '1'; }
 
-    await wait(1000); // let the 0.9s zoom-out transition finish
+      await wait(T.ZOOM_OUT_WAIT); // let the zoom-out transition finish
 
-    // Now safe to clear the inline styles — we're already at identity transform
-    editor.style.transform = '';
-    editor.style.transformOrigin = '';
+      // Now safe to clear the inline styles — we're already at identity transform
+      editor.style.transform = '';
+      editor.style.transformOrigin = '';
+    }
   }
 
   return dotDrawsGraph;

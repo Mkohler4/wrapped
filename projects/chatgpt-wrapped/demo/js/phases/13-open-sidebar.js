@@ -12,6 +12,7 @@ window.__editorPhases.openSidebar = (() => {
 
   const { wait } = H;
   const { SIDEBAR_CONVERSATIONS } = CFG;
+  const T = CFG.TIMINGS.PHASE_13;
 
   async function openSidebar() {
     const { editor } = STATE.dom;
@@ -41,12 +42,12 @@ window.__editorPhases.openSidebar = (() => {
     // Slide the sidebar open
     sidebar.classList.add('editor__sidebar--open');
     editor.classList.add('editor--sidebar-open');
-    await wait(300);
+    await wait(T.SIDEBAR_SLIDE_WAIT);
 
     // Stagger the conversation items in
     for (let i = 0; i < allItems.length; i++) {
       allItems[i].classList.add('sidebar__item--entering');
-      await wait(40);
+      await wait(T.ITEM_STAGGER);
     }
 
     // Clean up the old backdrop messages now that the sidebar is the focus
@@ -56,7 +57,7 @@ window.__editorPhases.openSidebar = (() => {
     }
 
     // Hold so user can read the sidebar
-    await wait(1200);
+    await wait(T.FINAL_HOLD);
 
     return allItems;
   }

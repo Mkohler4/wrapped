@@ -75,13 +75,15 @@
    ============================================ */
 .chat-ai-response {
   align-self: flex-start;
-  box-sizing: content-box;
+  box-sizing: border-box;
   max-width: 92%;
   font-size: 15px;
   line-height: 1.7;
   color: #d1d1d1;
   opacity: 0;
-  padding: 0;
+  /* Horizontal padding is always present so the text wraps at its
+     final bubble width from the start — no reflow when wrapped. */
+  padding: 0 24px;
   border-radius: 16px;
   background: transparent;
   transition: background 0.85s cubic-bezier(0.4, 0, 0.2, 1),
@@ -102,6 +104,13 @@
 
 .chat-ai-response--grown {
   transform: scale(1.04);
+}
+
+/* Skip the grow-scale on mobile / tablet — it pushes text off-screen */
+@media (max-width: 1180px) {
+  .chat-ai-response--grown {
+    transform: none;
+  }
 }
 
 /* Streaming cursor — thin typing caret */

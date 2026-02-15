@@ -1,5 +1,12 @@
 /* ============================================
    Phase 8: Ghost bubbles cascade (colorful)
+   ============================================
+   One continuous rAF loop:
+     • Fast burst  — 200 bubbles in 4.8s (eased)
+     • Slow drift  — GPU-accelerated translateY
+   The promise resolves at the end of the fast burst
+   so Phase 9+ can start, but the rAF loop keeps
+   running.  Returns { stop() } to kill the drift.
    ============================================ */
 window.__editorPhases = window.__editorPhases || {};
 
@@ -12,17 +19,17 @@ window.__editorPhases.cascadeMessages = (() => {
 
   const { wait, cascadeEasing } = H;
   const { SAMPLE_MESSAGES_USER, SAMPLE_MESSAGES_AI } = CFG;
+  const T = CFG.TIMINGS.PHASE_8;
 
   async function cascadeMessages() {
     const { editor, editorMain } = STATE.dom;
 
     // Zoom back out so we can see the cascade filling
     editor.classList.remove('editor--zoomed-response');
-    await wait(400);
+    await wait(T.ZOOM_OUT);
 
     // --- Pop footer to overlay so bubbles can fill behind it ---
     const footer = document.querySelector('.editor__footer');
-    const footerH = footer.offsetHeight;
     footer.style.position = 'absolute';
     footer.style.bottom = '0';
     footer.style.left = '0';
@@ -34,22 +41,17 @@ window.__editorPhases.cascadeMessages = (() => {
     STATE.chatMessages.style.gap = '6px';
 
     // --- GPU pre-warm ---
-    // Micro-blur forces the browser to promote chatMessages to its own
-    // compositing layer NOW, so the real blur later doesn't stutter.
-    STATE.chatMessages.style.willChange = 'filter, opacity';
+    STATE.chatMessages.style.willChange = 'filter, opacity, transform';
     STATE.chatMessages.style.filter = 'blur(0.01px)';
     STATE.chatMessages.classList.add('chat-messages--blur-ready');
 
-    // --- On-the-fly bubble creation + estimated scroll ---
-    const totalBubbles = 200;
-    const duration = 4800;
-    const avgBubbleH = 21;  // ~15px avg height + 6px gap
+    // --- Shared state ---
+    const avgBubbleH = 21;
     let bubbleCount = 0;
     let userMsgIdx = 0;
     let aiMsgIdx = 0;
     let footerFaded = false;
 
-    // Read the initial content height and viewport ONCE before the loop.
     const initialContentH = editorMain.scrollHeight;
     const viewportH = editorMain.clientHeight;
 
@@ -80,43 +82,72 @@ window.__editorPhases.cascadeMessages = (() => {
       bubbleCount++;
     }
 
-    await new Promise(resolve => {
-      const startTime = performance.now();
+    // =============================================
+    // Single continuous rAF loop
+    // =============================================
+    const TOTAL_BUBBLES     = T.TOTAL_BUBBLES;
+    const FAST_DURATION     = T.FAST_BURST_DURATION;
+    const DRIFT_PX_PER_SEC  = T.DRIFT_PX_PER_SEC;
 
-      function tick(now) {
+    let running = true;
+    let phase = 'fast';       // 'fast' → 'drift'
+    let driftOffset = 0;      // px shifted via translateY
+    let resolveReady;
+
+    const readyPromise = new Promise(r => { resolveReady = r; });
+    const startTime = performance.now();
+    let lastTick = startTime;
+
+    function tick(now) {
+      if (!running) return;
+
+      if (phase === 'fast') {
+        // ------- FAST BURST -------
         const elapsed = now - startTime;
-        const t = Math.min(elapsed / duration, 1);
+        const t = Math.min(elapsed / FAST_DURATION, 1);
         const eased = cascadeEasing(t);
 
-        // Create any missing bubbles (they pop in via CSS ghostAppear)
-        const targetCount = Math.min(totalBubbles, Math.ceil(eased * totalBubbles));
-        while (bubbleCount < targetCount) {
-          createBubble();
-        }
+        const targetCount = Math.min(TOTAL_BUBBLES, Math.ceil(eased * TOTAL_BUBBLES));
+        while (bubbleCount < targetCount) createBubble();
 
-        // Estimate total content height from bubble count — NO scrollHeight read.
+        // Estimated scroll
         const estimatedH = initialContentH + bubbleCount * avgBubbleH;
         const scrollTarget = Math.max(0, estimatedH - viewportH);
         editorMain.scrollTop = scrollTarget;
 
-        // Fade the footer at ~25% — reveals bubbles that were behind it
         if (!footerFaded && eased > 0.25) {
           footerFaded = true;
           footer.style.opacity = '0';
           footer.style.pointerEvents = 'none';
         }
 
-        if (t < 1) {
-          requestAnimationFrame(tick);
-        } else {
-          // Remove the footer entirely now that it's invisible
+        if (t >= 1) {
           footer.style.display = 'none';
-          resolve();
+
+          // Seamless hand-off to drift — no DOM additions, just translateY
+          phase = 'drift';
+          resolveReady();
         }
+      } else {
+        // ------- SLOW DRIFT (GPU-accelerated) -------
+        const dt = (now - lastTick) / 1000;
+        driftOffset += DRIFT_PX_PER_SEC * dt;
+        STATE.chatMessages.style.transform = `translateY(-${driftOffset}px)`;
       }
 
+      lastTick = now;
       requestAnimationFrame(tick);
-    });
+    }
+
+    requestAnimationFrame(tick);
+
+    // Wait for the fast burst to finish
+    await readyPromise;
+
+    // Return controller so downstream phases can stop the drift
+    return {
+      stop() { running = false; },
+    };
   }
 
   return cascadeMessages;

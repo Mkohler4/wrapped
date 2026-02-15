@@ -9,7 +9,7 @@ window.__editorPhases.deconstructBarChart = (() => {
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait, jitter, rollSquareToCenter } = H;
+  const { wait, jitter, rollSquareToCenter, isMobileViewport } = H;
 
   async function deconstructBarChart(refs) {
     const { editor } = STATE.dom;
@@ -53,31 +53,38 @@ window.__editorPhases.deconstructBarChart = (() => {
     await wait(300);
 
     // -------------------------------------------------------
-    // Wave 2: Zoom tighter onto the graph (~900ms)
+    // Wave 2: Zoom tighter onto the graph (desktop only)
     // -------------------------------------------------------
 
-    const targetScale = 2.2;
+    const mobile = isMobileViewport();
 
-    const savedTransform = editor.style.transform;
-    const savedTransition = editor.style.transition;
-    editor.style.transition = 'none';
-    editor.style.transform = 'none';
-    editor.offsetHeight; // force reflow
+    if (!mobile) {
+      const targetScale = 2.2;
 
-    const editorRect = editor.getBoundingClientRect();
-    const graphRect = graphContainer.getBoundingClientRect();
+      const savedTransform = editor.style.transform;
+      const savedTransition = editor.style.transition;
+      editor.style.transition = 'none';
+      editor.style.transform = 'none';
+      editor.offsetHeight; // force reflow
 
-    const graphCenterY = (graphRect.top + graphRect.bottom) / 2 - editorRect.top;
-    const editorCenterY = editorRect.height / 2;
-    const translateY = editorCenterY - graphCenterY;
+      const editorRect = editor.getBoundingClientRect();
+      const graphRect = graphContainer.getBoundingClientRect();
 
-    editor.style.transform = savedTransform;
-    editor.offsetHeight; // force reflow
+      const graphCenterY = (graphRect.top + graphRect.bottom) / 2 - editorRect.top;
+      const editorCenterY = editorRect.height / 2;
+      const translateY = editorCenterY - graphCenterY;
 
-    editor.style.transition = 'transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
-    editor.style.transform = `scale(${targetScale}) translateY(${translateY}px)`;
+      editor.style.transform = savedTransform;
+      editor.offsetHeight; // force reflow
 
-    await wait(1000);
+      editor.style.transition = 'transform 0.9s cubic-bezier(0.4, 0, 0.2, 1)';
+      editor.style.transform = `scale(${targetScale}) translateY(${translateY}px)`;
+
+      await wait(1000);
+    } else {
+      // Mobile: no zoom — let the deconstruction play at native scale
+      await wait(300);
+    }
 
     // -------------------------------------------------------
     // Wave 3: Parallel bar chart deconstruction (~1200ms)

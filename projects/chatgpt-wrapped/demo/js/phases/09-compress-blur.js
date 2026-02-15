@@ -6,10 +6,12 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.compressAndBlur = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait } = H;
+  const T = CFG.TIMINGS.PHASE_9;
 
   async function compressAndBlur() {
     const { editorMain } = STATE.dom;
@@ -18,19 +20,18 @@ window.__editorPhases.compressAndBlur = (() => {
     STATE.chatMessages.style.filter = '';  // remove micro-blur so transition starts clean
     STATE.chatMessages.classList.add('chat-messages--blurred');
 
-    // Wait for the 0.8s blur+opacity CSS transition to fully complete
-    await wait(900);
+    // Step 2: Start the gradient overlay while the blur is still settling
+    await wait(T.BLUR_SETTLE);
 
-    // Step 2: Fade in the gradient overlay
     const backdrop = document.createElement('div');
     backdrop.className = 'stat-backdrop';
     editorMain.appendChild(backdrop);
 
-    await wait(50); // let browser paint the element at opacity 0
+    await wait(T.BACKDROP_SETTLE);
     backdrop.classList.add('stat-backdrop--visible');
 
-    // Wait for the 0.6s opacity transition to complete
-    await wait(700);
+    // Let both transitions overlap — move on quickly
+    await wait(T.OVERLAP_HOLD);
   }
 
   return compressAndBlur;

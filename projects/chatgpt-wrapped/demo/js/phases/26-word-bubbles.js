@@ -322,7 +322,6 @@ window.__editorPhases.morphCellToWordBubble = (() => {
 
     await wait(800);
 
-    // Wrap the response
     response.classList.add('chat-ai-response--wrapped');
 
     await wait(600);

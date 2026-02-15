@@ -17,7 +17,7 @@
   const P     = window.__editorPhases;
 
   const { wait } = H;
-  const { GROWTH_DATA, GROWTH_PHASE_2 } = CFG;
+  const { GROWTH_DATA, GROWTH_PHASE_2, TIMINGS } = CFG;
 
   // ============================================
   // Master sequence
@@ -26,9 +26,9 @@
     // Initialize shared DOM references
     STATE.init();
 
-    await wait(1500);                                  // Idle
+    await wait(TIMINGS.INITIAL_IDLE);                  // Idle
     await P.typePrompt();                              // Phase 1: Type prompt
-    await wait(400);
+    await wait(TIMINGS.GAP_AFTER_TYPE_PROMPT);
     await P.moveCursorToSend();                        // Phase 2: Cursor → send
     await P.clickSend();                               // Phase 3: Click send
     await P.sendMessage();                             // Phase 4: Zoom out + bubble
@@ -36,9 +36,9 @@
     const resp = await P.streamAIResponse(dots);       // Phase 6: AI streams response
     await P.highlightResponse(resp);                   // Phase 7: Wrap → grow → zoom
     await P.dotDrawsGraph(resp);                       // Phase 7n: Dot draws graph
-    await P.cascadeMessages();                         // Phase 8: Ghost bubbles cascade
+    const cascadeCtrl = await P.cascadeMessages();      // Phase 8: Ghost bubbles cascade
     await P.compressAndBlur();                         // Phase 9: Blur + compress
-    await P.showHeroStat();                            // Phase 10: Hero stat: 20,000
+    await P.showHeroStat(cascadeCtrl);                 // Phase 10: Hero stat: 20,000
     await P.morphToConversations();                    // Phase 10b: 20,000 → 847
     await P.transitionToSidebar();                     // Phase 11: Scroll up → sidebar
     const sidebarItems = await P.openSidebar();        // Phase 13: Sidebar slides in

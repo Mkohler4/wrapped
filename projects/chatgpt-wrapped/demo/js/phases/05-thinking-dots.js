@@ -6,10 +6,12 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.showThinkingDots = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait } = H;
+  const T = CFG.TIMINGS.PHASE_5;
 
   async function showThinkingDots() {
     const thinking = document.createElement('div');
@@ -22,11 +24,11 @@ window.__editorPhases.showThinkingDots = (() => {
     STATE.chatMessages.appendChild(thinking);
 
     // Normal thinking
-    await wait(1500);
+    await wait(T.NORMAL_THINKING);
 
     // Intensify
     thinking.classList.add('chat-thinking--intense');
-    await wait(600);
+    await wait(T.INTENSIFY);
 
     return thinking;
   }

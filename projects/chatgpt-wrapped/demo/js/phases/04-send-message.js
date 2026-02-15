@@ -6,10 +6,12 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.sendMessage = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait } = H;
+  const T = CFG.TIMINGS.PHASE_4;
 
   async function sendMessage() {
     const { inputText, placeholder, sendBtn, inputWrap, editor, editorMain } = STATE.dom;
@@ -22,15 +24,17 @@ window.__editorPhases.sendMessage = (() => {
     sendBtn.classList.remove('editor__send-btn--active');
     inputWrap.classList.remove('editor__input-wrap--expanded');
 
-    // Zoom out
-    editor.classList.remove('editor--zoomed');
-    await wait(400);
+    // Zoom out (only if the zoom-in was applied — skipped on mobile)
+    if (editor.classList.contains('editor--zoomed')) {
+      editor.classList.remove('editor--zoomed');
+      await wait(T.ZOOM_OUT_WAIT);
+    }
 
     // Hide welcome
     const welcome = document.querySelector('.editor__welcome');
-    welcome.style.transition = 'opacity 0.3s ease';
+    welcome.style.transition = `opacity ${T.WELCOME_FADE_TRANSITION / 1000}s ease`;
     welcome.style.opacity = '0';
-    await wait(300);
+    await wait(T.WELCOME_FADE_WAIT);
     welcome.style.display = 'none';
 
     // Set up the chat messages container
@@ -47,9 +51,9 @@ window.__editorPhases.sendMessage = (() => {
     bubble.textContent = messageText;
     STATE.chatMessages.appendChild(bubble);
 
-    await wait(50);
+    await wait(T.BUBBLE_SETTLE);
     bubble.classList.add('chat-bubble--visible');
-    await wait(500);
+    await wait(T.BUBBLE_VISIBLE_HOLD);
   }
 
   return sendMessage;

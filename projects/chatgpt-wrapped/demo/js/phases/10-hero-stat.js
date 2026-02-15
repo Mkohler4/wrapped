@@ -6,12 +6,14 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.showHeroStat = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait, animateCounter } = H;
+  const T = CFG.TIMINGS.PHASE_10;
 
-  async function showHeroStat() {
+  async function showHeroStat(cascadeCtrl) {
     const { editorMain } = STATE.dom;
 
     // chatMessages stays as the colorful backdrop (absolutely positioned)
@@ -78,39 +80,38 @@ window.__editorPhases.showHeroStat = (() => {
     editorMain.appendChild(statDisplay);
 
     // Reveal the stat display + glow
-    await wait(100);
+    await wait(T.REVEAL_SETTLE);
     statDisplay.classList.add('stat-display--visible');
     glow.classList.add('stat-hero__glow--visible');
 
-    // Wait for the 0.7s stat reveal animation to fully complete so the
-    // stat is fully opaque before we switch chatMessages to absolute.
-    await wait(800);
+    // Let the reveal animation get underway
+    await wait(T.ANIMATION_SETTLE);
 
-    // NOW switch chatMessages to absolute backdrop mode.
-    // The stat + gradient + blur fully cover the bubbles, so the
-    // position change is invisible. Doing this earlier causes a visible
-    // jump because the gradient edges are semi-transparent.
-    STATE.chatMessages.classList.add('chat-messages--backdrop');
-    STATE.chatMessages.classList.add('chat-messages--drifting');
-
-    // Count up hero number
-    await animateCounter(heroNum, 20000, 1800);
+    // Count up hero number  (cascade drift still running behind the blur)
+    await animateCounter(heroNum, 20000, T.HERO_COUNTER_DURATION);
 
     // Show the label
-    await wait(200);
+    await wait(T.LABEL_DELAY);
     heroLabel.classList.add('stat-hero__label--visible');
-    await wait(500);
+    await wait(T.LABEL_VISIBLE_HOLD);
 
     // Show the split and count both
     split.classList.add('stat-split--visible');
-    await wait(100);
+    await wait(T.SPLIT_DELAY);
     await Promise.all([
-      animateCounter(youNum, 8000, 1200),
-      animateCounter(aiNum, 12000, 1200),
+      animateCounter(youNum, 8000, T.SPLIT_COUNTER_DURATION),
+      animateCounter(aiNum, 12000, T.SPLIT_COUNTER_DURATION),
     ]);
 
     // Hold for a moment before transitioning
-    await wait(2500);
+    await wait(T.FINAL_HOLD);
+
+    // Stop the cascade drift, clear the JS-driven transform, and
+    // switch chatMessages to absolute backdrop mode with CSS drift.
+    if (cascadeCtrl && cascadeCtrl.stop) cascadeCtrl.stop();
+    STATE.chatMessages.style.transform = '';
+    STATE.chatMessages.classList.add('chat-messages--backdrop');
+    STATE.chatMessages.classList.add('chat-messages--drifting');
   }
 
   return showHeroStat;

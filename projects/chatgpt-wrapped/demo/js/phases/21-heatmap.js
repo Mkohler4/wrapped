@@ -9,7 +9,7 @@ window.__editorPhases = window.__editorPhases || {};
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait } = H;
+  const { wait, isMobileViewport } = H;
 
   /**
    * Generate a 52×7 array of activity levels (0–4) that mimics
@@ -63,6 +63,7 @@ window.__editorPhases = window.__editorPhases || {};
   async function buildHeatmap(overlay, graphContainer) {
     const { editor } = STATE.dom;
     const viewport = document.getElementById('viewport');
+    const mobile = isMobileViewport();
 
     const COLS = 52;
     const ROWS = 7;
@@ -70,6 +71,11 @@ window.__editorPhases = window.__editorPhases || {};
     const GAP = 3;
     const centerCol = Math.floor(COLS / 2);
     const centerRow = Math.floor(ROWS / 2);
+
+    // On desktop the editor is zoomed to 2.2× (Phase 20), so the heatmap
+    // starts at the same scale and later zooms out.  On mobile the editor
+    // has no zoom, so the heatmap starts at 1× — no zoom-out needed.
+    const heatmapInitScale = mobile ? 1.0 : 2.2;
 
     const activityData = generateActivityData();
 
@@ -108,13 +114,13 @@ window.__editorPhases = window.__editorPhases || {};
     overlay.style.opacity = '0';
 
     // ---------------------------------------------------------
-    // 21a-3  Build the full heatmap DOM (hidden) at scale(2.2)
+    // 21a-3  Build the full heatmap DOM (hidden) at initial scale
     // ---------------------------------------------------------
 
     const heatmap = document.createElement('div');
     heatmap.className = 'heatmap';
     heatmap.style.opacity = '0';
-    heatmap.style.transform = 'translate(-50%, -50%) scale(2.2)';
+    heatmap.style.transform = `translate(-50%, -50%) scale(${heatmapInitScale})`;
 
     const gridArea = document.createElement('div');
     gridArea.className = 'heatmap__grid-area';
@@ -215,7 +221,7 @@ window.__editorPhases = window.__editorPhases || {};
     phantom.style.top = `${targetTop}px`;
     phantom.style.width = `${targetW}px`;
     phantom.style.height = `${targetH}px`;
-    phantom.style.borderRadius = `${3 * 2.2}px`;
+    phantom.style.borderRadius = `${3 * heatmapInitScale}px`;
 
     editor.style.transition = 'opacity 0.5s ease';
     editor.style.opacity = '0';
@@ -252,13 +258,15 @@ window.__editorPhases = window.__editorPhases || {};
     });
 
     // ---------------------------------------------------------
-    // 21c  Zoom out mid-rain
+    // 21c  Zoom out mid-rain (desktop only — mobile is already at 1×)
     // ---------------------------------------------------------
 
     await wait(1200);
 
-    heatmap.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.15, 1)';
-    heatmap.style.transform = 'translate(-50%, -50%) scale(1.0)';
+    if (!mobile) {
+      heatmap.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.15, 1)';
+      heatmap.style.transform = 'translate(-50%, -50%) scale(1.0)';
+    }
 
     // ---------------------------------------------------------
     // 21d  Wait for rain to complete

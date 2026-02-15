@@ -6,10 +6,12 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.moveCursorToSend = (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait } = H;
+  const T = CFG.TIMINGS.PHASE_2;
 
   async function moveCursorToSend() {
     const { cursor, sendBtn, inputText, fakeCursor } = STATE.dom;
@@ -25,11 +27,12 @@ window.__editorPhases.moveCursorToSend = (() => {
     fakeCursor.classList.add('fake-cursor--visible');
     fakeCursor.offsetHeight;
 
-    fakeCursor.style.transition = 'left 0.6s cubic-bezier(0.4, 0, 0.15, 1), top 0.6s cubic-bezier(0.4, 0, 0.15, 1)';
+    const dur = T.CURSOR_MOVE_MS / 1000;
+    fakeCursor.style.transition = `left ${dur}s cubic-bezier(0.4, 0, 0.15, 1), top ${dur}s cubic-bezier(0.4, 0, 0.15, 1)`;
     fakeCursor.style.left = `${btnRect.left + btnRect.width / 2 - 3}px`;
     fakeCursor.style.top = `${btnRect.top + btnRect.height / 2 - 3}px`;
 
-    await wait(650);
+    await wait(T.WAIT_AFTER_MOVE);
   }
 
   return moveCursorToSend;

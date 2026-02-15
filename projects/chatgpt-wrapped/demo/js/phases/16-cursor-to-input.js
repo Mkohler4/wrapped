@@ -12,7 +12,7 @@ window.__editorPhases = window.__editorPhases || {};
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait, jitter } = H;
+  const { wait, jitter, isMobileViewport } = H;
   const { CHAR_MS, SPACE_EXTRA } = CFG;
 
   // Phase 16a: Cursor travels to input field
@@ -67,9 +67,11 @@ window.__editorPhases = window.__editorPhases || {};
     fakeCursor.classList.remove('fake-cursor--visible');
     await wait(100);
 
-    // Zoom in on input
+    // Zoom in on input (skip on mobile / tablet viewports ≤ 1180 px)
     placeholder.classList.add('editor__placeholder--hidden');
-    editor.classList.add('editor--zoomed');
+    if (!isMobileViewport()) {
+      editor.classList.add('editor--zoomed');
+    }
     inputWrap.classList.add('editor__input-wrap--expanded');
     sendBtn.classList.add('editor__send-btn--active');
     cursor.classList.remove('editor__cursor--hidden');
@@ -105,9 +107,11 @@ window.__editorPhases = window.__editorPhases || {};
     inputWrap.classList.remove('editor__input-wrap--expanded');
     cursor.classList.add('editor__cursor--hidden');
 
-    // Zoom out
-    editor.classList.remove('editor--zoomed');
-    await wait(400);
+    // Zoom out (only if the zoom-in was applied — skipped on mobile)
+    if (editor.classList.contains('editor--zoomed')) {
+      editor.classList.remove('editor--zoomed');
+      await wait(400);
+    }
 
     // Ensure we have a chat messages container
     if (!STATE.chatMessages) {

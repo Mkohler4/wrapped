@@ -8,9 +8,11 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.morphToConversations = (() => {
   'use strict';
 
-  const H = window.__editorHelpers;
+  const CFG = window.__editorConfig;
+  const H   = window.__editorHelpers;
 
   const { wait, animateCounter } = H;
+  const T = CFG.TIMINGS.PHASE_10B;
 
   async function morphToConversations() {
     const heroNum   = document.querySelector('.stat-hero__number');
@@ -31,29 +33,29 @@ window.__editorPhases.morphToConversations = (() => {
       split.style.opacity = '0';
       split.style.transform = 'translateY(8px)';
     }
-    await wait(400);
+    await wait(T.SPLIT_FADE_WAIT);
 
     // --- Step 2: Count down hero number  20,000 → 847 ---
-    await animateCounter(heroNum, 847, 1200, 20000);
+    await animateCounter(heroNum, 847, T.COUNTDOWN_DURATION, 20000);
 
     // --- Step 3: Cross-fade the label ---
     heroLabel.classList.remove('stat-hero__label--visible');
     heroLabel.style.opacity = '1';
     heroLabel.offsetHeight; // reflow
 
-    heroLabel.style.transition = 'opacity 0.3s ease';
+    heroLabel.style.transition = `opacity ${T.LABEL_FADE_OUT / 1000}s ease`;
     heroLabel.style.opacity = '0';
-    await wait(300);
+    await wait(T.LABEL_FADE_OUT);
 
     // Swap text and fade in
     heroLabel.textContent = 'conversations in 2025';
-    heroLabel.style.transition = 'opacity 0.4s ease';
+    heroLabel.style.transition = `opacity ${T.LABEL_FADE_IN / 1000}s ease`;
     heroLabel.style.opacity = '1';
-    await wait(400);
+    await wait(T.LABEL_FADE_IN);
 
     // --- Step 4: Subtle glow color shift (optional flourish) ---
     if (glow) {
-      glow.style.transition = 'background 1s ease';
+      glow.style.transition = `background ${T.GLOW_TRANSITION / 1000}s ease`;
       glow.style.background = `radial-gradient(
         ellipse at center,
         rgba(96, 165, 250, 0.22) 0%,
@@ -63,7 +65,7 @@ window.__editorPhases.morphToConversations = (() => {
     }
 
     // Hold on the conversations number
-    await wait(2500);
+    await wait(T.FINAL_HOLD);
   }
 
   return morphToConversations;

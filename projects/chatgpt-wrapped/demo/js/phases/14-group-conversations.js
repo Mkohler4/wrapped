@@ -1,8 +1,9 @@
 /* ============================================
    Phase 14: Group conversations into topics
-   Sidebar stays visible; clones are "pulled out"
-   one-by-one like dealing cards, then organized
-   by topic. Sidebar closes afterward.
+   Sidebar items get color-highlighted, then the
+   sidebar closes.  Clones fly from the items'
+   last positions into topic columns across the
+   full-width main area, then morph into bar charts.
    ============================================ */
 window.__editorPhases = window.__editorPhases || {};
 
@@ -15,6 +16,7 @@ window.__editorPhases.groupConversations = (() => {
 
   const { wait, animateCount } = H;
   const { TOPIC_COLORS, CATEGORY_MESSAGES, TOPIC_DETAILS } = CFG;
+  const T = CFG.TIMINGS.PHASE_14;
 
   async function groupConversations(sidebarItems) {
     const { editor, editorMain } = STATE.dom;
@@ -33,13 +35,82 @@ window.__editorPhases.groupConversations = (() => {
         item.style.borderLeft = `3px solid ${color.text}`;
         item.style.background = color.bg;
       }
-      await wait(70);
+      await wait(T.HIGHLIGHT_STAGGER);
     }
 
     // Hold so user can see the color grouping
-    await wait(1000);
+    await wait(T.HIGHLIGHT_HOLD);
+
+    // --- Step 2a: Create clones on top of the real items (while sidebar is visible) ---
+    // Clones are position:fixed on <body>, so they won't move when the sidebar slides away.
+    // They get an OPAQUE background (topic color composited over the sidebar's #171717)
+    // so they look identical with or without the sidebar panel behind them.
+    function opaqueOverSidebar(rgbaStr) {
+      // Parse "rgba(r, g, b, a)" and composite over #171717 (23, 23, 23)
+      const m = rgbaStr.match(/[\d.]+/g);
+      if (!m || m.length < 4) return rgbaStr;
+      const [r, g, b, a] = m.map(Number);
+      const base = 23; // #171717
+      const cr = Math.round(r * a + base * (1 - a));
+      const cg = Math.round(g * a + base * (1 - a));
+      const cb = Math.round(b * a + base * (1 - a));
+      return `rgb(${cr}, ${cg}, ${cb})`;
+    }
+
+    const cloneData = [];   // { clone, topic }
+    for (let i = 0; i < sidebarItems.length; i++) {
+      const item  = sidebarItems[i];
+      const topic = item.dataset.topic;
+      const color = TOPIC_COLORS[topic];
+      const rect  = item.getBoundingClientRect();
+
+      const clone = document.createElement('div');
+      clone.className = 'topic-clone';
+      clone.textContent = item.textContent;
+      clone.style.position = 'fixed';
+      clone.style.left   = `${rect.left}px`;
+      clone.style.top    = `${rect.top}px`;
+      clone.style.width  = `${rect.width}px`;
+      clone.style.height = `${rect.height}px`;
+      // Match sidebar__item typography so the swap is invisible
+      clone.style.fontSize   = '13px';
+      clone.style.fontWeight = '500';
+      clone.style.padding    = '8px 10px';
+      clone.style.borderRadius = '8px';
+      clone.style.lineHeight = '1.3';
+      clone.style.boxShadow  = 'none';
+      clone.style.display    = 'flex';
+      clone.style.alignItems = 'center';
+      clone.style.boxSizing  = 'border-box';
+      clone.style.overflow   = 'hidden';
+      clone.style.whiteSpace = 'nowrap';
+      clone.style.textOverflow = 'ellipsis';
+      if (color) {
+        clone.style.borderLeft = `3px solid ${color.text}`;
+        clone.style.background = opaqueOverSidebar(color.bg);
+        clone.style.color = 'rgba(255, 255, 255, 0.85)';
+      }
+      document.body.appendChild(clone);
+      cloneData.push({ clone, topic });
+    }
+
+    // --- Step 2b: Hide real items, then slide the sidebar closed ---
+    // Clones are now covering every item. Hide the originals so when the
+    // sidebar panel slides left only the empty dark bar moves — the clones
+    // (on document.body) stay exactly where they are.
+    const sidebarList = document.getElementById('sidebar-list');
+    sidebarList.style.visibility = 'hidden';
+
+    // Normal slide-close — CSS transition handles the animation
+    sidebar.classList.remove('editor__sidebar--open');
+    editor.classList.remove('editor--sidebar-open');
+    await wait(T.SIDEBAR_CLOSE_WAIT);
+
+    // Restore visibility for future sidebar opens
+    sidebarList.style.visibility = '';
 
     // --- Pre-compute topic layout ---
+    // Sidebar overlays (no margin push), so mainRect is already full-width.
     const topicCounts = {};
     for (const item of sidebarItems) {
       const t = item.dataset.topic;
@@ -49,7 +120,6 @@ window.__editorPhases.groupConversations = (() => {
       .sort((a, b) => b[1] - a[1])
       .map(([topic], i) => ({ topic, rank: i + 1 }));
 
-    // Compute target columns inside the main area (sidebar still open)
     const mainRect = editorMain.getBoundingClientRect();
     const colPad = 10;
     const usableWidth = mainRect.width - colPad * 2;
@@ -63,60 +133,32 @@ window.__editorPhases.groupConversations = (() => {
       };
     });
 
-    // --- Step 2: Pull out clones one-by-one ---
-    for (let i = 0; i < sidebarItems.length; i++) {
-      const item = sidebarItems[i];
-      const topic = item.dataset.topic;
-      const color = TOPIC_COLORS[topic];
-      const rect = item.getBoundingClientRect();
+    // --- Step 2c: Fly clones to their target columns (staggered) ---
+    for (let i = 0; i < cloneData.length; i++) {
+      const { clone, topic } = cloneData[i];
 
-      // Create floating clone
-      const clone = document.createElement('div');
-      clone.className = 'topic-clone';
-      clone.textContent = item.textContent;
-      clone.style.position = 'fixed';
-      clone.style.left = `${rect.left}px`;
-      clone.style.top = `${rect.top}px`;
-      clone.style.width = `${rect.width}px`;
-      clone.style.height = `${rect.height}px`;
-      if (color) {
-        clone.style.borderLeft = `3px solid ${color.text}`;
-        clone.style.background = color.bg;
-        clone.style.color = 'rgba(255, 255, 255, 0.85)';
-      }
-      document.body.appendChild(clone);
-
-      // Collapse the original sidebar item out — looks physically extracted
-      item.style.transition = 'opacity 0.25s ease, height 0.25s ease 0.05s, padding 0.25s ease 0.05s, margin 0.25s ease 0.05s';
-      item.style.opacity = '0';
-      item.style.height = '0';
-      item.style.padding = '0';
-      item.style.margin = '0';
-      item.style.overflow = 'hidden';
-
-      // Force reflow so the clone starts at its sidebar position
+      // Force reflow so the clone animates from its current position
       clone.offsetHeight;
 
-      // Fly clone to its target column in the main area
-      const target = topicTargets[topic];
+      const target  = topicTargets[topic];
       const targetX = target.centerX - (colWidth - 16) / 2;
       const targetY = target.startY + 24 + target.nextSlot * 30;
       target.nextSlot++;
 
       clone.style.transition = 'left 0.7s cubic-bezier(0.4, 0, 0.15, 1), top 0.7s cubic-bezier(0.4, 0, 0.15, 1), width 0.7s ease, height 0.7s ease';
-      clone.style.left = `${targetX}px`;
-      clone.style.top = `${targetY}px`;
-      clone.style.width = `${colWidth - 16}px`;
+      clone.style.left   = `${targetX}px`;
+      clone.style.top    = `${targetY}px`;
+      clone.style.width  = `${colWidth - 16}px`;
       clone.style.height = '24px';
 
       allClones.push({ clone, topic });
 
       // Stagger — like dealing cards
-      await wait(120);
+      await wait(T.CLONE_FLY_STAGGER);
     }
 
     // Wait for the last clone's flight to finish
-    await wait(600);
+    await wait(T.CLONE_FLY_SETTLE);
 
     // --- Step 3: Topic column labels ---
     for (const rt of rankedTopics) {
@@ -134,55 +176,12 @@ window.__editorPhases.groupConversations = (() => {
       allLabels.push(lbl);
 
       // Stagger label appearances
-      await wait(80);
+      await wait(T.LABEL_STAGGER);
       lbl.classList.add('topic-column-label--visible');
     }
 
     // Hold so user can read the grouped view
-    await wait(1200);
-
-    // --- Step 4: Close the sidebar ---
-    sidebar.classList.remove('editor__sidebar--open');
-    editor.classList.remove('editor--sidebar-open');
-    await wait(600);
-
-    // --- Step 5: Re-center clones after sidebar closes ---
-    const newMainRect = editorMain.getBoundingClientRect();
-    const newUsable = newMainRect.width - colPad * 2;
-    const newColWidth = newUsable / rankedTopics.length;
-
-    // Recalculate target positions for full-width layout
-    const newTargets = {};
-    rankedTopics.forEach((t, i) => {
-      newTargets[t.topic] = {
-        centerX: newMainRect.left + colPad + newColWidth * i + newColWidth / 2,
-        startY: newMainRect.top + 50,
-        nextSlot: 0,
-      };
-    });
-
-    // Slide clones and labels to new centered positions
-    for (const { clone, topic } of allClones) {
-      const nt = newTargets[topic];
-      const nx = nt.centerX - (newColWidth - 16) / 2;
-      const ny = nt.startY + 24 + nt.nextSlot * 30;
-      nt.nextSlot++;
-
-      clone.style.transition = 'left 0.5s cubic-bezier(0.4, 0, 0.15, 1), top 0.5s ease, width 0.5s ease';
-      clone.style.left = `${nx}px`;
-      clone.style.top = `${ny}px`;
-      clone.style.width = `${newColWidth - 16}px`;
-    }
-    // Slide labels too
-    rankedTopics.forEach((rt, i) => {
-      const nt = newTargets[rt.topic];
-      const lbl = allLabels[i];
-      lbl.style.transition = 'left 0.5s cubic-bezier(0.4, 0, 0.15, 1), width 0.5s ease';
-      lbl.style.left = `${nt.centerX - (newColWidth - 16) / 2}px`;
-      lbl.style.width = `${newColWidth - 16}px`;
-    });
-
-    await wait(600);
+    await wait(T.GROUPED_HOLD);
 
     // --- Step 6a: Merge clones into one bar per topic ---
     const maxCount = Math.max(...Object.values(topicCounts));
@@ -225,7 +224,7 @@ window.__editorPhases.groupConversations = (() => {
       }
     }
 
-    await wait(600);
+    await wait(T.MERGE_SETTLE);
 
     // Remove all but one clone per topic (keep the first as the "bar")
     const topicBars = []; // { bar (DOM element), topic, rank }
@@ -243,7 +242,7 @@ window.__editorPhases.groupConversations = (() => {
     // Clean up labels
     for (const lbl of allLabels) lbl.remove();
 
-    await wait(200);
+    await wait(T.MERGE_CLEANUP_WAIT);
 
     // --- Step 6b: Reposition bars into centered vertical chart ---
     const chartRect = editorMain.getBoundingClientRect();
@@ -268,7 +267,7 @@ window.__editorPhases.groupConversations = (() => {
       bar.style.opacity = '1';
     }
 
-    await wait(700);
+    await wait(T.REPOSITION_SETTLE);
 
     // --- Step 6c: Grow bars proportionally (staggered) ---
     for (let i = 0; i < topicBars.length; i++) {
@@ -279,11 +278,11 @@ window.__editorPhases.groupConversations = (() => {
       bar.style.transition = 'width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)'; // overshoot easing
       bar.style.width = `${barWidth}px`;
 
-      await wait(300);
+      await wait(T.BAR_GROW_STAGGER);
     }
 
     // Wait for the last bar to finish growing
-    await wait(500);
+    await wait(T.BAR_GROW_SETTLE);
 
     // --- Step 6d: Reveal labels around each bar ---
     const barLabelEls = [];
@@ -325,17 +324,17 @@ window.__editorPhases.groupConversations = (() => {
       barLabelEls.push(msgEl);
 
       // Stagger the label reveal
-      await wait(50);
+      await wait(T.LABEL_REVEAL_PRE);
       rankEl.classList.add('topic-bar__rank--visible');
       nameEl.classList.add('topic-bar__name--visible');
       msgEl.classList.add('topic-bar__messages--visible');
-      animateCount(msgEl, messages, ' messages', 700);
+      animateCount(msgEl, messages, ' messages', T.COUNT_UP_DURATION);
 
-      await wait(150);
+      await wait(T.LABEL_REVEAL_POST);
     }
 
     // --- Step 6e: Subline ---
-    await wait(300);
+    await wait(T.SUBLINE_PRE_DELAY);
     const subline = document.createElement('div');
     subline.className = 'topic-bar__subline';
     const sublineY = chartTopY + topicBars.length * (barHeight + barGap) + 10;
@@ -346,11 +345,11 @@ window.__editorPhases.groupConversations = (() => {
     subline.style.top = `${sublineY}px`;
     document.body.appendChild(subline);
     barLabelEls.push(subline);
-    await wait(50);
+    await wait(T.SUBLINE_SETTLE);
     subline.classList.add('topic-bar__subline--visible');
 
     // Hold on the category bar chart
-    await wait(2000);
+    await wait(T.CATEGORY_HOLD);
 
     // --- Step 6f: Morph bars from categories → specific topics ---
 
@@ -359,7 +358,7 @@ window.__editorPhases.groupConversations = (() => {
       el.style.transition = 'opacity 0.3s ease';
       el.style.opacity = '0';
     }
-    await wait(350);
+    await wait(T.LABELS_FADE_OUT);
 
     // Remove old labels from DOM (but keep array reference for new ones)
     for (const el of barLabelEls) el.remove();
@@ -370,7 +369,7 @@ window.__editorPhases.groupConversations = (() => {
       bar.style.transition = 'width 0.4s cubic-bezier(0.4, 0, 0.15, 1)';
       bar.style.width = '4px';
     }
-    await wait(500);
+    await wait(T.BARS_SHRINK);
 
     // 6f-iii: Reposition + recolor bars for topic data
     const sortedTopics = [...TOPIC_DETAILS].sort((a, b) => b.messages - a.messages);
@@ -412,7 +411,7 @@ window.__editorPhases.groupConversations = (() => {
       bar.style.height = `${barHeight}px`;
       bar.style.background = topic.color;
     }
-    await wait(550);
+    await wait(T.BARS_REPOSITION);
 
     // 6f-iv: Grow bars to new proportional widths (staggered)
     for (let i = 0; i < sortedTopics.length; i++) {
@@ -423,11 +422,11 @@ window.__editorPhases.groupConversations = (() => {
       bar.style.transition = 'width 0.7s cubic-bezier(0.34, 1.56, 0.64, 1)';
       bar.style.width = `${barWidth}px`;
 
-      await wait(300);
+      await wait(T.TOPIC_BAR_GROW_STAGGER);
     }
 
     // Wait for last bar to finish growing
-    await wait(500);
+    await wait(T.TOPIC_BAR_GROW_SETTLE);
 
     // 6f-v: Reveal new topic labels + message counts
     for (let i = 0; i < sortedTopics.length; i++) {
@@ -467,17 +466,17 @@ window.__editorPhases.groupConversations = (() => {
       barLabelEls.push(msgEl);
 
       // Stagger the label reveal
-      await wait(50);
+      await wait(T.TOPIC_LABEL_PRE);
       rankEl.classList.add('topic-bar__rank--visible');
       nameEl.classList.add('topic-bar__name--visible');
       msgEl.classList.add('topic-bar__messages--visible');
-      animateCount(msgEl, topic.messages, ' messages', 700);
+      animateCount(msgEl, topic.messages, ' messages', T.COUNT_UP_DURATION);
 
-      await wait(150);
+      await wait(T.TOPIC_LABEL_POST);
     }
 
     // 6f-vi: New subline for topics
-    await wait(300);
+    await wait(T.TOPIC_SUBLINE_PRE);
     const topicSubline = document.createElement('div');
     topicSubline.className = 'topic-bar__subline';
     const topicSublineY = topicChartTopY + sortedTopics.length * (barHeight + barGap) + 10;
@@ -488,11 +487,11 @@ window.__editorPhases.groupConversations = (() => {
     topicSubline.style.top = `${topicSublineY}px`;
     document.body.appendChild(topicSubline);
     barLabelEls.push(topicSubline);
-    await wait(50);
+    await wait(T.TOPIC_SUBLINE_SETTLE);
     topicSubline.classList.add('topic-bar__subline--visible');
 
     // Hold on the topic bar chart
-    await wait(3000);
+    await wait(T.TOPIC_HOLD);
 
     // Return references for the next phase to collapse
     return { topicBars, barLabelEls, topicCounts, chartRect: editorMain.getBoundingClientRect() };

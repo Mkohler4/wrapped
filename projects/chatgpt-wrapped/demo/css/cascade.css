@@ -55,16 +55,32 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Backdrop mode — fill the entire main area absolutely */
+/* Backdrop mode — fill the entire main area absolutely.
+   Width is inset to match editor__main's horizontal padding so the
+   bubbles don't visibly jump wider when switching from normal flow
+   to absolute positioning.  Padding values mirror shell.css. */
 .chat-messages--backdrop {
   position: absolute;
   top: 0;
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+  width: calc(100% - 40px);   /* 2 × 20px default padding */
   overflow: hidden;
   justify-content: center;
   z-index: 0;
+}
+
+@media (max-width: 480px) {
+  .chat-messages--backdrop {
+    width: calc(100% - 32px); /* 2 × 16px mobile padding */
+  }
+}
+
+@media (min-width: 769px) {
+  .chat-messages--backdrop {
+    width: calc(100% - 48px); /* 2 × 24px desktop padding */
+  }
 }
 
 /* Transition must be set BEFORE value changes, or browsers snap instead
@@ -74,10 +90,12 @@
               opacity 0.8s ease;
 }
 
-/* Blur — softened to keep backdrop visible */
+/* Blur — softened to keep backdrop visible.
+   Opacity high enough that the slow drift is still
+   perceptible behind the gradient overlay. */
 .chat-messages--blurred {
-  filter: blur(4px);
-  opacity: 0.5;
+  filter: blur(3px);
+  opacity: 0.6;
 }
 
 /* Gentle drift when used as backdrop */
@@ -99,9 +117,9 @@
   z-index: 1;
   background: radial-gradient(
     ellipse at 50% 55%,
-    rgba(33, 33, 33, 0.82) 0%,
-    rgba(33, 33, 33, 0.55) 50%,
-    rgba(33, 33, 33, 0.25) 100%
+    rgba(33, 33, 33, 0.75) 0%,
+    rgba(33, 33, 33, 0.45) 50%,
+    rgba(33, 33, 33, 0.18) 100%
   );
   opacity: 0;
   transition: opacity 0.6s ease;

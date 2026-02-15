@@ -7,17 +7,18 @@ window.__editorPhases.highlightResponse = (() => {
   'use strict';
 
   const { wait } = window.__editorHelpers;
+  const T = window.__editorConfig.TIMINGS.PHASE_7;
 
   async function highlightResponse(response) {
-    await wait(800);
+    await wait(T.INITIAL_HOLD);
 
     response.classList.add('chat-ai-response--wrapped');
-    await wait(700);
+    await wait(T.WRAP_SETTLE);
     response.classList.add('chat-ai-response--grown');
-    await wait(500);
+    await wait(T.GROW_SETTLE);
     // NOTE: zoom is handled by dotDrawsGraph as one continuous motion.
     // No editor--zoomed-response here — avoids a two-step zoom.
-    await wait(1000); // Hold for a moment before next phase
+    await wait(T.FINAL_HOLD); // Hold for a moment before next phase
   }
 
   return highlightResponse;

@@ -12,12 +12,13 @@ window.__editorPhases.streamAIResponse = (() => {
 
   const { wait, jitter } = H;
   const { AI_RESPONSE_PARTS } = CFG;
+  const T = CFG.TIMINGS.PHASE_6;
 
   async function streamAIResponse(thinkingDots) {
     // Remove thinking dots
-    thinkingDots.style.transition = 'opacity 0.2s ease';
+    thinkingDots.style.transition = `opacity ${T.DOTS_FADE_OUT / 1000}s ease`;
     thinkingDots.style.opacity = '0';
-    await wait(200);
+    await wait(T.DOTS_FADE_OUT);
     thinkingDots.remove();
 
     // Create the response element
@@ -33,9 +34,9 @@ window.__editorPhases.streamAIResponse = (() => {
 
     STATE.chatMessages.appendChild(response);
 
-    await wait(50);
+    await wait(T.RESPONSE_SETTLE);
     response.classList.add('chat-ai-response--visible');
-    await wait(200);
+    await wait(T.RESPONSE_VISIBLE_WAIT);
 
     // Stream each part word-by-word
     for (const part of AI_RESPONSE_PARTS) {
@@ -54,13 +55,13 @@ window.__editorPhases.streamAIResponse = (() => {
         }
 
         if (word.trim()) {
-          await wait(jitter(55, 20));
+          await wait(jitter(T.WORD_BASE_MS, T.WORD_JITTER));
         }
       }
     }
 
     // Done streaming — hide cursor
-    await wait(400);
+    await wait(T.CURSOR_HIDE_HOLD);
     streamCursor.classList.add('chat-ai-response__cursor--hidden');
 
     return response;

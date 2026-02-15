@@ -6,6 +6,13 @@ window.__editorHelpers = (() => {
 
   const CFG = window.__editorConfig;
 
+  // --- Responsive check ---
+  // Returns true when the viewport is at or below the mobile breakpoint
+  // (phones / tablets up to iPad Mini landscape).
+  function isMobileViewport() {
+    return window.innerWidth <= CFG.MOBILE_MAX_WIDTH;
+  }
+
   // --- Core timing ---
   const wait = (ms) => new Promise(r => setTimeout(r, ms));
   const jitter = (base, range = 12) => base + (Math.random() * range * 2 - range);
@@ -147,6 +154,7 @@ window.__editorHelpers = (() => {
   }
 
   return {
+    isMobileViewport,
     wait,
     jitter,
     animateCount,
