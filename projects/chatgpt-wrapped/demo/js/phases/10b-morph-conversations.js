@@ -35,8 +35,8 @@ window.__editorPhases.morphToConversations = (() => {
     }
     await wait(T.SPLIT_FADE_WAIT);
 
-    // --- Step 2: Count down hero number  20,000 → 847 ---
-    await animateCounter(heroNum, 847, T.COUNTDOWN_DURATION, 20000);
+    // --- Step 2: Count down hero number  totalMessages → conversations ---
+    await animateCounter(heroNum, CFG.CONVERSATIONS, T.COUNTDOWN_DURATION, CFG.TOTAL_MESSAGES);
 
     // --- Step 3: Cross-fade the label ---
     heroLabel.classList.remove('stat-hero__label--visible');

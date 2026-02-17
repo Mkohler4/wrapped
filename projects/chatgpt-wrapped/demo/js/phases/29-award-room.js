@@ -56,7 +56,7 @@ window.__editorPhases.showAwardRoom = (() => {
 
     const joinedEl = document.createElement('p');
     joinedEl.className = 'award-room__joined';
-    joinedEl.textContent = 'Member since Jan 12, 2023';
+    joinedEl.textContent = `Member since ${CFG.MEMBER_SINCE}`;
     hero.appendChild(joinedEl);
 
     inner.appendChild(hero);

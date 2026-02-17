@@ -67,9 +67,12 @@ window.__editorHelpers = (() => {
   }
 
   // --- Compute message count per hour from normalized data ---
-  const USAGE_SUM = CFG.USAGE_HOURS.reduce((a, b) => a + b, 0);
+  // Computed on demand so it stays correct after config.init() patches USAGE_HOURS.
+  function usageSum() {
+    return CFG.USAGE_HOURS.reduce((a, b) => a + b, 0);
+  }
   function msgCountForHour(i) {
-    return Math.round((CFG.USAGE_HOURS[i] / USAGE_SUM) * CFG.TOTAL_MESSAGES);
+    return Math.round((CFG.USAGE_HOURS[i] / usageSum()) * CFG.TOTAL_MESSAGES);
   }
 
   // --- Cascade easing (Phase 8) ---
@@ -166,6 +169,6 @@ window.__editorHelpers = (() => {
     buildCatmullRomPath,
     easeOutCubic,
     rollSquareToCenter,
-    USAGE_SUM,
+    usageSum,
   };
 })();

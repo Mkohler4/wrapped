@@ -103,9 +103,9 @@
       // Also remove any lingering stat overlays
       viewport.querySelectorAll('.heatmap-stat').forEach(el => el.remove());
 
-      const { generateActivityData, formatNumber } = window.__editor;
+      const { computeActivityData, formatNumber } = window.__editor;
       const COLS = 52, ROWS = 7, CELL_SIZE = 14, GAP = 3;
-      const activityData = generateActivityData();
+      const { levels: activityData } = computeActivityData();
 
       const heatmap = document.createElement('div');
       heatmap.className = 'heatmap';

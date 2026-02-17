@@ -6,6 +6,7 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.revealBusiestDay = (() => {
   'use strict';
 
+  const CFG = window.__editorConfig;
   const H = window.__editorHelpers;
   const { wait, animateCounter } = H;
 
@@ -17,24 +18,17 @@ window.__editorPhases.revealBusiestDay = (() => {
    * @param {object} prevStats   – { activeDays, streak }
    */
   async function revealBusiestDay(
-    { heatmap, grid, allCells, activityData, COLS, ROWS },
+    { heatmap, grid, allCells, activityData, messageData, COLS, ROWS },
     prevStats
   ) {
     const { activeDays: activeDaysResult, streak: streakResult } = prevStats;
     const { streakCells, streakSet } = streakResult;
 
-    // --- Find the busiest day ---
-    function levelToMessages(level) {
-      if (level === 0) return 0;
-      const ranges = { 1: [5, 15], 2: [15, 35], 3: [35, 70], 4: [70, 130] };
-      const [lo, hi] = ranges[level];
-      return Math.floor(lo + Math.random() * (hi - lo));
-    }
-
+    // --- Find the busiest day (actual message counts) ---
     let busiestCol = 0, busiestRow = 0, maxMessages = 0;
     for (let col = 0; col < COLS; col++) {
       for (let row = 0; row < ROWS; row++) {
-        const count = levelToMessages(activityData[col][row]);
+        const count = messageData[col][row];
         if (count > maxMessages) {
           maxMessages = count;
           busiestCol = col;

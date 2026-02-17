@@ -13,7 +13,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
-  const { wait, fmtHour, msgCountForHour, isMobileViewport } = H;
+  const { wait, fmtHour, msgCountForHour, isMobileViewport, animateCounter } = H;
   const { USAGE_HOURS } = CFG;
   const T = CFG.TIMINGS.PHASE_7N;
 
@@ -377,7 +377,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
     // 4d. Peak hour callout — shows message count at the highest point
     const peakIdx = USAGE_HOURS.indexOf(maxValue);
     const peakPos = positions[peakIdx];
-    const peakMessages = msgCountForHour(peakIdx).toLocaleString();
+    const peakMessagesRaw = msgCountForHour(peakIdx);
     const peakHourText = fmtHour(peakIdx);
 
     const peakCallout = document.createElement('div');
@@ -387,7 +387,11 @@ window.__editorPhases.dotDrawsGraph = (() => {
 
     const peakCount = document.createElement('div');
     peakCount.className = 'dot-draw__peak-count';
-    peakCount.textContent = `${peakMessages} msgs`;
+    peakCount.textContent = '0';
+
+    const peakLabel = document.createElement('div');
+    peakLabel.className = 'dot-draw__peak-label';
+    peakLabel.textContent = 'messages';
 
     const peakHour = document.createElement('div');
     peakHour.className = 'dot-draw__peak-hour';
@@ -397,6 +401,7 @@ window.__editorPhases.dotDrawsGraph = (() => {
     peakLine.className = 'dot-draw__peak-line';
 
     peakCallout.appendChild(peakCount);
+    peakCallout.appendChild(peakLabel);
     peakCallout.appendChild(peakHour);
     peakCallout.appendChild(peakLine);
     graphWrap.appendChild(peakCallout);
@@ -404,6 +409,10 @@ window.__editorPhases.dotDrawsGraph = (() => {
     // Animate callout in after labels have settled
     await wait(T.CALLOUT_DELAY);
     peakCallout.classList.add('dot-draw__peak-callout--visible');
+
+    // Animate the number counting up
+    await wait(T.COUNTER_PREP);
+    await animateCounter(peakCount, peakMessagesRaw, T.PEAK_COUNTER_DURATION);
 
     // Hold — let user take in the full picture
     await wait(T.FINAL_HOLD);

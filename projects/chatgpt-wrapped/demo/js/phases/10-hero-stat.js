@@ -88,7 +88,7 @@ window.__editorPhases.showHeroStat = (() => {
     await wait(T.ANIMATION_SETTLE);
 
     // Count up hero number  (cascade drift still running behind the blur)
-    await animateCounter(heroNum, 20000, T.HERO_COUNTER_DURATION);
+    await animateCounter(heroNum, CFG.TOTAL_MESSAGES, T.HERO_COUNTER_DURATION);
 
     // Show the label
     await wait(T.LABEL_DELAY);
@@ -99,8 +99,8 @@ window.__editorPhases.showHeroStat = (() => {
     split.classList.add('stat-split--visible');
     await wait(T.SPLIT_DELAY);
     await Promise.all([
-      animateCounter(youNum, 8000, T.SPLIT_COUNTER_DURATION),
-      animateCounter(aiNum, 12000, T.SPLIT_COUNTER_DURATION),
+      animateCounter(youNum, CFG.USER_MESSAGES, T.SPLIT_COUNTER_DURATION),
+      animateCounter(aiNum, CFG.AI_MESSAGES, T.SPLIT_COUNTER_DURATION),
     ]);
 
     // Hold for a moment before transitioning

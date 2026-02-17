@@ -23,6 +23,9 @@
   // Master sequence
   // ============================================
   async function run() {
+    // Load data from wrapped-profile.json (patches config arrays in-place)
+    await CFG.init();
+
     // Initialize shared DOM references
     STATE.init();
 

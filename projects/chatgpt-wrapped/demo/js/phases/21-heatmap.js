@@ -6,55 +6,46 @@ window.__editorPhases = window.__editorPhases || {};
 (() => {
   'use strict';
 
+  const CFG   = window.__editorConfig;
   const H     = window.__editorHelpers;
   const STATE = window.__editorState;
 
   const { wait, isMobileViewport } = H;
 
   /**
-   * Generate a 52×7 array of activity levels (0–4) that mimics
-   * realistic ChatGPT usage across a full year.
+   * Convert the raw daily-message-count grid from the data file
+   * into a 52×7 array of activity levels (0–4), GitHub-style:
+   * the levels are relative to the user's personal max day.
+   *
+   * Returns { levels, messages } where:
+   *   levels[col][row]   = 0–4 activity level
+   *   messages[col][row] = original message count
    */
-  function generateActivityData() {
-    const COLS = 52;
-    const ROWS = 7;
+  function computeActivityData() {
+    const messages = CFG.HEATMAP_CONFIG.dailyMessages;
 
-    const monthlyCurve = [
-      0.35, 0.45, 0.60, 0.75, 0.85, 0.70,
-      0.55, 0.50, 0.65, 0.80, 0.90, 0.60,
-    ];
+    // Find the personal max
+    let maxCount = 0;
+    messages.forEach(week =>
+      week.forEach(count => { if (count > maxCount) maxCount = count; })
+    );
 
-    const data = [];
+    // GitHub-style quartile thresholds relative to max
+    const t1 = maxCount * 0.25;
+    const t2 = maxCount * 0.50;
+    const t3 = maxCount * 0.75;
 
-    for (let col = 0; col < COLS; col++) {
-      const week = [];
-      const month = Math.min(11, Math.floor((col / COLS) * 12));
-      const monthIntensity = monthlyCurve[month];
+    const levels = messages.map(week =>
+      week.map(count => {
+        if (count === 0) return 0;
+        if (count <= t1)  return 1;
+        if (count <= t2)  return 2;
+        if (count <= t3)  return 3;
+        return 4;
+      })
+    );
 
-      let weekBoost = 0;
-      if (Math.random() < 0.12) weekBoost = 0.25;
-      else if (Math.random() < 0.10) weekBoost = -0.20;
-
-      for (let row = 0; row < ROWS; row++) {
-        const isWeekend = (row === 0 || row === 6);
-        const dayBase = isWeekend ? 0.25 : 0.65;
-
-        const raw = dayBase * (monthIntensity + weekBoost) + (Math.random() * 0.35 - 0.10);
-        const clamped = Math.max(0, Math.min(1, raw));
-
-        let level;
-        if (clamped < 0.12)      level = 0;
-        else if (clamped < 0.30) level = 1;
-        else if (clamped < 0.50) level = 2;
-        else if (clamped < 0.72) level = 3;
-        else                     level = 4;
-
-        week.push(level);
-      }
-      data.push(week);
-    }
-
-    return data;
+    return { levels, messages };
   }
 
   /**
@@ -77,7 +68,7 @@ window.__editorPhases = window.__editorPhases || {};
     // has no zoom, so the heatmap starts at 1× — no zoom-out needed.
     const heatmapInitScale = mobile ? 1.0 : 2.2;
 
-    const activityData = generateActivityData();
+    const { levels: activityData, messages: messageData } = computeActivityData();
 
     // Force the seed cell at center to be high-activity green
     activityData[centerCol][centerRow] = 4;
@@ -168,7 +159,13 @@ window.__editorPhases = window.__editorPhases || {};
           cell.style.transform = 'translateY(0)';
           seedCell = cell;
         } else {
-          const offset = -(300 + Math.random() * 500);
+          // On desktop (2.2× zoom) the viewport crops the top so a small
+          // offset is enough.  On mobile (1× scale) the full grid is
+          // visible — cells need to start much higher to fall in from
+          // above the visible area.
+          const minOff = mobile ? 600 : 300;
+          const rangeOff = mobile ? 800 : 500;
+          const offset = -(minOff + Math.random() * rangeOff);
           cell.style.transform = `translateY(${offset}px)`;
         }
 
@@ -300,9 +297,9 @@ window.__editorPhases = window.__editorPhases || {};
       c.el.style.opacity = '';
     });
 
-    return { heatmap, grid, allCells, activityData, COLS, ROWS };
+    return { heatmap, grid, allCells, activityData, messageData, COLS, ROWS };
   }
 
-  window.__editorPhases.generateActivityData = generateActivityData;
+  window.__editorPhases.computeActivityData = computeActivityData;
   window.__editorPhases.buildHeatmap = buildHeatmap;
 })();

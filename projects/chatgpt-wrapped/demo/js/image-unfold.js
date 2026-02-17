@@ -21,25 +21,14 @@
   'use strict';
 
   // ============================================
-  // Image sources
+  // Image sources & words — read from config at start()
+  // (deferred because config.js loads after this file,
+  //  and init() populates GENERATED_IMAGES async)
   // ============================================
-  const MAIN_SRCS = [
-    'images/img-01.webp',
-    'images/img-02.webp',
-    'images/img-03.webp',
-    'images/img-04.webp',
-    'images/img-05.webp',
-  ];
-
-  const BG_SRCS = [
-    'images/sphere2-01.webp', 'images/sphere2-02.webp', 'images/sphere2-03.webp',
-    'images/sphere2-04.webp', 'images/sphere2-05.webp', 'images/sphere2-06.webp',
-    'images/sphere2-07.webp', 'images/sphere2-08.webp', 'images/sphere2-09.webp',
-    'images/sphere2-10.webp', 'images/sphere2-11.webp', 'images/sphere2-12.webp',
-  ];
-
-  // Words displayed in the bubble during each rotation stop
-  const IMG_WORDS = { 1: 'Bloomed', 3: 'Quietly', 2: 'Wander', 5: 'Drifted', 4: 'Gently' };
+  let MAIN_SRCS = [];
+  let BG_SRCS = [];
+  let IMG_WORDS = {};
+  let IMAGE_COUNT = 0;
 
   // ============================================
   // State
@@ -108,7 +97,6 @@
   let countEl = null;        // DOM wrapper for count display
   let countNumEl = null;     // DOM element for the animated number
   let countLabelEl = null;   // DOM element for the subtitle label
-  const IMAGE_COUNT = 211;   // number of images generated in 2025
   const FAN_CARD_SIZE = 140; // card size in the fan (before sf scaling)
 
   // ============================================
@@ -1158,6 +1146,14 @@
   // ============================================
   async function start() {
     cleanup();
+
+    // Read image data from config (populated by init())
+    const imgData = window.__editorConfig.GENERATED_IMAGES;
+    MAIN_SRCS = imgData.mainSources || [];
+    BG_SRCS = imgData.backgroundSources || [];
+    const _w = imgData.words || [];
+    IMG_WORDS = { 1: _w[0], 3: _w[2], 2: _w[1], 5: _w[4], 4: _w[3] };
+    IMAGE_COUNT = imgData.count || 0;
 
     await preloadImages();
 
