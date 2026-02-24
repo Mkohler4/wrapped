@@ -18,7 +18,8 @@ window.__editorPhases.morphCellToWordBubble = (() => {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const wordData = WORD_FREQUENCY_DATA[0];
-    const targetSize = 180;
+    const isMob = vw < 600;
+    const targetSize = isMob ? Math.min(100, Math.floor(vw * 0.26)) : 180;
 
     // --- Step 1: Morph square → circle ---
     cell.style.transition =
@@ -126,30 +127,41 @@ window.__editorPhases.morphCellToWordBubble = (() => {
     const placed = [];
     const firstR = targetSize / 2;
 
+    // Placement zone — wider on narrow mobile viewports
+    const zoneLeft   = vw * (isMob ? 0.22 : 0.15);
+    const zoneRight  = vw * (isMob ? 0.78 : 0.85);
+    const zoneTop    = vh * (isMob ? 0.50 : 0.28);
+    const zoneBottom = vh * (isMob ? 0.93 : 0.78);
+
     function findPosition(r) {
-      const padding = 14;
-      const zoneLeft   = vw * 0.20;
-      const zoneRight  = vw * 0.80;
-      const zoneTop    = vh * 0.30;
-      const zoneBottom = vh * 0.75;
-      let bestX, bestY, tries = 0;
+      const padding = 20;
+      let bestX = zoneLeft + r, bestY = zoneTop + r, bestScore = -Infinity;
+      let tries = 0;
       do {
-        bestX = zoneLeft + r + Math.random() * (zoneRight - zoneLeft - 2 * r);
-        bestY = zoneTop  + r + Math.random() * (zoneBottom - zoneTop - 2 * r);
+        const candidateX = zoneLeft + r + Math.random() * Math.max(0, zoneRight - zoneLeft - 2 * r);
+        const candidateY = zoneTop  + r + Math.random() * Math.max(0, zoneBottom - zoneTop  - 2 * r);
         tries++;
-        const overlaps = placed.some(p => {
-          const dx = bestX - p.cx;
-          const dy = bestY - p.cy;
-          return Math.sqrt(dx * dx + dy * dy) < (r + p.r + padding);
-        });
-        if (!overlaps) break;
-      } while (tries < 120);
+        let minGap = Infinity;
+        let overlaps = false;
+        for (const p of placed) {
+          const dx = candidateX - p.cx;
+          const dy = candidateY - p.cy;
+          const gap = Math.sqrt(dx * dx + dy * dy) - (r + p.r + padding);
+          if (gap < 0) overlaps = true;
+          if (gap < minGap) minGap = gap;
+        }
+        if (!overlaps) return { cx: candidateX, cy: candidateY };
+        if (minGap > bestScore) {
+          bestScore = minGap;
+          bestX = candidateX;
+          bestY = candidateY;
+        }
+      } while (tries < 200);
       return { cx: bestX, cy: bestY };
     }
 
-    // Place the first bubble
-    const firstPos = findPosition(firstR);
-    placed.push({ cx: firstPos.cx, cy: firstPos.cy, r: firstR });
+    // First bubble is fixed at viewport centre — register its true position
+    placed.push({ cx: vw / 2, cy: vh / 2, r: firstR });
 
     // Place all extra bubbles
     const extraPositions = [];
@@ -158,6 +170,46 @@ window.__editorPhases.morphCellToWordBubble = (() => {
       const pos = findPosition(r);
       placed.push({ cx: pos.cx, cy: pos.cy, r });
       extraPositions.push(pos);
+    }
+
+    // Relaxation pass: iteratively push overlapping circles apart so they
+    // land with a light "resistance" rather than piling up.
+    // First bubble (index 0) is anchored at centre and cannot move.
+    const relaxGap = 6;
+    for (let iter = 0; iter < 80; iter++) {
+      for (let i = 0; i < placed.length; i++) {
+        for (let j = i + 1; j < placed.length; j++) {
+          const a = placed[i], b = placed[j];
+          const dx = b.cx - a.cx;
+          const dy = b.cy - a.cy;
+          const dist = Math.sqrt(dx * dx + dy * dy) || 0.001;
+          const minDist = a.r + b.r + relaxGap;
+          if (dist < minDist) {
+            const push = (minDist - dist) * 0.5;
+            const nx = dx / dist, ny = dy / dist;
+            if (i === 0) {
+              b.cx += nx * push * 2;
+              b.cy += ny * push * 2;
+            } else {
+              a.cx -= nx * push;
+              a.cy -= ny * push;
+              b.cx += nx * push;
+              b.cy += ny * push;
+            }
+          }
+        }
+        if (i > 0) {
+          const p = placed[i];
+          p.cx = Math.max(zoneLeft + p.r, Math.min(zoneRight  - p.r, p.cx));
+          p.cy = Math.max(zoneTop  + p.r, Math.min(zoneBottom - p.r, p.cy));
+        }
+      }
+    }
+
+    // Write relaxed positions back to extraPositions
+    for (let i = 0; i < extraPositions.length; i++) {
+      extraPositions[i].cx = placed[i + 1].cx;
+      extraPositions[i].cy = placed[i + 1].cy;
     }
 
     // Show thinking dots
@@ -220,6 +272,15 @@ window.__editorPhases.morphCellToWordBubble = (() => {
     }
     spawnAtWord.sort((a, b) => a - b);
 
+    // Colours pulled from the sidebar/topic animation palette
+    const EXTRA_BUBBLE_COLORS = [
+      { r: 192, g: 132, b: 252 }, // purple  #c084fc
+      { r: 251, g: 146, b: 60  }, // orange  #fb923c
+      { r: 96,  g: 165, b: 250 }, // blue    #60a5fa
+      { r: 244, g: 114, b: 182 }, // pink    #f472b6
+      { r: 52,  g: 211, b: 153 }, // emerald #34d399
+    ];
+
     // Helper: create and launch a bubble
     let spawnIdx = 0;
     function spawnBubble() {
@@ -239,10 +300,11 @@ window.__editorPhases.morphCellToWordBubble = (() => {
       bubble.style.alignItems = 'center';
       bubble.style.justifyContent = 'center';
       bubble.style.overflow = 'hidden';
-      bubble.style.background = 'rgba(16, 185, 129, 0.08)';
-      bubble.style.border = '2px solid rgba(16, 185, 129, 0.40)';
+      const col = EXTRA_BUBBLE_COLORS[spawnIdx % EXTRA_BUBBLE_COLORS.length];
+      bubble.style.background = `rgba(${col.r}, ${col.g}, ${col.b}, 0.08)`;
+      bubble.style.border = `2px solid rgba(${col.r}, ${col.g}, ${col.b}, 0.40)`;
       bubble.style.boxShadow =
-        '0 0 20px rgba(16, 185, 129, 0.10), inset 0 0 20px rgba(16, 185, 129, 0.06)';
+        `0 0 20px rgba(${col.r}, ${col.g}, ${col.b}, 0.10), inset 0 0 20px rgba(${col.r}, ${col.g}, ${col.b}, 0.06)`;
 
       bubble.style.width = '10px';
       bubble.style.height = '10px';
@@ -338,11 +400,12 @@ window.__editorPhases.morphCellToWordBubble = (() => {
     await wait(1000);
 
     // --- Step 6: Gentle drift on all bubbles ---
+    const driftScale = isMob ? 0.25 : 1;
     function applyDrift(el) {
-      const dx1 = (Math.random() - 0.5) * 40;
-      const dy1 = (Math.random() - 0.5) * 30;
-      const dx2 = (Math.random() - 0.5) * 35;
-      const dy2 = (Math.random() - 0.5) * 25;
+      const dx1 = (Math.random() - 0.5) * 40 * driftScale;
+      const dy1 = (Math.random() - 0.5) * 30 * driftScale;
+      const dx2 = (Math.random() - 0.5) * 35 * driftScale;
+      const dy2 = (Math.random() - 0.5) * 25 * driftScale;
       el.style.setProperty('--drift-duration', `${6 + Math.random() * 4}s`);
       el.style.setProperty('--drift-delay', `${Math.random() * 2}s`);
       el.style.setProperty('--drift-x1', `${dx1}px`);

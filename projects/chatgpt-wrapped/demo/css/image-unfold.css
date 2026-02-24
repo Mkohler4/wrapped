@@ -97,6 +97,18 @@
   transform: translate(-50%, -50%) scale(1) translateY(0);
 }
 
+@media (max-width: 1024px) {
+  .image-unfold-bubble {
+    width: 100px;
+    padding: 7px 14px;
+    border-radius: 16px;
+  }
+
+  .image-unfold-bubble__text {
+    font-size: 14px;
+  }
+}
+
 .image-unfold-bubble__text {
   font-family: -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 18px;
@@ -133,7 +145,7 @@
   font-size: 18px;
   font-weight: 400;
   color: rgba(255, 255, 255, 0.55);
-  margin-top: 8px;
+  margin-top: 20px;
   letter-spacing: 0.01em;
   opacity: 0;
   transition: opacity 0.5s ease;

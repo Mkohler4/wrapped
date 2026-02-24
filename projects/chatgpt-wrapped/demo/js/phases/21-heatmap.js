@@ -56,10 +56,12 @@ window.__editorPhases = window.__editorPhases || {};
     const viewport = document.getElementById('viewport');
     const mobile = isMobileViewport();
 
-    const COLS = 52;
-    const ROWS = 7;
-    const CELL_SIZE = 14;
-    const GAP = 3;
+    // Mobile: fold the 52-week grid in half → 26 cols × 14 rows (H1 on top, H2 below)
+    // Desktop: standard GitHub-style 52 cols × 7 rows
+    const COLS      = mobile ? 26 : 52;
+    const ROWS      = mobile ? 14 : 7;
+    const CELL_SIZE = mobile ? 10 : 14;
+    const GAP       = mobile ?  2 :  3;
     const centerCol = Math.floor(COLS / 2);
     const centerRow = Math.floor(ROWS / 2);
 
@@ -68,7 +70,25 @@ window.__editorPhases = window.__editorPhases || {};
     // has no zoom, so the heatmap starts at 1× — no zoom-out needed.
     const heatmapInitScale = mobile ? 1.0 : 2.2;
 
-    const { levels: activityData, messages: messageData } = computeActivityData();
+    let { levels: activityData, messages: messageData } = computeActivityData();
+
+    if (mobile) {
+      // Remap 52×7 → 26×14: weeks 0-25 fill rows 0-6, weeks 26-51 fill rows 7-13
+      const remapL = [], remapM = [];
+      for (let col = 0; col < 26; col++) {
+        remapL[col] = []; remapM[col] = [];
+        for (let row = 0; row < 7; row++) {
+          remapL[col][row] = activityData[col][row];
+          remapM[col][row] = messageData[col][row];
+        }
+        for (let row = 7; row < 14; row++) {
+          remapL[col][row] = activityData[col + 26][row - 7];
+          remapM[col][row] = messageData[col + 26][row - 7];
+        }
+      }
+      activityData = remapL;
+      messageData  = remapM;
+    }
 
     // Force the seed cell at center to be high-activity green
     activityData[centerCol][centerRow] = 4;
@@ -109,92 +129,161 @@ window.__editorPhases = window.__editorPhases || {};
     // ---------------------------------------------------------
 
     const heatmap = document.createElement('div');
-    heatmap.className = 'heatmap';
+    heatmap.className = mobile ? 'heatmap heatmap--mobile' : 'heatmap';
     heatmap.style.opacity = '0';
     heatmap.style.transform = `translate(-50%, -50%) scale(${heatmapInitScale})`;
 
-    const gridArea = document.createElement('div');
-    gridArea.className = 'heatmap__grid-area';
-
-    const dayLabelsEl = document.createElement('div');
-    dayLabelsEl.className = 'heatmap__day-labels';
-    const DAY_NAMES = ['', 'M', '', 'W', '', 'F', ''];
-    DAY_NAMES.forEach(name => {
-      const lbl = document.createElement('div');
-      lbl.className = 'heatmap__day-label';
-      lbl.textContent = name;
-      dayLabelsEl.appendChild(lbl);
-    });
-    gridArea.appendChild(dayLabelsEl);
-
-    const grid = document.createElement('div');
-    grid.className = 'heatmap__grid';
-
+    const colPx = CELL_SIZE + GAP;
     const allCells = [];
     let seedCell = null;
+    let grid; // first/only grid — used for reflow trigger
+    const allMonthLabelRows    = [];
+    const allDayLabelContainers = []; // collected per-half for 21e animation
 
-    for (let col = 0; col < COLS; col++) {
-      const colEl = document.createElement('div');
-      colEl.className = 'heatmap__col';
+    // Builds one 26×7 grid half (rows rowStart…rowStart+6), appends its
+    // gridArea + month labels to heatmap, returns the grid element.
+    const buildHalf = (rowStart, months) => {
+      const halfGridArea = document.createElement('div');
+      halfGridArea.className = 'heatmap__grid-area';
 
-      for (let row = 0; row < ROWS; row++) {
-        const cell = document.createElement('div');
-        const level = activityData[col][row];
-        cell.className = `heatmap__cell heatmap__cell--level-${level}`;
+      const dayLabels = document.createElement('div');
+      dayLabels.className = 'heatmap__day-labels';
+      ['', 'M', '', 'W', '', 'F', ''].forEach(name => {
+        const lbl = document.createElement('div');
+        lbl.className = 'heatmap__day-label';
+        lbl.textContent = name;
+        dayLabels.appendChild(lbl);
+      });
+      halfGridArea.appendChild(dayLabels);
+      allDayLabelContainers.push(dayLabels);
 
-        const isSeed = (col === centerCol && row === centerRow);
+      const halfGrid = document.createElement('div');
+      halfGrid.className = 'heatmap__grid';
 
-        const dx = col - centerCol;
-        const dy = row - centerRow;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+      for (let col = 0; col < COLS; col++) {
+        const colEl = document.createElement('div');
+        colEl.className = 'heatmap__col';
+        for (let row = rowStart; row < rowStart + 7; row++) {
+          const cell = document.createElement('div');
+          const level = activityData[col][row];
+          cell.className = `heatmap__cell heatmap__cell--level-${level}`;
 
-        const baseDelay = dist * 25;
-        const jit = (Math.random() * 300) - 150;
-        const delay = Math.max(0, Math.min(3500, baseDelay + jit));
+          const isSeed = (col === centerCol && row === centerRow);
+          const dx = col - centerCol;
+          const dy = row - centerRow;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const baseDelay = dist * 25;
+          const jit = (Math.random() * 300) - 150;
+          const delay = Math.max(0, Math.min(3500, baseDelay + jit));
+          const fallDuration = 400 + Math.random() * 200;
 
-        const fallDuration = 400 + Math.random() * 200;
+          if (isSeed) {
+            cell.style.opacity = '0';
+            cell.style.transform = 'translateY(0)';
+            seedCell = cell;
+          } else {
+            const offset = -(600 + Math.random() * 800);
+            cell.style.transform = `translateY(${offset}px)`;
+          }
 
-        if (isSeed) {
-          cell.style.opacity = '0';
-          cell.style.transform = 'translateY(0)';
-          seedCell = cell;
-        } else {
-          // On desktop (2.2× zoom) the viewport crops the top so a small
-          // offset is enough.  On mobile (1× scale) the full grid is
-          // visible — cells need to start much higher to fall in from
-          // above the visible area.
-          const minOff = mobile ? 600 : 300;
-          const rangeOff = mobile ? 800 : 500;
-          const offset = -(minOff + Math.random() * rangeOff);
-          cell.style.transform = `translateY(${offset}px)`;
+          colEl.appendChild(cell);
+          allCells.push({ el: cell, col, row, dist, delay, fallDuration, isSeed });
         }
-
-        colEl.appendChild(cell);
-        allCells.push({ el: cell, col, row, dist, delay, fallDuration, isSeed });
+        halfGrid.appendChild(colEl);
       }
-      grid.appendChild(colEl);
+
+      halfGridArea.appendChild(halfGrid);
+      heatmap.appendChild(halfGridArea);
+
+      // Month labels sit directly below this half
+      const monthRow = document.createElement('div');
+      monthRow.className = 'heatmap__month-labels';
+      const labelW = Math.round((COLS / 6) * colPx);
+      months.forEach(name => {
+        const lbl = document.createElement('div');
+        lbl.className = 'heatmap__month-label';
+        lbl.textContent = name;
+        lbl.style.width = `${labelW}px`;
+        monthRow.appendChild(lbl);
+      });
+      heatmap.appendChild(monthRow);
+      allMonthLabelRows.push(monthRow);
+
+      return halfGrid;
+    };
+
+    if (mobile) {
+      // Two stacked 26×7 halves with their own month labels
+      grid = buildHalf(0, ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun']);
+      const halfGap = document.createElement('div');
+      halfGap.className = 'heatmap__half-gap';
+      heatmap.appendChild(halfGap);
+      buildHalf(7, ['Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']);
+    } else {
+      // Desktop: single 52×7 grid with 12 month labels at the bottom
+      const gridArea = document.createElement('div');
+      gridArea.className = 'heatmap__grid-area';
+
+      const dayLabels = document.createElement('div');
+      dayLabels.className = 'heatmap__day-labels';
+      ['', 'M', '', 'W', '', 'F', ''].forEach(name => {
+        const lbl = document.createElement('div');
+        lbl.className = 'heatmap__day-label';
+        lbl.textContent = name;
+        dayLabels.appendChild(lbl);
+      });
+      gridArea.appendChild(dayLabels);
+      allDayLabelContainers.push(dayLabels);
+
+      grid = document.createElement('div');
+      grid.className = 'heatmap__grid';
+
+      for (let col = 0; col < COLS; col++) {
+        const colEl = document.createElement('div');
+        colEl.className = 'heatmap__col';
+        for (let row = 0; row < ROWS; row++) {
+          const cell = document.createElement('div');
+          const level = activityData[col][row];
+          cell.className = `heatmap__cell heatmap__cell--level-${level}`;
+          const isSeed = (col === centerCol && row === centerRow);
+          const dx = col - centerCol;
+          const dy = row - centerRow;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const baseDelay = dist * 25;
+          const jit = (Math.random() * 300) - 150;
+          const delay = Math.max(0, Math.min(3500, baseDelay + jit));
+          const fallDuration = 400 + Math.random() * 200;
+          if (isSeed) {
+            cell.style.opacity = '0';
+            cell.style.transform = 'translateY(0)';
+            seedCell = cell;
+          } else {
+            const offset = -(300 + Math.random() * 500);
+            cell.style.transform = `translateY(${offset}px)`;
+          }
+          colEl.appendChild(cell);
+          allCells.push({ el: cell, col, row, dist, delay, fallDuration, isSeed });
+        }
+        grid.appendChild(colEl);
+      }
+
+      gridArea.appendChild(grid);
+      heatmap.appendChild(gridArea);
+
+      const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      const monthRow = document.createElement('div');
+      monthRow.className = 'heatmap__month-labels';
+      const weeksPerMonth = COLS / 12;
+      MONTHS.forEach(name => {
+        const lbl = document.createElement('div');
+        lbl.className = 'heatmap__month-label';
+        lbl.textContent = name;
+        lbl.style.width = `${Math.round(weeksPerMonth * colPx)}px`;
+        monthRow.appendChild(lbl);
+      });
+      heatmap.appendChild(monthRow);
+      allMonthLabelRows.push(monthRow);
     }
-
-    gridArea.appendChild(grid);
-    heatmap.appendChild(gridArea);
-
-    // Month labels
-    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const monthRow = document.createElement('div');
-    monthRow.className = 'heatmap__month-labels';
-
-    const colPx = CELL_SIZE + GAP;
-    const weeksPerMonth = COLS / 12;
-
-    MONTHS.forEach(name => {
-      const lbl = document.createElement('div');
-      lbl.className = 'heatmap__month-label';
-      lbl.textContent = name;
-      lbl.style.width = `${Math.round(weeksPerMonth * colPx)}px`;
-      monthRow.appendChild(lbl);
-    });
-    heatmap.appendChild(monthRow);
 
     viewport.appendChild(heatmap);
     heatmap.offsetHeight;
@@ -255,12 +344,23 @@ window.__editorPhases = window.__editorPhases || {};
     });
 
     // ---------------------------------------------------------
-    // 21c  Zoom out mid-rain (desktop only — mobile is already at 1×)
+    // 21c  Zoom out mid-rain
+    //      Desktop: 2.2× → 1.0×
+    //      Mobile / iPad Mini: 1.0× → fit-to-viewport scale
+    //      so the full heatmap + labels are visible.
     // ---------------------------------------------------------
 
     await wait(1200);
 
-    if (!mobile) {
+    if (mobile) {
+      // Compute scale that fits the heatmap width inside the viewport
+      // with some breathing room (16px padding each side).
+      const heatmapNaturalW = heatmap.scrollWidth;
+      const availableW = window.innerWidth - 32;
+      const fitScale = Math.min(1.0, availableW / heatmapNaturalW);
+      heatmap.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.15, 1)';
+      heatmap.style.transform = `translate(-50%, -50%) scale(${fitScale})`;
+    } else {
       heatmap.style.transition = 'transform 1.2s cubic-bezier(0.4, 0, 0.15, 1)';
       heatmap.style.transform = 'translate(-50%, -50%) scale(1.0)';
     }
@@ -279,13 +379,17 @@ window.__editorPhases = window.__editorPhases || {};
     // 21e  Polish: fade in labels
     // ---------------------------------------------------------
 
-    const dayLabelEls = dayLabelsEl.querySelectorAll('.heatmap__day-label');
-    dayLabelEls.forEach((lbl, i) => {
+    const allDayLabels = allDayLabelContainers.flatMap(c =>
+      [...c.querySelectorAll('.heatmap__day-label')]
+    );
+    allDayLabels.forEach((lbl, i) => {
       setTimeout(() => { lbl.style.opacity = '1'; }, i * 60);
     });
 
-    const monthLabelEls = monthRow.querySelectorAll('.heatmap__month-label');
-    monthLabelEls.forEach((lbl, i) => {
+    const allMonthLabels = allMonthLabelRows.flatMap(row =>
+      [...row.querySelectorAll('.heatmap__month-label')]
+    );
+    allMonthLabels.forEach((lbl, i) => {
       setTimeout(() => { lbl.style.opacity = '1'; }, i * 50);
     });
 

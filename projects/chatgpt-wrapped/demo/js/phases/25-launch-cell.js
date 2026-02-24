@@ -6,7 +6,7 @@ window.__editorPhases = window.__editorPhases || {};
 window.__editorPhases.launchBusiestCell = (() => {
   'use strict';
 
-  const { wait } = window.__editorHelpers;
+  const { wait, isMobileViewport } = window.__editorHelpers;
 
   /**
    * After the three-stat layout, this phase:
@@ -58,8 +58,11 @@ window.__editorPhases.launchBusiestCell = (() => {
     const cellCenterX = cellRect.left + cellRect.width / 2;
     const cellCenterY = cellRect.top + cellRect.height / 2;
 
-    const offsetX = heatmapCenterX - cellCenterX;
-    const offsetY = heatmapCenterY - cellCenterY;
+    // Offsets are in screen-pixels; convert to unscaled heatmap coords
+    // by dividing by the current CSS scale so the translate values are correct.
+    const curScale = heatmapRect.width / heatmap.offsetWidth || 1;
+    const offsetX = (heatmapCenterX - cellCenterX) / curScale;
+    const offsetY = (heatmapCenterY - cellCenterY) / curScale;
 
     const zoomScale = 3.5;
 
@@ -114,6 +117,7 @@ window.__editorPhases.launchBusiestCell = (() => {
     heatmap.style.transition = 'transform 1.8s cubic-bezier(0.55, 0, 1, 0.45), opacity 1.6s ease-in';
     heatmap.style.transform =
       `translate(calc(-50% + ${offsetX * zoomScale}px), calc(-50% + ${offsetY * zoomScale}px + 120vh)) scale(${zoomScale})`;
+
     heatmap.style.opacity = '0';
 
     await wait(2000);

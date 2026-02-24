@@ -102,6 +102,77 @@
 }
 
 /* ============================================
+   Mobile layout — 26 cols × 14 rows
+   Applies up to and including iPad Mini horizontal (1024px).
+   ============================================ */
+@media (max-width: 1024px) {
+  .heatmap--mobile .heatmap__cell {
+    width: 10px;
+    height: 10px;
+  }
+
+  .heatmap--mobile .heatmap__day-label {
+    width: 10px;
+    height: 10px;
+  }
+
+  .heatmap--mobile .heatmap__day-labels {
+    gap: 2px;
+    margin-right: 4px;
+  }
+
+  .heatmap--mobile .heatmap__grid {
+    gap: 2px;
+  }
+
+  .heatmap--mobile .heatmap__col {
+    gap: 2px;
+  }
+
+  /* Visual gap between H1 (Jan–Jun, rows 0-6) and H2 (Jul–Dec, rows 7-13) */
+  .heatmap--mobile .heatmap__cell--section-break {
+    margin-top: 7px;
+  }
+
+  /* Tighten vertical spacing between the two month-label rows */
+  .heatmap--mobile .heatmap__month-labels {
+    margin-top: 5px;
+    padding-left: 14px; /* align with grid past the 10px day-labels + 4px margin */
+  }
+
+  /* Gap between the two year-halves */
+  .heatmap__half-gap {
+    height: 10px;
+  }
+
+  /* ---- Stats: tighter horizontal offsets so all 3 fit on-screen ---- */
+
+  /* Phase 23: left stat offset — wide enough to breathe, small enough to stay on-screen */
+  .heatmap--mobile .heatmap-stat--left {
+    transform: translateX(calc(-50% - 110px));
+  }
+
+  /* Phase 23: right stat at symmetric +110px */
+  .heatmap--mobile .heatmap-stat--right {
+    transform: translateX(calc(-50% + 110px));
+  }
+
+  /* Slightly smaller hero numbers so 3 side-by-side stats fit */
+  .heatmap--mobile .heatmap-stat__number {
+    font-size: clamp(26px, 7.5vw, 40px);
+  }
+
+  .heatmap--mobile .heatmap-stat__label {
+    margin-top: 3px;
+  }
+
+  .heatmap--mobile .heatmap-stat__sub,
+  .heatmap--mobile .heatmap-stat__date {
+    margin-top: 2px;
+  }
+}
+
+/* ============================================
    Phase 22: Active-Days Wave Reveal
    ============================================ */
 

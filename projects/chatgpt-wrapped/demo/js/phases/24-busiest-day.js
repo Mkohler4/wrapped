@@ -21,6 +21,7 @@ window.__editorPhases.revealBusiestDay = (() => {
     { heatmap, grid, allCells, activityData, messageData, COLS, ROWS },
     prevStats
   ) {
+    const mobile = H.isMobileViewport ? H.isMobileViewport() : false;
     const { activeDays: activeDaysResult, streak: streakResult } = prevStats;
     const { streakCells, streakSet } = streakResult;
 
@@ -89,12 +90,23 @@ window.__editorPhases.revealBusiestDay = (() => {
     await wait(800);
 
     // --- 3. Rebalance to 3-stat layout ---
-    if (activeDaysResult && activeDaysResult.stat) {
-      activeDaysResult.stat.style.transform =
-        'translateX(calc(-50% - 200px))';
-    }
-    if (streakResult && streakResult.stat) {
-      streakResult.stat.style.transform = 'translateX(-50%)';
+    if (mobile) {
+      // Mobile: keep left stat where it is (already at −90px from --left class),
+      // slide streak stat to centre, busiest day will appear on the right at +90px
+      if (activeDaysResult && activeDaysResult.stat) {
+        activeDaysResult.stat.style.transform = 'translateX(calc(-50% - 110px))';
+      }
+      if (streakResult && streakResult.stat) {
+        streakResult.stat.style.transform = 'translateX(-50%)';
+      }
+    } else {
+      // Desktop: wider horizontal spread
+      if (activeDaysResult && activeDaysResult.stat) {
+        activeDaysResult.stat.style.transform = 'translateX(calc(-50% - 200px))';
+      }
+      if (streakResult && streakResult.stat) {
+        streakResult.stat.style.transform = 'translateX(-50%)';
+      }
     }
 
     await wait(400);
@@ -102,7 +114,9 @@ window.__editorPhases.revealBusiestDay = (() => {
     // --- 4. Build + reveal the busiest-day stat ---
     const stat = document.createElement('div');
     stat.className = 'heatmap-stat heatmap-stat--above';
-    stat.style.transform = 'translateX(calc(-50% + 200px))';
+    stat.style.transform = mobile
+      ? 'translateX(calc(-50% + 110px))'   // Mobile: right slot at +90px
+      : 'translateX(calc(-50% + 200px))'; // Desktop: wide right
 
     const numEl = document.createElement('div');
     numEl.className = 'heatmap-stat__number';

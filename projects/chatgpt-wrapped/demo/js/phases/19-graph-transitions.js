@@ -231,8 +231,9 @@ window.__editorPhases = window.__editorPhases || {};
     // --- Step 5: Build bar chart (HTML divs) ---
     const categories = barData.categories;
     const maxVal = Math.max(...categories.map(c => c.value));
+    const mobile = H.isMobileViewport ? H.isMobileViewport() : false;
     const barChartPadTop = 36;
-    const barChartPadBottom = 28;
+    const barChartPadBottom = mobile ? 60 : 28;
     const barChartPadLeft = 12;
     const barChartPadRight = 12;
     const availableH = containerH - barChartPadTop - barChartPadBottom;

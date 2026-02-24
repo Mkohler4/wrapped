@@ -176,3 +176,36 @@
   text-overflow: ellipsis;
   max-width: 64px;
 }
+
+/* ============================================
+   Mobile: Bar chart — rotated labels, tighter spacing
+   up to and including iPad Mini horizontal (1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .insight-bar-chart {
+    gap: 3px;
+    padding: 0 4px;
+  }
+
+  .insight-bar {
+    max-width: 30px;
+  }
+
+  .insight-bar__value {
+    font-size: 10px;
+    padding-bottom: 3px;
+  }
+
+  /* Rotate labels 40° so all 6 fit without collision */
+  .insight-bar__label {
+    font-size: 8px;
+    padding-top: 2px;
+    white-space: nowrap;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: left;
+    transform-origin: top left;
+    transform: rotate(40deg);
+  }
+}

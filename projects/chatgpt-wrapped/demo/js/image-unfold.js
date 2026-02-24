@@ -77,10 +77,10 @@
   const DOT_ANGLE_IMG4 = Math.PI * 11 / 12;
   let currentDotAngle = DOT_ANGLE_IMG1;
 
-  // Bubble offset math
-  const BUBBLE_HALF_W = 80;
-  const BUBBLE_HALF_H = 21;
-  const BUBBLE_GAP = 40;
+  // Bubble offset math (overridden in initGeometry for mobile)
+  let BUBBLE_HALF_W = 80;
+  let BUBBLE_HALF_H = 21;
+  let BUBBLE_GAP = 40;
 
   // Wiggle
   const WIGGLE_DEPTH_THRESH = 0.82;
@@ -164,7 +164,19 @@
     CY = stageH / 2;
     SPHERE2_OFFSET_Z = -350 * sf;
     SPHERE2_OFFSET_Y =  200 * sf;
-    CIRCLE_R = 170 * sf;
+    // Scale orbit and bubble for mobile/tablet vs desktop
+    if (stageW <= 1024) {
+      // Orbit radius scales down on narrow screens so bubble stays on-screen
+      CIRCLE_R      = Math.min(170, stageW * 0.28) * sf;
+      BUBBLE_HALF_W = 50;   // 100px wide bubble
+      BUBBLE_HALF_H = 16;
+      BUBBLE_GAP    = 28;   // gap between dot and bubble
+    } else {
+      CIRCLE_R      = 170 * sf;
+      BUBBLE_HALF_W = 80;
+      BUBBLE_HALF_H = 21;
+      BUBBLE_GAP    = 40;
+    }
 
     // --- Axis 1 (phase 1: 1→3→2) ---
     const DIAG_1 = Math.PI - Math.PI / 5;
@@ -963,7 +975,7 @@
     await wait(200);
 
     // --- 5. Slide fan down to make room for the counter above ---
-    const SLIDE_DOWN = 80 * sf;
+    const SLIDE_DOWN = 120 * sf;
     const SLIDE_DUR = 500;
 
     // Snapshot current fan positions
@@ -992,7 +1004,7 @@
     // --- 6. Position count above the fan and show it ---
     // Place the count wrapper above the fanned cards
     const fanTopEdge = parseFloat(mainImgEls[2].style.top); // center card top
-    countEl.style.top = (fanTopEdge - 20 * sf) + 'px';
+    countEl.style.top = (fanTopEdge - 56 * sf) + 'px';
     countEl.style.left = '50%';
     countEl.style.transform = 'translate(-50%, -100%)';
     countEl.classList.add('image-unfold-count-wrap--visible');
