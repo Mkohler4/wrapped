@@ -1,0 +1,110 @@
+/* ============================================
+   Cascade V2 — Pre-rendered Scroll Strip
+   ============================================
+   Replaces the DOM-append approach with a single
+   pre-rendered column of bubbles animated via
+   GPU-accelerated translateY.
+
+   Layout:
+     .cascade-mask          (clips + gradient fade)
+       └ .cascade-strip     (tall column, translateY)
+           └ .ghost-bubble × N
+
+   The mask sits inside .editor__main (position: relative).
+   stat-backdrop (z:1) and stat-display (z:2) are siblings
+   of the mask at the editorMain level.
+   ============================================ */
+
+/* --- Mask container ---
+   Fills editor__main, clips the scrolling strip,
+   and applies a gradient fade at the bottom edge
+   so bubbles "appear" as they enter from below.  */
+.cascade-mask {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  z-index: 0;
+  box-sizing: border-box;
+  padding: 0 20px;
+
+  /* Bottom-edge gradient: bubbles fade in smoothly */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    black 0%,
+    black 82%,
+    transparent 100%
+  );
+}
+
+@media (max-width: 480px) {
+  .cascade-mask {
+    padding: 0 16px;   /* match editor__main mobile padding */
+  }
+}
+
+@media (min-width: 769px) {
+  .cascade-mask {
+    padding: 0 24px;   /* match editor__main desktop padding */
+  }
+}
+
+/* --- The scrolling strip ---
+   A single tall flex column of pre-rendered bubbles.
+   Only translateY changes during animation — pure GPU compositing. */
+.cascade-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding-top: 16px;
+  will-change: transform;
+}
+
+/* Strip bubbles start invisible and get revealed one
+   by one as they scroll into view.  During the slow
+   ramp they pop in individually; during the fast cruise
+   reveals are too fast to see — seamless illusion.       */
+.cascade-strip .ghost-bubble {
+  opacity: 0;
+  animation: none;
+  transform: none;
+  transition: opacity 0.18s ease;
+}
+
+.cascade-strip .ghost-bubble.revealed {
+  opacity: 1;
+}
+
+/* --- Infinite staircase: neutralize backdrop / drifting ---
+   Phase 10 adds .chat-messages--backdrop and
+   .chat-messages--drifting to STATE.chatMessages (the strip).
+   The original cascade.css turns these into an absolute-
+   positioned, CSS-animated layer.  That causes a visible
+   layout jump when switching from the JS-driven rAF.
+
+   Instead, we keep the rAF running and make both classes
+   completely inert on the .cascade-strip.  Phase 10 thinks
+   it did its cleanup; visually, nothing changes.         */
+
+.cascade-strip.chat-messages--backdrop {
+  /* Prevent the position: absolute + left: 50% layout shift */
+  position: static   !important;
+  top:    auto        !important;
+  bottom: auto        !important;
+  left:   auto        !important;
+  width:  100%        !important;
+  overflow: visible   !important;
+}
+
+.cascade-strip.chat-messages--drifting {
+  /* Kill the ±14 px wobble animation — the rAF handles movement */
+  animation: none !important;
+}

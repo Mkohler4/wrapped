@@ -1,0 +1,360 @@
+/* ============================================
+   Heatmap — iOS-style Activity Grid
+   ============================================ */
+
+/* --- Container --- */
+.heatmap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 20;
+  pointer-events: none;
+}
+
+.heatmap__grid-area {
+  display: flex;
+  gap: 0;
+}
+
+/* Day-of-week labels (M, W, F) */
+.heatmap__day-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-right: 6px;
+  padding-top: 0;
+}
+
+.heatmap__day-label {
+  width: 14px;
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  font-family: -apple-system, 'SF Pro Text', 'Outfit', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* --- Grid (columns = weeks, cells within = days) --- */
+.heatmap__grid {
+  display: flex;
+  gap: 3px;
+}
+
+.heatmap__col {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* --- Individual cell --- */
+.heatmap__cell {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  will-change: transform;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* --- Activity levels --- */
+.heatmap__cell--level-0 {
+  background: #2a2a2e;
+}
+
+.heatmap__cell--level-1 {
+  background: rgba(16, 185, 129, 0.25);
+}
+
+.heatmap__cell--level-2 {
+  background: rgba(16, 185, 129, 0.45);
+}
+
+.heatmap__cell--level-3 {
+  background: rgba(16, 185, 129, 0.65);
+}
+
+.heatmap__cell--level-4 {
+  background: rgba(16, 185, 129, 0.85);
+}
+
+/* --- Month labels --- */
+.heatmap__month-labels {
+  display: flex;
+  margin-top: 8px;
+  padding-left: 20px; /* align with grid (past day labels) */
+}
+
+.heatmap__month-label {
+  font-family: -apple-system, 'SF Pro Text', 'Outfit', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+/* ============================================
+   Mobile layout — 26 cols × 14 rows
+   Applies up to and including iPad Mini horizontal (1024px).
+   ============================================ */
+@media (max-width: 1024px) {
+  .heatmap--mobile .heatmap__cell {
+    width: 10px;
+    height: 10px;
+  }
+
+  .heatmap--mobile .heatmap__day-label {
+    width: 10px;
+    height: 10px;
+  }
+
+  .heatmap--mobile .heatmap__day-labels {
+    gap: 2px;
+    margin-right: 4px;
+  }
+
+  .heatmap--mobile .heatmap__grid {
+    gap: 2px;
+  }
+
+  .heatmap--mobile .heatmap__col {
+    gap: 2px;
+  }
+
+  /* Visual gap between H1 (Jan–Jun, rows 0-6) and H2 (Jul–Dec, rows 7-13) */
+  .heatmap--mobile .heatmap__cell--section-break {
+    margin-top: 7px;
+  }
+
+  /* Tighten vertical spacing between the two month-label rows */
+  .heatmap--mobile .heatmap__month-labels {
+    margin-top: 5px;
+    padding-left: 14px; /* align with grid past the 10px day-labels + 4px margin */
+  }
+
+  /* Gap between the two year-halves */
+  .heatmap__half-gap {
+    height: 10px;
+  }
+
+  /* ---- Stats: tighter horizontal offsets so all 3 fit on-screen ---- */
+
+  /* Phase 23: left stat offset — wide enough to breathe, small enough to stay on-screen */
+  .heatmap--mobile .heatmap-stat--left {
+    transform: translateX(calc(-50% - 110px));
+  }
+
+  /* Phase 23: right stat at symmetric +110px */
+  .heatmap--mobile .heatmap-stat--right {
+    transform: translateX(calc(-50% + 110px));
+  }
+
+  /* Slightly smaller hero numbers so 3 side-by-side stats fit */
+  .heatmap--mobile .heatmap-stat__number {
+    font-size: clamp(26px, 7.5vw, 40px);
+  }
+
+  .heatmap--mobile .heatmap-stat__label {
+    margin-top: 3px;
+  }
+
+  .heatmap--mobile .heatmap-stat__sub,
+  .heatmap--mobile .heatmap-stat__date {
+    margin-top: 2px;
+  }
+}
+
+/* ============================================
+   Phase 22: Active-Days Wave Reveal
+   ============================================ */
+
+/* Inactive cells dim after counting completes */
+.heatmap__cell--dimmed {
+  opacity: 0.35;
+  transition: opacity 0.8s ease;
+}
+
+/* --- Stat overlay (above the grid) --- */
+.heatmap-stat {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  pointer-events: none;
+  z-index: 25;
+  opacity: 0;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.15, 1),
+              opacity 0.4s ease;
+}
+
+.heatmap-stat--above {
+  bottom: calc(100% + 24px);
+}
+
+/* Slide left to make room for a sibling stat on the right */
+.heatmap-stat--left {
+  transform: translateX(calc(-50% - 120px));
+}
+
+/* Right-side stat (e.g. streak beside active days) */
+.heatmap-stat--right {
+  transform: translateX(calc(-50% + 120px));
+}
+
+.heatmap-stat--visible {
+  opacity: 1;
+}
+
+/* Hero number for heatmap stats (smaller than the main hero) */
+.heatmap-stat__number {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(36px, 8vw, 56px);
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* Primary label (e.g. "days active") */
+.heatmap-stat__label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(13px, 2.8vw, 18px);
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 6px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heatmap-stat__label--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Secondary / muted sub-label (e.g. "67% of your year") */
+.heatmap-stat__sub {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(11px, 2.4vw, 14px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.3);
+  margin-top: 4px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heatmap-stat__sub--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================
+   Phase 23: Longest Streak Reveal
+   ============================================ */
+
+/* Non-streak cells fade to near-invisible */
+.heatmap__cell--faded {
+  opacity: 0.1;
+  transition: opacity 0.5s ease;
+}
+
+/* Date range text under the streak stat */
+.heatmap-stat__date {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: clamp(10px, 2.2vw, 13px);
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.25);
+  margin-top: 3px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.heatmap-stat__date--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ============================================
+   Phase 24: Busiest Day Reveal
+   ============================================ */
+
+/* Single busiest-day cell — un-faded, glow animates in */
+.heatmap__cell--busiest {
+  opacity: 1 !important;
+  transition: opacity 0.8s ease,
+              box-shadow 1.2s ease;
+}
+
+/* Glow applied as a separate step so the transition is visible */
+.heatmap__cell--busiest-glow {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.55),
+              0 0 24px rgba(16, 185, 129, 0.2);
+}
+
+/* ============================================
+   Phase 25: Busiest Cell Launch
+   ============================================ */
+
+/* Free-floating cell that breaks out of the heatmap */
+.heatmap-flying-cell {
+  position: fixed;
+  border-radius: 12px;
+  z-index: 100;
+  will-change: transform, opacity;
+  pointer-events: none;
+  background: rgba(16, 185, 129, 0.85);
+  box-shadow:
+    0 0 24px rgba(16, 185, 129, 0.6),
+    0 0 60px rgba(16, 185, 129, 0.25);
+}
+
+/* Shake — subtle tremor like the cell is loosening from the grid */
+@keyframes cellShake {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  15%  { transform: translate(-0.5px, 0.3px) rotate(-0.4deg); }
+  30%  { transform: translate(0.7px, -0.3px) rotate(0.5deg); }
+  45%  { transform: translate(-0.6px, 0.2px) rotate(-0.6deg); }
+  60%  { transform: translate(0.5px, -0.4px) rotate(0.4deg); }
+  75%  { transform: translate(-0.4px, 0.3px) rotate(-0.3deg); }
+  90%  { transform: translate(0.6px, -0.2px) rotate(0.5deg); }
+}
+
+.heatmap__cell--shaking {
+  animation: cellShake 0.3s ease-in-out infinite;
+}
+
+/* Phase A: Spin in place while heatmap falls (no fade yet) */
+.heatmap-flying-cell--spinning {
+  transition: transform 2s cubic-bezier(0.22, 0.61, 0.36, 1);
+  transform: rotate(360deg) !important;
+}
+
+/* Phase B: Keep spinning + shrink + fade into the background */
+.heatmap-flying-cell--launched {
+  transition: transform 2.5s cubic-bezier(0.22, 0.61, 0.36, 1),
+              opacity 2.5s ease-in;
+  transform: rotate(720deg) scale(0.03) !important;
+  opacity: 0 !important;
+}
+
+/* Heatmap falls off the bottom of the screen */
+@keyframes heatmapFallAway {
+  0%   { opacity: 1; }
+  100% { transform: translate(-50%, 80vh) scale(1); opacity: 0; }
+}

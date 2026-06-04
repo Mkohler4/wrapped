@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Cascade V2 — Test Harness</title>
+
+  <!-- Fonts (same as main page) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Shared CSS -->
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/shell.css">
+  <link rel="stylesheet" href="css/chat.css">
+  <link rel="stylesheet" href="css/cascade.css">
+  <link rel="stylesheet" href="css/stats.css">
+
+  <!-- V2 strip styles -->
+  <link rel="stylesheet" href="css/cascade-v2.css">
+
+  <style>
+    /* ---- Test control panel ---- */
+    #test-controls {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 99999;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      padding: 8px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      user-select: none;
+    }
+
+    #test-controls button {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #fff;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    #test-controls button:hover  { background: rgba(255, 255, 255, 0.18); }
+    #test-controls button:active { background: rgba(255, 255, 255, 0.25); }
+
+    #test-controls .separator {
+      width: 1px;
+      height: 18px;
+      background: rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
+    }
+
+    #status {
+      color: #c084fc;
+      font-weight: 500;
+      min-width: 160px;
+    }
+
+    #viewport-info {
+      font-variant-numeric: tabular-nums;
+      opacity: 0.4;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======== Test controls ======== -->
+  <div id="test-controls">
+    <button id="btn-restart">&#8635; Restart</button>
+    <div class="separator"></div>
+    <span id="status">Starting&hellip;</span>
+    <span id="viewport-info"></span>
+  </div>
+
+  <!-- ======== Editor (same structure as index.html) ======== -->
+  <div class="viewport" id="viewport">
+    <div class="editor" id="editor">
+
+      <!-- Header -->
+      <header class="editor__header">
+        <div class="editor__header-left">
+          <button class="editor__sidebar-btn" aria-label="Toggle sidebar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <rect x="3" y="3" width="18" height="18" rx="3"/>
+              <line x1="9" y1="3" x2="9" y2="21"/>
+            </svg>
+          </button>
+          <span class="editor__header-model">ChatGPT <span class="editor__header-caret">&#x25BE;</span></span>
+        </div>
+        <div class="editor__header-right">
+          <button class="editor__icon-btn" aria-label="New chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Main chat area -->
+      <main class="editor__main">
+        <!-- Populated by the test script -->
+      </main>
+
+      <!-- Footer with input -->
+      <footer class="editor__footer">
+        <div class="editor__input-wrap">
+          <div class="editor__input">
+            <span class="editor__input-text"></span>
+            <span class="editor__cursor editor__cursor--hidden"></span>
+            <span class="editor__placeholder">Message ChatGPT&hellip;</span>
+          </div>
+          <div class="editor__input-actions">
+            <button class="editor__attach-btn" aria-label="Images">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+              </svg>
+            </button>
+            <button class="editor__send-btn" aria-label="Send">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M8 14V2M8 2L3 7M8 2L13 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <p class="editor__disclaimer">ChatGPT can make mistakes. Check important info.</p>
+      </footer>
+
+    </div>
+  </div>
+
+  <!-- Fake mouse cursor (needed by Phase 11) -->
+  <div class="fake-cursor" id="fake-cursor">
+    <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 2L3 16L7.5 11.5L12.5 18L15 16.5L10 10L16 9L3 2Z" fill="white" stroke="black" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <!-- Prevent editor.js auto-run if accidentally loaded -->
+  <script>window.__editorTestMode = true;</script>
+
+  <!-- Shared infrastructure -->
+  <script src="js/config.js"></script>
+  <script src="js/helpers.js"></script>
+  <script src="js/state.js"></script>
+
+  <!-- V2 cascade phase + existing downstream phases -->
+  <script src="js/phases/08-cascade-messages-v2.js"></script>
+  <script src="js/phases/09-compress-blur.js"></script>
+  <script src="js/phases/10-hero-stat.js"></script>
+  <script src="js/phases/10b-morph-conversations.js"></script>
+  <script src="js/phases/11-transition-sidebar-v2.js"></script>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const H     = window.__editorHelpers;
+    const STATE = window.__editorState;
+    const P     = window.__editorPhases;
+    const { wait } = H;
+
+    const statusEl       = document.getElementById('status');
+    const viewportInfoEl = document.getElementById('viewport-info');
+
+    // Run-ID for abort-safe restarts
+    let runId = 0;
+
+    /* ------------------------------------------
+       Create the initial chat content that would
+       exist after Phases 1–7 in the real flow.
+       ------------------------------------------ */
+    function createInitialChat() {
+      const main = document.querySelector('.editor__main');
+
+      // Switch main to top-aligned flow (like after Phase 4 sendMessage)
+      main.style.justifyContent = 'flex-start';
+      main.style.alignItems     = 'stretch';
+
+      const chatMessages = document.createElement('div');
+      chatMessages.className = 'chat-messages';
+
+      // User bubble
+      const userBubble = document.createElement('div');
+      userBubble.className = 'chat-bubble';
+      userBubble.style.opacity   = '1';
+      userBubble.style.transform = 'none';
+      userBubble.textContent = 'Give me my 2025 ChatGPT Wrapped';
+      chatMessages.appendChild(userBubble);
+
+      // AI response
+      const aiResp = document.createElement('div');
+      aiResp.className = 'chat-ai-response';
+      aiResp.style.opacity = '1';
+      aiResp.innerHTML = [
+        'You code by day and write fiction by night. ',
+        '<span class="ai-accent">73%</span>',
+        ' of your creative writing happens after ',
+        '<span class="ai-accent--warm">10 PM</span>',
+        '. You\'re two different people.',
+      ].join('');
+      chatMessages.appendChild(aiResp);
+
+      main.appendChild(chatMessages);
+      STATE.chatMessages = chatMessages;
+    }
+
+    /* ------------------------------------------
+       Run the FULL cascade → blur → stat →
+       morph → fade-out sequence.
+       ------------------------------------------ */
+    async function runTest() {
+      const thisRun = ++runId;
+
+      // ---- Reset DOM ----
+      const editor = document.getElementById('editor');
+      const main   = document.querySelector('.editor__main');
+      const footer = document.querySelector('.editor__footer');
+      const fakeCursor = document.getElementById('fake-cursor');
+
+      // Kill any running cascade rAF before clearing the DOM
+      if (window.__cascadeV2Ctrl) {
+        window.__cascadeV2Ctrl.kill();
+        window.__cascadeV2Ctrl = null;
+      }
+
+      // Clear dynamic content from main
+      while (main.firstChild) main.removeChild(main.firstChild);
+
+      // Reset main inline styles
+      main.removeAttribute('style');
+
+      // Reset footer inline styles
+      footer.removeAttribute('style');
+
+      // Reset editor classes
+      editor.className = 'editor';
+
+      // Reset fake cursor
+      fakeCursor.classList.remove('fake-cursor--visible');
+      fakeCursor.removeAttribute('style');
+
+      // Re-initialise shared state
+      STATE.init();
+
+      // Create the pre-cascade chat content
+      createInitialChat();
+
+      // Simulate zoomed-response state (Phase 7 output)
+      editor.classList.add('editor--zoomed-response');
+
+      statusEl.textContent = 'Waiting\u2026';
+      await wait(600);
+      if (runId !== thisRun) return;
+
+      // ---- Phase 8: Cascade (fast scroll → drift) ----
+      statusEl.textContent = 'Phase 8: Cascade';
+      const cascadeCtrl = await P.cascadeMessages();
+      if (runId !== thisRun) { cascadeCtrl.stop(); return; }
+
+      // ---- Phase 9: Blur + gradient overlay ----
+      statusEl.textContent = 'Phase 9: Blur';
+      await P.compressAndBlur();
+      if (runId !== thisRun) return;
+
+      // ---- Phase 10: Hero stat — 20,000 ----
+      statusEl.textContent = 'Phase 10: 20,000';
+      await P.showHeroStat(cascadeCtrl);
+      if (runId !== thisRun) return;
+
+      // ---- Phase 10b: Morph 20,000 → 847 conversations ----
+      statusEl.textContent = 'Phase 10b: 20k \u2192 847';
+      await P.morphToConversations();
+      if (runId !== thisRun) return;
+
+      // ---- Phase 11: Stat slides away, messages fade out ----
+      statusEl.textContent = 'Phase 11: Fade out';
+      await P.transitionToSidebar();
+      if (runId !== thisRun) return;
+
+      // ---- Cleanup: remove any remaining elements ----
+      statusEl.textContent = 'Done \u2714';
+
+      // Brief hold, then clean slate for replay
+      await wait(1500);
+      if (runId !== thisRun) return;
+
+      // Clean up remaining DOM (mask, strip, etc.)
+      while (main.firstChild) main.removeChild(main.firstChild);
+      main.removeAttribute('style');
+      editor.className = 'editor';
+      footer.removeAttribute('style');
+
+      statusEl.textContent = 'Done \u2714  (press R to replay)';
+    }
+
+    /* ------------------------------------------
+       Viewport info display
+       ------------------------------------------ */
+    function updateViewportInfo() {
+      viewportInfoEl.textContent =
+        `${window.innerWidth}\u2009\u00D7\u2009${window.innerHeight}`;
+    }
+    window.addEventListener('resize', updateViewportInfo);
+    updateViewportInfo();
+
+    /* ------------------------------------------
+       Event listeners
+       ------------------------------------------ */
+    document.getElementById('btn-restart').addEventListener('click', runTest);
+
+    // Keyboard shortcut: R to restart
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'r' && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        runTest();
+      }
+    });
+
+    /* ------------------------------------------
+       Auto-run on load
+       ------------------------------------------ */
+    function boot() {
+      STATE.init();
+      runTest();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', boot);
+    } else {
+      boot();
+    }
+  })();
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,131 @@
+/* ============================================
+   Cascade — Ghost Bubbles & Backdrop
+   ============================================ */
+
+/* Ghost bubble base — starts invisible; animation triggered by --active */
+.ghost-bubble {
+  height: 14px;
+  border-radius: 10px;
+  opacity: 0;
+  flex-shrink: 0;
+}
+
+/* Activated during cascade — triggers the pop-in animation */
+.ghost-bubble--active {
+  animation: ghostAppear 0.15s ease forwards;
+}
+
+/* User ghosts — purple tint */
+.ghost-bubble--user {
+  align-self: flex-end;
+  background: rgba(192, 132, 252, 0.30);
+}
+
+/* AI ghosts — blue tint */
+.ghost-bubble--ai {
+  align-self: flex-start;
+  background: rgba(96, 165, 250, 0.25);
+}
+
+/* Featured ghost — taller, has text snippet */
+.ghost-bubble--featured {
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ghost-bubble--featured.ghost-bubble--user {
+  color: rgba(192, 132, 252, 0.75);
+  background: rgba(192, 132, 252, 0.22);
+}
+
+.ghost-bubble--featured.ghost-bubble--ai {
+  color: rgba(96, 165, 250, 0.70);
+  background: rgba(96, 165, 250, 0.18);
+}
+
+@keyframes ghostAppear {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Backdrop mode — fill the entire main area absolutely.
+   Width is inset to match editor__main's horizontal padding so the
+   bubbles don't visibly jump wider when switching from normal flow
+   to absolute positioning.  Padding values mirror shell.css. */
+.chat-messages--backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 40px);   /* 2 × 20px default padding */
+  overflow: hidden;
+  justify-content: center;
+  z-index: 0;
+}
+
+@media (max-width: 480px) {
+  .chat-messages--backdrop {
+    width: calc(100% - 32px); /* 2 × 16px mobile padding */
+  }
+}
+
+@media (min-width: 769px) {
+  .chat-messages--backdrop {
+    width: calc(100% - 48px); /* 2 × 24px desktop padding */
+  }
+}
+
+/* Transition must be set BEFORE value changes, or browsers snap instead
+   of animating. Applied via .chat-messages--blur-ready in JS at cascade start. */
+.chat-messages--blur-ready {
+  transition: filter 0.8s ease,
+              opacity 0.8s ease;
+}
+
+/* Blur — softened to keep backdrop visible.
+   Opacity high enough that the slow drift is still
+   perceptible behind the gradient overlay. */
+.chat-messages--blurred {
+  filter: blur(3px);
+  opacity: 0.6;
+}
+
+/* Gentle drift when used as backdrop */
+.chat-messages--drifting {
+  animation: backdropDrift 10s ease-in-out infinite alternate;
+}
+
+@keyframes backdropDrift {
+  0%   { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-14px); }
+}
+
+/* ============================================
+   Gradient overlay between bubbles and stat
+   ============================================ */
+.stat-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: radial-gradient(
+    ellipse at 50% 55%,
+    rgba(33, 33, 33, 0.75) 0%,
+    rgba(33, 33, 33, 0.45) 50%,
+    rgba(33, 33, 33, 0.18) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
+
+.stat-backdrop--visible {
+  opacity: 1;
+}

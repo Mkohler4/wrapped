@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Test — Award Room</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/award-room.css">
+  <style>
+    /* Test harness controls */
+    .test-controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .test-controls button {
+      font-family: 'Outfit', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 20px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 8px;
+      background: rgba(255,255,255,0.08);
+      color: #ececec;
+      cursor: pointer;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .test-controls button:hover {
+      background: rgba(255,255,255,0.14);
+      border-color: rgba(255,255,255,0.25);
+    }
+    .test-controls button:active {
+      transform: scale(0.97);
+    }
+    .test-controls .label {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="viewport" id="viewport"></div>
+
+  <!-- Test controls -->
+  <div class="test-controls">
+    <span class="label">Award Room</span>
+    <button id="btn-instant">Show Instant</button>
+    <button id="btn-staggered">Staggered Entry</button>
+    <button id="btn-reset">Reset</button>
+  </div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    const viewport = document.getElementById('viewport');
+    const wait = (ms) => new Promise(r => setTimeout(r, ms));
+
+    // ---- Placeholder stat data ----
+    const STATS = [
+      {
+        value: 'Jan 12, 2023',
+        label: 'Member Since',
+        color: 'purple',
+        isDate: true,
+      },
+      {
+        value: 847,
+        label: 'Conversations',
+        color: 'blue',
+      },
+      {
+        value: 20000,
+        label: 'Messages Sent',
+        color: 'white',
+      },
+      {
+        value: 42,
+        suffix: 'days',
+        label: 'Longest Streak',
+        color: 'emerald',
+      },
+      {
+        value: 73,
+        suffix: 'times',
+        label: 'Active After Midnight',
+        color: 'amber',
+      },
+      {
+        value: 24,
+        label: 'Topics Explored',
+        color: 'purple',
+      },
+      {
+        value: 211,
+        label: 'Images Generated',
+        color: 'blue',
+      },
+      {
+        value: 243,
+        label: 'Days Active',
+        color: 'emerald',
+      },
+    ];
+
+    // ---- Animate a number from 0 → target ----
+    function animateCount(el, target, durationMs = 700) {
+      const start = performance.now();
+      const step = (now) => {
+        const t = Math.min((now - start) / durationMs, 1);
+        const eased = 1 - (1 - t) * (1 - t); // ease-out quad
+        const current = Math.round(eased * target);
+        el.textContent = current.toLocaleString();
+        if (t < 1) requestAnimationFrame(step);
+      };
+      requestAnimationFrame(step);
+    }
+
+    // ---- Build the award room DOM ----
+    let roomEl = null;
+    let cardEls = [];
+    let numberEls = [];
+    let titleEl = null;
+    let joinedEl = null;
+    let glowEl = null;
+    let ctaWrap = null;
+
+    function buildRoom() {
+      // Clean previous
+      if (roomEl) roomEl.remove();
+      cardEls = [];
+      numberEls = [];
+
+      roomEl = document.createElement('div');
+      roomEl.className = 'award-room';
+
+      const inner = document.createElement('div');
+      inner.className = 'award-room__inner';
+
+      // --- Hero ---
+      const hero = document.createElement('div');
+      hero.className = 'award-room__hero';
+
+      glowEl = document.createElement('div');
+      glowEl.className = 'award-room__glow';
+      hero.appendChild(glowEl);
+
+      titleEl = document.createElement('h2');
+      titleEl.className = 'award-room__title';
+      titleEl.textContent = 'Your Year with ChatGPT';
+      hero.appendChild(titleEl);
+
+      joinedEl = document.createElement('p');
+      joinedEl.className = 'award-room__joined';
+      joinedEl.textContent = 'Member since Jan 12, 2023';
+      hero.appendChild(joinedEl);
+
+      inner.appendChild(hero);
+
+      // --- Stats grid ---
+      const grid = document.createElement('div');
+      grid.className = 'award-room__grid';
+
+      STATS.forEach((stat) => {
+        const card = document.createElement('div');
+        card.className = 'award-card';
+
+        const number = document.createElement('div');
+        number.className = `award-card__number award-card__number--${stat.color}`;
+        if (stat.isDate) {
+          number.textContent = stat.value;
+          number.style.fontSize = 'clamp(18px, 4vw, 26px)';
+          number.style.fontWeight = '700';
+          number.style.letterSpacing = '-0.01em';
+        } else {
+          number.textContent = '0';
+        }
+        card.appendChild(number);
+
+        if (stat.suffix && !stat.isDate) {
+          const suf = document.createElement('span');
+          suf.className = 'award-card__suffix';
+          suf.textContent = ' ' + stat.suffix;
+          number.appendChild(suf);
+        }
+
+        const label = document.createElement('div');
+        label.className = 'award-card__label';
+        label.textContent = stat.label;
+        card.appendChild(label);
+
+        grid.appendChild(card);
+        cardEls.push(card);
+        numberEls.push({ el: number, stat });
+      });
+
+      inner.appendChild(grid);
+
+      // --- Download Video CTA ---
+      ctaWrap = document.createElement('div');
+      ctaWrap.className = 'award-room__cta-wrap';
+
+      const btn = document.createElement('button');
+      btn.className = 'award-room__download-btn';
+      btn.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Download Video
+      `;
+      ctaWrap.appendChild(btn);
+
+      const tagline = document.createElement('div');
+      tagline.className = 'award-room__tagline';
+      tagline.textContent = 'Share your ChatGPT story';
+      ctaWrap.appendChild(tagline);
+
+      inner.appendChild(ctaWrap);
+
+      roomEl.appendChild(inner);
+      viewport.appendChild(roomEl);
+
+      return roomEl;
+    }
+
+    // ---- Show everything instantly (no animation) ----
+    function showInstant() {
+      buildRoom();
+
+      // Make visible immediately
+      roomEl.classList.add('award-room--visible');
+      glowEl.classList.add('award-room__glow--visible');
+      titleEl.classList.add('award-room__title--visible');
+      joinedEl.classList.add('award-room__joined--visible');
+
+      cardEls.forEach(c => c.classList.add('award-card--visible'));
+      ctaWrap.classList.add('award-room__cta-wrap--visible');
+
+      // Set final number values (no counting)
+      numberEls.forEach(({ el, stat }) => {
+        if (!stat.isDate) {
+          const suffix = el.querySelector('.award-card__suffix');
+          el.textContent = stat.value.toLocaleString();
+          if (suffix) el.appendChild(suffix);
+        }
+      });
+    }
+
+    // ---- Staggered entry animation ----
+    async function showStaggered() {
+      buildRoom();
+
+      // Force initial layout
+      void roomEl.offsetWidth;
+
+      // 1. Fade in overlay via inline style
+      roomEl.style.opacity = '1';
+      await wait(600);
+
+      // 2. Glow
+      glowEl.style.opacity = '1';
+
+      // 3. Title
+      titleEl.style.transition = 'opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+      titleEl.style.opacity = '1';
+      titleEl.style.transform = 'translateY(0)';
+      await wait(300);
+
+      // 4. Joined date
+      joinedEl.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)';
+      joinedEl.style.opacity = '1';
+      joinedEl.style.transform = 'translateY(0)';
+      await wait(400);
+
+      // 5. Cards stagger in one by one
+      for (let i = 0; i < cardEls.length; i++) {
+        const card = cardEls[i];
+        const { el, stat } = numberEls[i];
+
+        card.style.transition = 'opacity 0.5s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        card.style.opacity = '1';
+        card.style.transform = 'scale(1) translateY(0)';
+
+        // Animate the count (skip for date card)
+        if (!stat.isDate) {
+          const suffix = el.querySelector('.award-card__suffix');
+          animateCount(el, stat.value, 600 + i * 50);
+          if (suffix) {
+            await wait(20);
+            el.appendChild(suffix);
+          }
+        }
+
+        await wait(120);
+      }
+
+      await wait(300);
+
+      // 6. Download button fades in
+      ctaWrap.style.transition = 'opacity 0.6s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1)';
+      ctaWrap.style.opacity = '1';
+      ctaWrap.style.transform = 'translateY(0)';
+    }
+
+    // ---- Reset ----
+    function reset() {
+      if (roomEl) {
+        roomEl.remove();
+        roomEl = null;
+      }
+      cardEls = [];
+      numberEls = [];
+    }
+
+    // ---- Button handlers ----
+    document.getElementById('btn-instant').addEventListener('click', () => {
+      reset();
+      showInstant();
+    });
+
+    document.getElementById('btn-staggered').addEventListener('click', () => {
+      reset();
+      showStaggered();
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', reset);
+
+    // Auto-show instant on load so design is immediately visible
+    showInstant();
+  })();
+  </script>
+</body>
+</html>

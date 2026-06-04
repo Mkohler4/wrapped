@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Test — Sphere + Images Animation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #1a1a1a;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      color: #fff;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .stage {
+      position: relative;
+      z-index: 0;
+      width: 800px;
+      height: 700px;
+    }
+    /* Layer divs removed in v4 — flat z-index approach */
+    /* Wireframe dots hidden */
+    .dot { display: none; }
+    .ring-dot, .equator-dot, .meridian-dot { display: none; }
+
+    /* Dotted circle hidden */
+    .dotted-circle { display: none; }
+    .circle-dot {
+      position: fixed;
+      width: 22px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 10000;
+      transform: translate(-50%, -50%);
+      animation: dot-glow 2s ease-in-out infinite;
+    }
+    @keyframes dot-glow {
+      0%, 100% {
+        box-shadow: 0 0 8px 2px rgba(255, 255, 255, 0.3),
+                    0 0 20px 6px rgba(255, 255, 255, 0.15);
+      }
+      50% {
+        box-shadow: 0 0 14px 5px rgba(255, 255, 255, 0.6),
+                    0 0 35px 12px rgba(255, 255, 255, 0.25);
+      }
+    }
+    .dot-bubble {
+      position: fixed;
+      z-index: 10001;
+      pointer-events: none;
+      background: rgba(240, 240, 240, 0.95);
+      border-radius: 24px;
+      padding: 10px 28px;
+      width: 160px;
+      text-align: center;
+      transform: translate(-50%, -50%);
+    }
+    .dot-bubble-text {
+      font-size: 18px;
+      font-weight: 500;
+      color: #222;
+      transition: opacity 0.3s ease;
+    }
+
+    .img-card {
+      position: absolute;
+      border-radius: 36px;
+      overflow: hidden;
+      box-shadow: none;
+      will-change: transform;
+      transform: translate3d(0,0,0); /* force GPU layer from the start */
+    }
+    .img-card img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    /* Image labels hidden */
+    .img-label { display: none; }
+
+    .info {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 13px;
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      line-height: 1.6;
+    }
+    .info strong { color: rgba(255,255,255,0.7); }
+
+    .controls {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 8px 16px;
+      border-radius: 12px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .controls button {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #ececec;
+      cursor: pointer;
+    }
+    .controls button:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+    .controls .label {
+      font-size: 11px;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="info">
+    <strong>Sphere + Images (v2 — layer fix)</strong><br>
+    If you see "v2" above, you have the latest code.
+  </div>
+
+  <div class="dotted-circle"></div>
+  <div class="circle-dot" id="circle-dot"></div>
+  <div class="dot-bubble" id="dot-bubble">
+    <span class="dot-bubble-text" id="dot-bubble-text">Bloomed</span>
+  </div>
+  <div class="stage" id="stage"></div>
+
+  <div class="controls">
+    <span class="label">Sphere</span>
+    <button id="btn-rotate">Rotate (1→3)</button>
+    <button id="btn-reset">Reset</button>
+  </div>
+
+  <script>
+  (() => {
+    const stage = document.getElementById('stage');
+    const W = 800;
+    const H = 700;
+    const CX = W / 2;
+    const CY = H / 2;
+    const R = 220;
+    const CAMERA_DIST = 800;
+
+    // =============================================
+    // 3D projection
+    // =============================================
+    function project(x3d, y3d, z3d) {
+      const scale = CAMERA_DIST / (CAMERA_DIST - z3d);
+      return {
+        x: CX + x3d * scale,
+        y: CY - y3d * scale,
+        scale,
+        z: z3d,
+      };
+    }
+
+    function depthNorm(z3d) {
+      return (z3d + R) / (2 * R); // 0=back, 1=front
+    }
+
+    // =============================================
+    // Sphere wireframe dots (static reference)
+    // =============================================
+    const sphereDots = [];
+
+    // Equator (blue)
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      sphereDots.push({ x: R*Math.cos(a), y: 0, z: R*Math.sin(a), type: 'equator' });
+    }
+    // Meridian (orange)
+    for (let i = 0; i < 40; i++) {
+      const a = (i / 40) * Math.PI * 2;
+      sphereDots.push({ x: 0, y: R*Math.cos(a), z: R*Math.sin(a), type: 'meridian' });
+    }
+    // Latitude rings (white)
+    for (let lat = 1; lat < 7; lat++) {
+      const phi = (lat / 7) * Math.PI;
+      const rr = R * Math.sin(phi);
+      const ry = R * Math.cos(phi);
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * Math.PI * 2;
+        sphereDots.push({ x: rr*Math.cos(a), y: ry, z: rr*Math.sin(a), type: 'ring' });
+      }
+    }
+    sphereDots.push({ x:0, y:R, z:0, type:'ring' });
+    sphereDots.push({ x:0, y:-R, z:0, type:'ring' });
+
+    // =============================================
+    // 3 Images on the sphere's equator
+    // =============================================
+    // Placed on the equator (y=0) at different angles.
+    // x3d = R * cos(angle), z3d = R * sin(angle)
+    //   angle = π/2  → x=0,  z=+R → FRONT (closest to viewer)
+    //   angle = 0    → x=+R, z=0  → RIGHT side
+    //   angle = -π/2 → x=0,  z=-R → BACK (into the screen, behind front)
+    //
+    // So Image 3 (back) is directly BEHIND Image 1 (front) — same
+    // screen x/y, just smaller & dimmer because it's further away.
+
+    // --- 5 orbit images on the diagonal great circle ---
+    // Sequence: 1→3→2→5→4
+    //
+    // An image at orbit angle θ comes to front when rotationY = θ - π/2.
+    // Layout: Images ordered by when they appear during forward rotation.
+    //
+    //   Image 1: θ = π/2       → front at rotationY = 0
+    //   Image 2: θ = 0         → front at rotationY = -π/2
+    //   Image 3: θ = -π/2      → front at rotationY = -π
+    //   Image 4: θ = -2π/3     → front at rotationY = -7π/6
+    //   Image 5: θ = 2π/3      → front at rotationY = -11π/6 (≡ π/6)
+    //
+    // Wait - we need the skip constraint:
+    //   2→5 skip 4: Image 4 must be at the midpoint of the 2→5 rotation.
+    //   midpoint = (-π/2 + rotY_5) / 2 = rotY_4
+    //   → rotY_5 = 2·rotY_4 + π/2
+    //
+    //   Choose rotY_4 = -7π/6 → rotY_5 = -14π/6 + 3π/6 = -11π/6
+    //   θ_4 = -7π/6 + π/2 = -2π/3   ✓ no collision
+    //   θ_5 = -11π/6 + π/2 = -4π/3 ≡ 2π/3   ✓ no collision
+    //
+    // Animation deltas:
+    //   1→3: 0 → -π        (Δ = -π,   pass Image 2 at midpoint)
+    //   3→2: -π → -π/2     (Δ = +π/2, reverse)
+    //   2→5: -π/2 → -11π/6 (Δ = -4π/3, pass Image 4 at midpoint)
+    //   5→4: -11π/6 → -7π/6 (Δ = +2π/3, reverse)
+
+    const IMAGE_SRCS = [
+      'images/img-01.webp',
+      'images/img-02.webp',
+      'images/img-03.webp',
+      'images/img-04.webp',
+      'images/img-05.webp',
+    ];
+    const IMAGE_LABELS = ['Image 1', 'Image 2', 'Image 3', 'Image 4', 'Image 5'];
+    const IMAGE_ANGLES_START = [
+      Math.PI / 2,        // Image 1: front
+      0,                  // Image 2
+      -Math.PI / 2,       // Image 3
+      -2 * Math.PI / 3,   // Image 4
+      2 * Math.PI / 3,    // Image 5
+    ];
+
+    // --- No extra scattered images on the main sphere ---
+    const EXTRA_SRCS = [];
+    const EXTRA_LABELS = [];
+    const EXTRA_POSITIONS = [];
+
+    // =============================================
+    // Small background sphere
+    // =============================================
+    const R2 = 220;                  // small sphere (bigger radius, same image sizes)
+    const SPHERE2_OFFSET_Z = -350;   // behind the main sphere
+    const SPHERE2_OFFSET_Y = 200;    // higher on screen (larger = higher because Y is flipped)
+
+    // Wireframe dots for the small sphere
+    const sphere2Dots = [];
+    // Equator
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      sphere2Dots.push({ x: R2*Math.cos(a), y: 0, z: R2*Math.sin(a), type: 'ring' });
+    }
+    // Meridian
+    for (let i = 0; i < 24; i++) {
+      const a = (i / 24) * Math.PI * 2;
+      sphere2Dots.push({ x: 0, y: R2*Math.cos(a), z: R2*Math.sin(a), type: 'ring' });
+    }
+    // A few latitude rings
+    for (let lat = 1; lat < 4; lat++) {
+      const phi = (lat / 4) * Math.PI;
+      const rr = R2 * Math.sin(phi);
+      const ry = R2 * Math.cos(phi);
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        sphere2Dots.push({ x: rr*Math.cos(a), y: ry, z: rr*Math.sin(a), type: 'ring' });
+      }
+    }
+
+    // Images on the small sphere (scattered positions)
+    // 12 unique DALL-E images on the background sphere
+    const SPHERE2_SRCS = [
+      'images/sphere2-01.webp', 'images/sphere2-02.webp', 'images/sphere2-03.webp',
+      'images/sphere2-04.webp', 'images/sphere2-05.webp', 'images/sphere2-06.webp',
+      'images/sphere2-07.webp', 'images/sphere2-08.webp', 'images/sphere2-09.webp',
+      'images/sphere2-10.webp', 'images/sphere2-11.webp', 'images/sphere2-12.webp',
+    ];
+    const SPHERE2_LABELS = [];
+    for (let i = 0; i < 12; i++) SPHERE2_LABELS.push('Img ' + (i + 1));
+
+    // 12 random points scattered on the sphere (seeded for consistency)
+    const SPHERE2_POSITIONS = (() => {
+      const pts = [];
+      // Pseudo-random but deterministic lat/lon values
+      const coords = [
+        { lat:  0.23, lon:  0.41 },
+        { lat: -0.58, lon:  2.73 },
+        { lat:  0.81, lon: -1.19 },
+        { lat: -0.12, lon:  1.87 },
+        { lat:  0.47, lon: -2.54 },
+        { lat: -0.93, lon:  0.62 },
+        { lat:  0.35, lon:  2.18 },
+        { lat: -0.71, lon: -0.33 },
+        { lat:  0.64, lon:  1.05 },
+        { lat: -0.39, lon: -1.72 },
+        { lat:  0.14, lon: -0.88 },
+        { lat: -0.52, lon:  3.01 },
+      ];
+      for (const c of coords) {
+        pts.push({
+          x: R2 * Math.cos(c.lat) * Math.cos(c.lon),
+          y: R2 * Math.sin(c.lat),
+          z: R2 * Math.cos(c.lat) * Math.sin(c.lon),
+        });
+      }
+      return pts;
+    })();
+
+    // =============================================
+    // Generic Rodrigues rotation (any axis in the XY plane, nZ=0)
+    // =============================================
+    function rotateAroundN(px, py, pz, axX, axY, phi) {
+      const c = Math.cos(phi), s = Math.sin(phi);
+      const dot = axX * px + axY * py;
+      const cx = axY * pz;
+      const cy = -axX * pz;
+      const cz = axX * py - axY * px;
+      return {
+        x: px * c + cx * s + axX * dot * (1 - c),
+        y: py * c + cy * s + axY * dot * (1 - c),
+        z: pz * c + cz * s,
+      };
+    }
+
+    // =============================================
+    // Axis 1 — diagonal great circle (phase 1: 1→3→2)
+    // =============================================
+    const DIAG_ANGLE_1 = Math.PI - Math.PI / 5; // top-left diagonal (~144°)
+    const d1Cos = Math.cos(DIAG_ANGLE_1);
+    const d1Sin = Math.sin(DIAG_ANGLE_1);
+    const n1X = -d1Sin;
+    const n1Y = d1Cos;
+
+    function orbitPos1(theta) {
+      return {
+        x: R * Math.cos(theta) * d1Cos,
+        y: R * Math.cos(theta) * d1Sin,
+        z: R * Math.sin(theta),
+      };
+    }
+
+    // =============================================
+    // Axis 2 — different diagonal (phase 2: 2→5→4)
+    // =============================================
+    const DIAG_ANGLE_2 = Math.PI / 4; // bottom-right diagonal (45°)
+    const d2Cos = Math.cos(DIAG_ANGLE_2);
+    const d2Sin = Math.sin(DIAG_ANGLE_2);
+    const n2X = -d2Sin;
+    const n2Y = d2Cos;
+
+    function orbitPos2(theta) {
+      return {
+        x: R * Math.cos(theta) * d2Cos,
+        y: R * Math.cos(theta) * d2Sin,
+        z: R * Math.sin(theta),
+      };
+    }
+
+    // =============================================
+    // Two rotation state variables
+    // =============================================
+    let rot1 = 0; // rotation around axis 1 (phase 1)
+    let rot2 = 0; // rotation around axis 2 (phase 2)
+    let s2rot = 0; // small sphere rotation (simple Y-axis spin)
+
+    // =============================================
+    // Base positions for Images 4 & 5
+    // =============================================
+    // Images 4 and 5 live on great circle 2. Their orbit angles on circle 2:
+    //   Image 4: θ = 0     (midpoint/skip) — front at rot2 = -π/2
+    //   Image 5: θ = -π/2  (landing)       — front at rot2 = -π
+    //
+    // During render, we apply rot1 first, then rot2. At the start of phase 2,
+    // rot1 = -π/2 (locked). We need their *base* positions such that after
+    // rot1 = -π/2 is applied, they land on circle 2.
+    //
+    // base = rotateAroundN(orbitPos2(θ), n1X, n1Y, +π/2)  (inverse of -π/2)
+    const img4OnCircle2 = orbitPos2(0);
+    const img5OnCircle2 = orbitPos2(-Math.PI / 2);
+    const img4Base = rotateAroundN(img4OnCircle2.x, img4OnCircle2.y, img4OnCircle2.z, n1X, n1Y, Math.PI / 2);
+    const img5Base = rotateAroundN(img5OnCircle2.x, img5OnCircle2.y, img5OnCircle2.z, n1X, n1Y, Math.PI / 2);
+
+    // Override IMAGE_ANGLES_START[3] and [4] — we'll use raw base positions instead
+    const IMAGE_BASE_POSITIONS = [
+      orbitPos1(IMAGE_ANGLES_START[0]), // Image 1
+      orbitPos1(IMAGE_ANGLES_START[1]), // Image 2
+      orbitPos1(IMAGE_ANGLES_START[2]), // Image 3
+      img4Base,                         // Image 4
+      img5Base,                         // Image 5
+    ];
+
+    // =============================================
+    // Rendering
+    // =============================================
+
+    // DOM elements for main sphere dots
+    let dotEls = [];
+    // DOM elements for main orbit images
+    let imgEls = [];
+    let labelEls = [];
+    // DOM elements for extra images (empty now)
+    let extraImgEls = [];
+    let extraLabelEls = [];
+    // DOM elements for small background sphere
+    let sphere2DotEls = [];
+    let sphere2ImgEls = [];
+    let sphere2LabelEls = [];
+
+    function buildDOM() {
+      stage.innerHTML = '';
+      dotEls = [];
+      imgEls = [];
+      labelEls = [];
+      extraImgEls = [];
+      extraLabelEls = [];
+      sphere2DotEls = [];
+      sphere2ImgEls = [];
+      sphere2LabelEls = [];
+
+      // v4 — NUCLEAR: no layer divs, everything flat in stage, massive z-index gaps
+      stage.style.position = 'relative';
+      stage.style.zIndex = '0';
+
+      // version badge removed
+
+      // --- Small background sphere (directly in stage, low z-index) ---
+      for (const d of sphere2Dots) {
+        const el = document.createElement('div');
+        el.className = 'dot ring-dot';
+        stage.appendChild(el);
+        sphere2DotEls.push(el);
+      }
+      for (let i = 0; i < SPHERE2_SRCS.length; i++) {
+        const card = document.createElement('div');
+        card.className = 'img-card';
+        // no debug outline
+        const img = document.createElement('img');
+        img.src = SPHERE2_SRCS[i];
+        img.draggable = false;
+        card.appendChild(img);
+        stage.appendChild(card);
+        sphere2ImgEls.push(card);
+
+        const lbl = document.createElement('div');
+        lbl.className = 'img-label';
+        lbl.textContent = SPHERE2_LABELS[i];
+        stage.appendChild(lbl);
+        sphere2LabelEls.push(lbl);
+      }
+
+      // --- Main sphere (directly in stage, HIGH z-index) ---
+      for (const d of sphereDots) {
+        const el = document.createElement('div');
+        el.className = 'dot';
+        if (d.type === 'equator') el.classList.add('equator-dot');
+        else if (d.type === 'meridian') el.classList.add('meridian-dot');
+        else el.classList.add('ring-dot');
+        stage.appendChild(el);
+        dotEls.push(el);
+      }
+      for (let i = 0; i < IMAGE_SRCS.length; i++) {
+        const card = document.createElement('div');
+        card.className = 'img-card';
+        // no debug outline
+        const img = document.createElement('img');
+        img.src = IMAGE_SRCS[i];
+        img.draggable = false;
+        card.appendChild(img);
+        stage.appendChild(card);
+        imgEls.push(card);
+        const lbl = document.createElement('div');
+        lbl.className = 'img-label';
+        lbl.textContent = IMAGE_LABELS[i];
+        stage.appendChild(lbl);
+        labelEls.push(lbl);
+      }
+    }
+
+    // Apply both rotations: first rot1 around axis1, then rot2 around axis2
+    function applyRotations(px, py, pz) {
+      const r1 = rotateAroundN(px, py, pz, n1X, n1Y, rot1);
+      return rotateAroundN(r1.x, r1.y, r1.z, n2X, n2Y, rot2);
+    }
+
+    // =============================================
+    // Idle wiggle for background images
+    // =============================================
+    let animating = false;
+    // Each image gets unique phase offsets so they move independently.
+    const WIGGLE_MAX_PX = 30;            // max pixel displacement (gentle drift range)
+    const WIGGLE_DEPTH_THRESH = 0.82;  // depthNorm above this = no wiggle (front image)
+    // wiggleMul removed — drift always active (it's too slow to notice during rotation)
+
+    // Each image gets several layered slow sine waves at irrational ratios
+    // so the movement never repeats and flows organically.
+    const imgDriftLayers = [];
+    for (let i = 0; i < 5; i++) {
+      const layers = [];
+      for (let l = 0; l < 3; l++) {
+        layers.push({
+          px: Math.random() * Math.PI * 2,
+          py: Math.random() * Math.PI * 2,
+          fx: (0.1 + Math.random() * 0.1) * (1 + l * 0.3), // ~65-130s per cycle (~1-2 min)
+          fy: (0.1 + Math.random() * 0.1) * (1 + l * 0.3),
+          ax: (1 - l * 0.3),  // amplitude weight: layer 0 dominates
+          ay: (1 - l * 0.3),
+        });
+      }
+      imgDriftLayers.push(layers);
+    }
+
+    // Same drift layers for background sphere (12 images)
+    const sphere2DriftLayers = [];
+    for (let i = 0; i < 12; i++) {
+      const layers = [];
+      for (let l = 0; l < 3; l++) {
+        layers.push({
+          px: Math.random() * Math.PI * 2,
+          py: Math.random() * Math.PI * 2,
+          fx: (0.005 + Math.random() * 0.005) * (1 + l * 0.3),
+          fy: (0.005 + Math.random() * 0.005) * (1 + l * 0.3),
+          ax: (1 - l * 0.3),
+          ay: (1 - l * 0.3),
+        });
+      }
+      sphere2DriftLayers.push(layers);
+    }
+
+    function getSphere2Wiggle(imageIdx, now) {
+      const layers = sphere2DriftLayers[imageIdx];
+      const sec = now / 1000;
+      let dx = 0, dy = 0;
+      for (const L of layers) {
+        dx += Math.sin(sec * L.fx * Math.PI * 2 + L.px) * L.ax;
+        dy += Math.sin(sec * L.fy * Math.PI * 2 + L.py) * L.ay;
+      }
+      const norm = 1 / 2.1;
+      return {
+        dx: dx * norm * WIGGLE_MAX_PX * 0.6, // slightly less drift than main sphere
+        dy: dy * norm * WIGGLE_MAX_PX * 0.6,
+      };
+    }
+
+    function getWiggle(imageIdx, now) {
+      const layers = imgDriftLayers[imageIdx];
+      const sec = now / 1000;
+      let dx = 0, dy = 0;
+      for (const L of layers) {
+        dx += Math.sin(sec * L.fx * Math.PI * 2 + L.px) * L.ax;
+        dy += Math.sin(sec * L.fy * Math.PI * 2 + L.py) * L.ay;
+      }
+      // Normalize so max possible is ~1, then scale
+      const norm = 1 / 2.1; // sum of weights ≈ 1 + 0.7 + 0.4 = 2.1
+      return {
+        dx: dx * norm * WIGGLE_MAX_PX,
+        dy: dy * norm * WIGGLE_MAX_PX,
+      };
+    }
+
+    function render(now) {
+      if (!now) now = performance.now();
+
+      // Drift is always active — no wiggleMul needed
+
+      // --- Small background sphere (dots + images) ---
+      // Rotate small sphere around Y axis
+      const s2c = Math.cos(s2rot), s2s = Math.sin(s2rot);
+      for (let i = 0; i < sphere2Dots.length; i++) {
+        const d = sphere2Dots[i];
+        // Apply Y-axis rotation then offset
+        const rx = d.x * s2c + d.z * s2s;
+        const rz = -d.x * s2s + d.z * s2c;
+        const wx = rx;
+        const wy = d.y + SPHERE2_OFFSET_Y;
+        const wz = rz + SPHERE2_OFFSET_Z;
+
+        const p = project(wx, wy, wz);
+        // depthNorm relative to the small sphere's own range
+        const t2 = (wz - (SPHERE2_OFFSET_Z - R2)) / (2 * R2);
+        const size = 2 + t2 * 4;
+        const opacity = 0.08 + t2 * 0.25;
+
+        const el = sphere2DotEls[i];
+        el.style.left = p.x + 'px';
+        el.style.top = p.y + 'px';
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.opacity = opacity;
+        el.style.zIndex = Math.round(t2 * 10); // 0–10
+      }
+
+      for (let i = 0; i < SPHERE2_POSITIONS.length; i++) {
+        const sp = SPHERE2_POSITIONS[i];
+        // Apply Y-axis rotation then offset
+        const rx2 = sp.x * s2c + sp.z * s2s;
+        const rz2 = -sp.x * s2s + sp.z * s2c;
+        const wx = rx2;
+        const wy = sp.y + SPHERE2_OFFSET_Y;
+        const wz = rz2 + SPHERE2_OFFSET_Z;
+
+        const p = project(wx, wy, wz);
+        const t2 = (wz - (SPHERE2_OFFSET_Z - R2)) / (2 * R2);
+
+        const imgSize = 30 + t2 * t2 * 100; // smaller images
+
+        const s2w = getSphere2Wiggle(i, now);
+        const card = sphere2ImgEls[i];
+        card.style.left = (p.x - imgSize / 2) + 'px';
+        card.style.top = (p.y - imgSize / 2) + 'px';
+        card.style.width = imgSize + 'px';
+        card.style.height = imgSize + 'px';
+        card.style.transform = `translate3d(${s2w.dx.toFixed(3)}px, ${s2w.dy.toFixed(3)}px, 0)`;
+        card.style.borderRadius = Math.round(imgSize * 0.14) + 'px'; // scales with image size
+        card.style.opacity = 1;
+        card.style.zIndex = 10 + Math.round(t2 * 40); // 10–50
+        const bright2 = 0.05 + t2 * 0.15; // 0.05 (back) to 0.2 (front) — very dark background sphere
+        card.style.filter = `brightness(${bright2.toFixed(2)})`;
+
+        const lbl = sphere2LabelEls[i];
+        lbl.style.left = p.x + 'px';
+        lbl.style.top = (p.y + imgSize / 2 + 6) + 'px';
+        lbl.style.opacity = 1;
+        lbl.style.zIndex = 10 + Math.round(t2 * 40) + 1;
+      }
+
+      // --- Main sphere dots + images ---
+      for (let i = 0; i < sphereDots.length; i++) {
+        const d = sphereDots[i];
+        const r = applyRotations(d.x, d.y, d.z);
+        const p = project(r.x, r.y, r.z);
+        const t = depthNorm(r.z);
+        const isLine = d.type === 'equator' || d.type === 'meridian';
+        const size = (isLine ? 2 : 3) + t * t * (isLine ? 5 : 11);
+        const opacity = 0.15 + t * 0.85;
+        const el = dotEls[i];
+        el.style.left = p.x + 'px';
+        el.style.top = p.y + 'px';
+        el.style.width = size + 'px';
+        el.style.height = size + 'px';
+        el.style.opacity = opacity;
+        el.style.zIndex = 10000 + Math.round(t * 5000); // 10000–15000
+      }
+      for (let i = 0; i < IMAGE_SRCS.length; i++) {
+        const base = IMAGE_BASE_POSITIONS[i];
+        const r = applyRotations(base.x, base.y, base.z);
+        const p = project(r.x, r.y, r.z);
+        const t = depthNorm(r.z);
+        let wx = 0, wy = 0;
+        if (t < WIGGLE_DEPTH_THRESH) {
+          const strength = 1 - t / WIGGLE_DEPTH_THRESH;
+          const w = getWiggle(i, now);
+          wx = w.dx * strength;
+          wy = w.dy * strength;
+        }
+        const imgSize = 70 + t * t * 290;
+        const card = imgEls[i];
+        card.style.left = (p.x - imgSize / 2) + 'px';
+        card.style.top = (p.y - imgSize / 2) + 'px';
+        card.style.width = imgSize + 'px';
+        card.style.height = imgSize + 'px';
+        // Wiggle via GPU-composited transform for sub-pixel smooth movement
+        card.style.transform = `translate3d(${wx.toFixed(3)}px, ${wy.toFixed(3)}px, 0)`;
+        card.style.borderRadius = Math.round(imgSize * 0.14) + 'px'; // scales with image size
+        card.style.opacity = 1;
+        card.style.zIndex = 50000 + Math.round(t * 40000); // 50000–90000
+        const bright = 0.15 + t * t * 0.85; // 0.15 (back, dim) to 1.0 (front, full) — never black
+        card.style.filter = `brightness(${bright.toFixed(2)})`;
+        const lbl = labelEls[i];
+        lbl.style.left = (p.x + wx) + 'px';
+        lbl.style.top = (p.y + wy + imgSize / 2 + 10) + 'px';
+        lbl.style.opacity = 1;
+        lbl.style.zIndex = 50000 + Math.round(t * 40000) + 1;
+      }
+    }
+
+    // Continuous render loop (keeps wiggle alive)
+    function renderLoop(now) {
+      if (!animating) render(now); // animations call render() themselves
+      requestAnimationFrame(renderLoop);
+    }
+    requestAnimationFrame(renderLoop);
+
+    // =============================================
+    // Animation: rotate sphere so image 3 comes to front
+    // =============================================
+    // Image 1 starts at angle π/2  (front, z = +R).
+    // Image 2 starts at angle 0    (right, x = +R).
+    // Image 3 starts at angle -π/2 (back, z = -R).
+    //
+    // To bring Image 3 to front, we rotate by -π (i.e. −180°).
+    // After −π rotation:
+    //   Image 3: -π/2 + (-π) wraps to π/2 → FRONT ✓
+    //   Image 2:  0   + (-π) = -π → LEFT side
+    //   Image 1:  π/2 + (-π) = -π/2 → BACK ✓
+    //
+    // At the midpoint (-π/2 rotation):
+    //   Image 2: 0 + (-π/2) = -π/2… wait, let me reconsider.
+    //
+    // Actually with rotation applied in the render loop as:
+    //   angle = startAngle + rotationY
+    // Adding +π to rotationY:
+    //   Image 1: π/2 + π = 3π/2 → sin(3π/2)=-1 → z=-R → BACK ✓
+    //   Image 2: 0 + π = π → sin(π)=0 → side
+    //   Image 3: -π/2 + π = π/2 → sin(π/2)=1 → z=+R → FRONT ✓
+    //
+    // At midpoint (+π/2):
+    //   Image 2: 0 + π/2 = π/2 → z=+R → FRONT! Passes through front ✓
+
+    // Quintic ease-in-out for a snappier whip feel
+    function easeInOutCubic(t) {
+      return t < 0.5
+        ? 16 * t * t * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 5) / 2;
+    }
+
+    // Generic rotation animator — setter receives the current value
+    function animateRotation(fromAngle, toAngle, duration, setter) {
+      if (animating) return Promise.resolve();
+      animating = true;
+
+      return new Promise(resolve => {
+        const delta = toAngle - fromAngle;
+        const t0 = performance.now();
+
+        function tick(now) {
+          const raw = Math.min((now - t0) / duration, 1);
+          const eased = easeInOutCubic(raw);
+          setter(fromAngle + delta * eased);
+          render(now);
+
+          if (raw < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            setter(toAngle);
+            render(now);
+            animating = false;
+            resolve();
+          }
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // Convenience wrappers
+    function animateRot1(from, to, dur) {
+      return animateRotation(from, to, dur, v => { rot1 = v; });
+    }
+    function animateRot2(from, to, dur) {
+      return animateRotation(from, to, dur, v => { rot2 = v; });
+    }
+    // Small sphere rotates independently (fire-and-forget, doesn't block)
+    function spinSmallSphere(from, to, dur) {
+      const delta = to - from;
+      const t0 = performance.now();
+      function tick(now) {
+        const raw = Math.min((now - t0) / dur, 1);
+        const eased = easeInOutCubic(raw);
+        s2rot = from + delta * eased;
+        if (raw < 1) requestAnimationFrame(tick);
+        else s2rot = to;
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function wait(ms) {
+      return new Promise(r => setTimeout(r, ms));
+    }
+
+    // =============================================
+    // Circle dot + bubble — moves along the 2D dotted circle
+    // =============================================
+    const circleDotEl = document.getElementById('circle-dot');
+    const bubbleEl = document.getElementById('dot-bubble');
+    const bubbleTextEl = document.getElementById('dot-bubble-text');
+    const CIRCLE_R = 180; // radius of the dotted circle (360px / 2)
+
+    // Dot angle positions on the 2D circle for each image stop
+    const DOT_ANGLE_IMG1 = -Math.PI / 3;       // upper-right area
+    const DOT_ANGLE_IMG3 = Math.PI * 2 / 3;    // lower-left area
+    const DOT_ANGLE_IMG2 = Math.PI / 6;         // right-ish area
+    const DOT_ANGLE_IMG5 = -Math.PI * 5 / 6;   // upper-left area
+    const DOT_ANGLE_IMG4 = Math.PI * 11 / 12;  // lower area
+
+    // Words for each image
+    const IMG_WORDS = { 1: 'Bloomed', 3: 'Quietly', 2: 'Wander', 5: 'Drifted', 4: 'Gently' };
+
+    let currentDotAngle = DOT_ANGLE_IMG1;
+
+    // Bubble dimensions (must match CSS: width 160, padding 10+10 + ~18px text ≈ 42px)
+    const BUBBLE_HALF_W = 80;
+    const BUBBLE_HALF_H = 21;
+    const DOT_OVERLAP = -22; // px gap between dot center and nearest bubble edge
+
+    // Offset so the dot overlaps a CONSISTENT number of pixels into the
+    // nearest bubble edge, regardless of angle.
+    const BUBBLE_GAP = 40; // gap (px) from dot to nearest bubble edge
+    function bubbleOffsetForAngle(angle) {
+      const ac = Math.max(Math.abs(Math.cos(angle)), 0.05);
+      const as = Math.max(Math.abs(Math.sin(angle)), 0.05);
+      // Edge distance capped at 55 so nearly-horizontal angles don't blow up
+      const edgeDist = Math.min(BUBBLE_HALF_W / ac, BUBBLE_HALF_H / as, 55);
+      return edgeDist + BUBBLE_GAP;
+    }
+
+    function positionDot(angle) {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = cx + CIRCLE_R * Math.cos(angle);
+      const dy = cy + CIRCLE_R * Math.sin(angle);
+      circleDotEl.style.left = dx + 'px';
+      circleDotEl.style.top = dy + 'px';
+      currentDotAngle = angle;
+    }
+
+    // Get the bubble's outward position for a given circle angle
+    function bubblePosForAngle(angle) {
+      const cx = window.innerWidth / 2;
+      const cy = window.innerHeight / 2;
+      const dx = cx + CIRCLE_R * Math.cos(angle);
+      const dy = cy + CIRCLE_R * Math.sin(angle);
+      const offset = bubbleOffsetForAngle(angle);
+      return {
+        x: dx + offset * Math.cos(angle),
+        y: dy + offset * Math.sin(angle),
+      };
+    }
+
+    function positionBubbleAt(x, y) {
+      bubbleEl.style.left = x + 'px';
+      bubbleEl.style.top = y + 'px';
+    }
+
+    function positionBubbleForAngle(angle) {
+      const p = bubblePosForAngle(angle);
+      positionBubbleAt(p.x, p.y);
+    }
+
+    // Bubble moves in a STRAIGHT LINE from one outward position to another
+    function animateBubble(fromAngle, toAngle, duration) {
+      const from = bubblePosForAngle(fromAngle);
+      const to = bubblePosForAngle(toAngle);
+      const t0 = performance.now();
+
+      function tick(now) {
+        const raw = Math.min((now - t0) / duration, 1);
+        const eased = easeInOutCubic(raw);
+        const x = from.x + (to.x - from.x) * eased;
+        const y = from.y + (to.y - from.y) * eased;
+        positionBubbleAt(x, y);
+        if (raw < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function fadeTextOut() {
+      bubbleTextEl.style.opacity = '0';
+      return wait(300);
+    }
+
+    function fadeTextIn(word) {
+      bubbleTextEl.textContent = word;
+      bubbleTextEl.style.opacity = '1';
+    }
+
+    function animateDot(fromAngle, toAngle, duration) {
+      return new Promise(resolve => {
+        const t0 = performance.now();
+        let delta = toAngle - fromAngle;
+        while (delta > Math.PI) delta -= 2 * Math.PI;
+        while (delta < -Math.PI) delta += 2 * Math.PI;
+
+        function tick(now) {
+          const raw = Math.min((now - t0) / duration, 1);
+          const eased = easeInOutCubic(raw);
+          positionDot(fromAngle + delta * eased);
+          if (raw < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            positionDot(fromAngle + delta);
+            resolve();
+          }
+        }
+        requestAnimationFrame(tick);
+      });
+    }
+
+    // =============================================
+    // Controls
+    // =============================================
+
+    // Swap text mid-animation: fade out at 40%, fade in new word at 60%
+    function swapTextDuring(duration, newWord) {
+      setTimeout(() => fadeTextOut(), duration * 0.4);
+      setTimeout(() => fadeTextIn(newWord), duration * 0.6);
+    }
+
+    document.getElementById('btn-rotate').addEventListener('click', () => {
+      swapTextDuring(3000, IMG_WORDS[3]);
+      animateDot(currentDotAngle, DOT_ANGLE_IMG3, 3000);
+      animateBubble(currentDotAngle, DOT_ANGLE_IMG3, 3000);
+      spinSmallSphere(s2rot, s2rot + Math.PI * 0.7, 3000);
+      animateRot1(rot1, rot1 - Math.PI, 3000);
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      rot1 = 0;
+      rot2 = 0;
+      s2rot = 0;
+      animating = false;
+      render();
+      positionDot(DOT_ANGLE_IMG1);
+      positionBubbleForAngle(DOT_ANGLE_IMG1);
+      bubbleTextEl.textContent = IMG_WORDS[1];
+      bubbleTextEl.style.opacity = '1';
+    });
+
+    // =============================================
+    // Init
+    // =============================================
+    buildDOM();
+    render();
+    positionDot(DOT_ANGLE_IMG1);
+    positionBubbleForAngle(DOT_ANGLE_IMG1);
+    fadeTextIn(IMG_WORDS[1]);
+
+    // Phase 1 rotation targets (rot1 around axis 1):
+    //   Image 1 at front: rot1 = 0
+    //   Image 3 at front: rot1 = -π
+    //   Image 2 at front: rot1 = -π/2
+    //
+    // Phase 2 rotation targets (rot2 around axis 2, rot1 locked at -π/2):
+    //   Image 2 at front: rot2 = 0
+    //   Image 5 at front: rot2 = -π
+    //   Image 4 at front: rot2 = -π/2
+
+    // Auto-play: 1→3→2→5→4
+    (async () => {
+      await wait(800);
+
+      // === PHASE 1: rotate around axis 1 ===
+      swapTextDuring(3000, IMG_WORDS[3]);
+      animateDot(DOT_ANGLE_IMG1, DOT_ANGLE_IMG3, 3000);
+      animateBubble(DOT_ANGLE_IMG1, DOT_ANGLE_IMG3, 3000);
+      spinSmallSphere(0, Math.PI * 0.7, 3000); // small sphere spins along
+      await animateRot1(0, -Math.PI, 3000);
+
+      await wait(1200);
+
+      swapTextDuring(2000, IMG_WORDS[2]);
+      animateDot(DOT_ANGLE_IMG3, DOT_ANGLE_IMG2, 2000);
+      animateBubble(DOT_ANGLE_IMG3, DOT_ANGLE_IMG2, 2000);
+      spinSmallSphere(Math.PI * 0.7, Math.PI * 1.1, 2000);
+      await animateRot1(-Math.PI, -Math.PI / 2, 2000);
+
+      await wait(1200);
+
+      // === PHASE 2: rotate around axis 2 ===
+      swapTextDuring(3000, IMG_WORDS[5]);
+      animateDot(DOT_ANGLE_IMG2, DOT_ANGLE_IMG5, 3000);
+      animateBubble(DOT_ANGLE_IMG2, DOT_ANGLE_IMG5, 3000);
+      spinSmallSphere(Math.PI * 1.1, Math.PI * 1.8, 3000);
+      await animateRot2(0, -Math.PI, 3000);
+
+      await wait(1200);
+
+      swapTextDuring(2000, IMG_WORDS[4]);
+      animateDot(DOT_ANGLE_IMG5, DOT_ANGLE_IMG4, 2000);
+      animateBubble(DOT_ANGLE_IMG5, DOT_ANGLE_IMG4, 2000);
+      spinSmallSphere(Math.PI * 1.8, Math.PI * 2.2, 2000);
+      await animateRot2(-Math.PI, -Math.PI / 2, 2000);
+    })();
+  })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+/* ============================================
+   Word Bubbles — text labels + drift animation
+   ============================================ */
+
+/* --- Word label inside bubble --- */
+.word-bubble__text {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 600;
+  color: #ececec;
+  white-space: nowrap;
+  line-height: 1;
+  opacity: 0;
+  transform: scale(0.7);
+  transition: opacity 0.6s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.word-bubble__text--visible {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* --- Count label below word --- */
+.word-bubble__count {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.5);
+  white-space: nowrap;
+  line-height: 1;
+  margin-top: 4px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.5s ease 0.25s, transform 0.5s ease 0.25s;
+}
+
+.word-bubble__count--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Gentle floating drift --- */
+.word-bubble--drifting {
+  animation: wordBubbleDrift var(--drift-duration, 8s) ease-in-out infinite alternate;
+  animation-delay: var(--drift-delay, 0s);
+}
+
+@keyframes wordBubbleDrift {
+  0%   { transform: translate(0, 0); }
+  33%  { transform: translate(var(--drift-x1, 4px), var(--drift-y1, -6px)); }
+  66%  { transform: translate(var(--drift-x2, -3px), var(--drift-y2, 4px)); }
+  100% { transform: translate(var(--drift-x3, 2px), var(--drift-y3, -4px)); }
+}

@@ -1,0 +1,211 @@
+/* ============================================
+   Insight Bubble — Container for the graph
+   ============================================ */
+
+/* The outer bubble — looks like a ChatGPT response card */
+.insight-bubble {
+  align-self: flex-start;
+  max-width: 92%;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  border-bottom-left-radius: 4px;
+  padding: 20px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Graph bubble — centered horizontally for a presentation feel */
+.insight-bubble--centered {
+  align-self: center;
+  border-bottom-left-radius: 18px;
+}
+
+/* ============================================
+   Graph Area — iOS-style container
+   ============================================ */
+
+.insight-graph {
+  width: 100%;
+  height: 240px;
+  position: relative;
+  border-radius: 12px;
+  background: rgba(16, 185, 129, 0.03);
+  border: 1px solid rgba(16, 185, 129, 0.08);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* ============================================
+   SVG Line Graph
+   ============================================ */
+
+.line-graph__path {
+  will-change: stroke-dashoffset;
+}
+
+.line-graph__area {
+  will-change: opacity;
+}
+
+/* ============================================
+   Graph Title
+   ============================================ */
+
+.line-graph__title {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.45);
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Month Labels (X-axis)
+   ============================================ */
+
+.line-graph__month-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 10px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.35);
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Y-axis Reference Labels
+   ============================================ */
+
+.line-graph__y-label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.25);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Value Callouts (key data points)
+   ============================================ */
+
+.line-graph__callout {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ============================================
+   Insight Bar Chart — shown inside .insight-graph
+   when graph morphs from line to bar
+   ============================================ */
+
+.insight-bar-chart {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0 16px;
+}
+
+/* Each column: value label + bar + x-axis label, stacked vertically */
+.insight-bar-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  justify-content: flex-end;
+}
+
+/* The bar itself */
+.insight-bar {
+  width: 100%;
+  max-width: 48px;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(
+    180deg,
+    rgba(16, 185, 129, 0.7) 0%,
+    rgba(16, 185, 129, 0.35) 100%
+  );
+  transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: height;
+}
+
+/* Value label above each bar */
+.insight-bar__value {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.7);
+  text-align: center;
+  padding-bottom: 4px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Category label below each bar */
+.insight-bar__label {
+  font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  text-align: center;
+  padding-top: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 64px;
+}
+
+/* ============================================
+   Mobile: Bar chart — rotated labels, tighter spacing
+   up to and including iPad Mini horizontal (1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .insight-bar-chart {
+    gap: 3px;
+    padding: 0 4px;
+  }
+
+  .insight-bar {
+    max-width: 30px;
+  }
+
+  .insight-bar__value {
+    font-size: 10px;
+    padding-bottom: 3px;
+  }
+
+  /* Rotate labels 40° so all 6 fit without collision */
+  .insight-bar__label {
+    font-size: 8px;
+    padding-top: 2px;
+    white-space: nowrap;
+    max-width: none;
+    overflow: visible;
+    text-overflow: clip;
+    text-align: left;
+    transform-origin: top left;
+    transform: rotate(40deg);
+  }
+}
